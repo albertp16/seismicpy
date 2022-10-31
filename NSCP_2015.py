@@ -19,7 +19,6 @@ def zone(Z):
     return results
 
 ##Source factor
- 
 near_source = {
         "Na" : {
             "2" : {
@@ -265,36 +264,33 @@ class siteCoef:
             return results
         
 
-def GMCURVE(data,R,report):
-    R = 8.5
-    #imported parameters
-    Ca = data["Ca"]
-    Cv = data["Cv"]
+def rsCurve(ca,cv,R):
     
-    twoptfiveCa = 2.5*Ca
+    twoptfiveCa = 2.5*ca
     
-    Ts = Cv/twoptfiveCa
+    Ts = cv/twoptfiveCa
     To = 0.2*Ts
 
     ###USED IN PLOTTING CURVE
     elastic_x = []
     elastic_y = []
     inelastic_x = []
-    inelastic_y = []    
+    inelastic_y = [] 
+    
     for i in range(500):
             seconds = float(i)/100
             control_period = seconds/Ts
             if control_period == 0: 
-                sa_index = Ca
-                in_sa_index = Ca/R
+                sa_index = ca
+                in_sa_index = ca/R
             elif control_period > 0 and control_period <= 0.2:
                 continue
             elif control_period > 0.2 and control_period <= 1:
                 sa_index = twoptfiveCa
                 in_sa_index = twoptfiveCa/R                
             elif control_period > 1 and control_period < 5:
-                sa_index = Cv/seconds
-                in_sa_index = (Cv/seconds)/R  
+                sa_index = cv/seconds
+                in_sa_index = (cv/seconds)/R  
             elif control_period >= 5:
                 continue
             elastic_x.append(control_period)
@@ -309,36 +305,32 @@ def GMCURVE(data,R,report):
             seconds = float(i)*0.2
         
             if seconds == 0: 
-                sa_index = Ca
+                sa_index = ca
             elif seconds > 0 and seconds <= To: 
                 continue
             elif seconds > To and seconds <= Ts:
                 sa_index = twoptfiveCa
             elif seconds > Ts:
-                sa_index = Cv/seconds
+                sa_index = cv/seconds
 
             table_x.append(round(seconds,3))
             table_y.append(round(sa_index,3))
             
-            curve = {
-                "elastic" : {
-                    "x" : elastic_x,
-                    "y" : elastic_y
-                },
-                "inelastic" : {
-                    "x" : inelastic_x,
-                    "y" : inelastic_y
-                },
-                "TABLE" : {
-                    "x" : table_x,
-                    "y" : table_y
-                },
-                "max_sa" : twoptfiveCa,
-                "Ca" : Ca,
-                "Cv" : Cv,
-                # "Na" : ,
-                # "Nv" : 
-            }  
+    curve = {
+        "elastic" : {
+            "x" : elastic_x,
+            "y" : elastic_y
+        },
+        "inelastic" : {
+            "x" : inelastic_x,
+            "y" : inelastic_y
+        },
+        "tabulated" : {
+            "x" : table_x,
+            "y" : table_y
+        },
+        "max_sa" : twoptfiveCa,
+    }  
         
     
     return curve
@@ -353,7 +345,7 @@ print(nv)
 print(ca)
 print(cv)
 
-
+print(rsCurve(ca,cv,8.5))
 
 
 
