@@ -10,7 +10,7 @@ ASEP sensitivity Analysis
 import matplotlib.pyplot as plt
 
 import NSCP_2015 as NSCP
-import ASCE705 as ASCE
+#import ASCE705 as ASCE
 
 
 def generate(ca,cv,R):
@@ -22,11 +22,10 @@ def generate(ca,cv,R):
     ax.set(xlabel="Period (sec)", ylabel="Spectral Acceleration (Sa)",
             title= "Design Response Spectra")
     ax.grid()
-    plt.xscale('line')
     plt.legend()
     plt.show()
     
-test = NSCP.siteCoef(2,"A","s_d","4")
+test = NSCP.siteCoef(33,"A","s_d","4")
 ca = test.ca()
 cv = test.cv()
 R = 8.5

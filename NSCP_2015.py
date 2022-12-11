@@ -340,12 +340,12 @@ na = test.na()
 nv = test.nv()
 ca = test.ca()
 cv = test.cv()
-print(na)
-print(nv)
-print(ca)
-print(cv)
+# print(na)
+#print(nv)
+#print(ca)
+#print(cv)
 
-print(rsCurve(ca,cv,8.5))
+#print(rsCurve(ca,cv,8.5))
 
 
 
