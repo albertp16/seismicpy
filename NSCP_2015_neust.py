@@ -336,7 +336,23 @@ def rsCurve(ca,cv,R):
     
     return curve
 
-test = siteCoef(2,"A","s_d","4")
+### 
+sp_one = "s_e"
+sp_two = "s_d"
+sp_three = "s_c"
+
+level13 = 200000*0.00980665
+level24 = 500000*0.00980665
+level5 = 500000*0.00980665
+
+location_one = 19.3
+location_two = 1.3 
+location_three = 382.8
+
+height_arr = [3.5,3.5,3.5,3.5,3.5]
+weight_arr = [level13,level24,level13,level24,level5]
+
+test = siteCoef(3.02,"A","s_b","4")
 na = test.na()
 nv = test.nv()
 ca = test.ca()
@@ -345,11 +361,13 @@ print(na)
 print(nv)
 print(ca)
 print(cv)
-hn = 47
-W = 5000 + (14*3000)
-I = 1
-R = 8.5
-T = 0.0731*pow(hn,3/4)
+hn = 11.24
+print('height ' + str(hn))
+W = (level13*2) + (level24*2) + (level5)
+I = 1.50
+R = 8.50
+T = 0.0853*pow(hn,3/4)
+# T = 0.0731*pow(hn,3/4)
 Z = 0.4
 base_shear = ((cv*I)/(R*T))*W
 base_shear_2 = ((2.5*ca*I)/(R))*W
