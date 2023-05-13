@@ -337,6 +337,7 @@ def rsCurve(ca,cv,R):
     return curve
 
 ### 
+'''
 sp_one = "s_e"
 sp_two = "s_d"
 sp_three = "s_c"
@@ -351,8 +352,8 @@ location_three = 382.8
 
 height_arr = [3.5,3.5,3.5,3.5,3.5]
 weight_arr = [level13,level24,level13,level24,level5]
-
-test = siteCoef(3.02,"A","s_b","4")
+'''
+test = siteCoef(19.2,"A","s_d","4")
 na = test.na()
 nv = test.nv()
 ca = test.ca()
@@ -361,27 +362,28 @@ print(na)
 print(nv)
 print(ca)
 print(cv)
-hn = 11.24
-print('height ' + str(hn))
-W = (level13*2) + (level24*2) + (level5)
-I = 1.50
-R = 8.50
-T = 0.0853*pow(hn,3/4)
+
+# =============================================================================
+# hn = 11.24
+# print('height ' + str(hn))
+# # W = (level13*2) + (level24*2) + (level5)
+# I = 1.50
+# R = 8.50
+# T = 0.0853*pow(hn,3/4)
 # T = 0.0731*pow(hn,3/4)
-Z = 0.4
-base_shear = ((cv*I)/(R*T))*W
-base_shear_2 = ((2.5*ca*I)/(R))*W
-base_shear_3 = 0.11*ca*I*W
-base_shear_4 = ((0.8*Z*nv*I)/(R))*W
-print(W)
-print(T)
-print(base_shear)
-print(base_shear_2)
-print(base_shear_3)
-print(base_shear_4)
-govern_v = max(min(base_shear,base_shear_2),base_shear_3,base_shear_4)
-print(govern_v)
-
-
-
+# Z = 0.4
+# base_shear = ((cv*I)/(R*T))*W
+# base_shear_2 = ((2.5*ca*I)/(R))*W
+# base_shear_3 = 0.11*ca*I*W
+# base_shear_4 = ((0.8*Z*nv*I)/(R))*W
+# print(W)
+# print(T)
+# print(base_shear)
+# print(base_shear_2)
+# print(base_shear_3)
+# print(base_shear_4)
+# govern_v = max(min(base_shear,base_shear_2),base_shear_3,base_shear_4)
+# print(govern_v)
+# 
+# =============================================================================
 
