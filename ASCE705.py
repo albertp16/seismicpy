@@ -211,8 +211,6 @@ def sitecoefficients(soil_type_input,Ss_input,S1_input):
     
 
 
-
-
 def responseSpecturmCurve(Ss,S1,Fa,Fv,TL,reduce):
     
         Sms = Fa*Ss

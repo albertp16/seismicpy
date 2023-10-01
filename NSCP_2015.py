@@ -336,33 +336,99 @@ def rsCurve(ca,cv,R):
     
     return curve
 
-test = siteCoef(2,"A","s_d","4")
+
+
+test = siteCoef(10,"A","s_e","4")
 na = test.na()
 nv = test.nv()
 ca = test.ca()
 cv = test.cv()
+x = rsCurve(ca,cv,8.5)["elastic"]["x"]
+y = rsCurve(ca,cv,8.5)["elastic"]["y"]
+
 print(na)
 print(nv)
 print(ca)
 print(cv)
-hn = 47
-W = 5000 + (14*3000)
-I = 1
-R = 8.5
-T = 0.0731*pow(hn,3/4)
-Z = 0.4
-base_shear = ((cv*I)/(R*T))*W
-base_shear_2 = ((2.5*ca*I)/(R))*W
-base_shear_3 = 0.11*ca*I*W
-base_shear_4 = ((0.8*Z*nv*I)/(R))*W
-print(W)
-print(T)
-print(base_shear)
-print(base_shear_2)
-print(base_shear_3)
-print(base_shear_4)
-govern_v = max(min(base_shear,base_shear_2),base_shear_3,base_shear_4)
-print(govern_v)
+
+length = len(x)
+
+coords = ''
+
+
+i = 0
+while i < length:
+    coords += '('+str(x[i])+','+str(y[i])+')'
+    i = i + 1
+    
+def baseShear():
+    ##NSCP2015 
+    
+    ##ASCE705
+    
+    return print("working")
+
+baseShear()
+# print(coords)
+
+
+TeX_string = '''
+    \\begin{figure}[h!]
+    \\centering
+    \\begin{tikzpicture}
+    \\begin{axis}[
+        title={Wind Velocity Pressure Plot},
+        xlabel={Wind Pressure Force (pa)},
+        ylabel={Building Height (m)},
+        % xmin=0, xmax=100,
+        % ymin=0, ymax=120,
+        % xtick={0,20,40,60,80,100},
+        % ytick={0,20,40,60,80,100,120},
+        legend pos=north west,
+        ymajorgrids=true,
+        grid style=dashed,
+    ]
+    
+    \\addplot[
+        color=red,
+        % mark=square,
+        ]
+        coordinates {
+'''
+TeX_string += coords
+TeX_string +='''
+        };
+        \legend{wind pressure}
+        
+    \\end{axis}
+    \\end{tikzpicture}
+    \\caption{Wind Pressure Plot}
+    \\label{fig:wind pressure}
+    \\end{figure}
+'''
+# print(TeX_string)
+
+# print(TeX_string)
+# print(ca)
+# print(cv)
+# hn = 47
+# W = 5000 + (14*3000)
+# I = 1
+# R = 8.5
+# T = 0.0731*pow(hn,3/4)
+# Z = 0.4
+# base_shear = ((cv*I)/(R*T))*W
+# base_shear_2 = ((2.5*ca*I)/(R))*W
+# base_shear_3 = 0.11*ca*I*W
+# base_shear_4 = ((0.8*Z*nv*I)/(R))*W
+# print(W)
+# print(T)
+# print(base_shear)
+# print(base_shear_2)
+# print(base_shear_3)
+# print(base_shear_4)
+# govern_v = max(min(base_shear,base_shear_2),base_shear_3,base_shear_4)
+# print(govern_v)
 
 
 
