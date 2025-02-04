@@ -1,0 +1,8 @@
+README.md
+setup.py
+apecseismicpy/__init__.py
+apecseismicpy/baseshear.py
+apecseismicpy.egg-info/PKG-INFO
+apecseismicpy.egg-info/SOURCES.txt
+apecseismicpy.egg-info/dependency_links.txt
+apecseismicpy.egg-info/top_level.txt
