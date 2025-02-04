@@ -2,12 +2,12 @@
 """
 Created on Wed Sep  6 08:27:02 2023
 
-@author: alber
+@author: albert pamonag 
 """
 import math
-hn = 20.518
-period = 0.0731*math.pow(hn,3/4)
-print(period)
+# hn = 20.518
+# period = 0.0731*math.pow(hn,3/4)
+# print(period)
 class nscp2015:
     def __init__(self,zone,nv,ca,cv,importance_factor,response_modification,period,weight):
         self.zone = zone
@@ -36,6 +36,7 @@ class nscp2015:
     def governingShear(self):
         
         if(self.zone == 4):
+            # TODO to complete this conditions 
             govern_shear_max = min(self.totalBaseShear(),self.maxBaseShear())
             govern_shear_min = max(self.totalBaseShear(),self.minBaseShear())
             govern_shear = min(govern_shear_max,self.maxBaseShearZ4())
@@ -43,9 +44,9 @@ class nscp2015:
         return govern_shear
     
     
-data_one = nscp2015(4,1.20,0.44,0.768,1,8.5,0.82,56898.60)
-print(data_one.totalBaseShear())
-print(data_one.maxBaseShear())
-print(data_one.minBaseShear())
-print(data_one.maxBaseShearZ4())
+# data_one = nscp2015(4,1.20,0.44,0.768,1,8.5,0.82,56898.60)
+# print(data_one.totalBaseShear())
+# print(data_one.maxBaseShear())
+# print(data_one.minBaseShear())
+# print(data_one.maxBaseShearZ4())
 # print(data_one.governingShear())
