@@ -5,9 +5,7 @@ Created on Wed Sep  6 08:27:02 2023
 @author: albert pamonag 
 """
 import math
-# hn = 20.518
-# period = 0.0731*math.pow(hn,3/4)
-# print(period)
+
 class nscp2015:
     def __init__(self,zone,nv,ca,cv,importance_factor,response_modification,period,weight):
         self.zone = zone
