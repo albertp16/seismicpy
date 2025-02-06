@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-class ResponseSpectrum:
+class responseSpectrum:
     def __init__(self, ca, cv, R):
         self.ca = ca
         self.cv = cv
@@ -53,9 +53,9 @@ class ResponseSpectrum:
         plt.xlim(0, 5)  # Ensure the x-axis extends to 5 seconds
         plt.show()
 
-# Example usage
-ca = 0.3
-cv = 0.8
-R = 3.0
-response_spectrum = ResponseSpectrum(ca, cv, R)
-response_spectrum.plot()
+# # Example usage
+# ca = 0.3
+# cv = 0.8
+# R = 3.0
+# response_spectrum = ResponseSpectrum(ca, cv, R)
+# response_spectrum.plot()

@@ -6,7 +6,7 @@ Created on Wed Sep  6 08:27:02 2023
 """
 import math
 
-class nscp2015:
+class calculate_base_shear:
     def __init__(self,zone,nv,ca,cv,importance_factor,response_modification,period,weight):
         self.zone = zone
         self.nv = nv

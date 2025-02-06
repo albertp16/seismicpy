@@ -1,6 +1,6 @@
 import math
 
-def calculate(type, hn):
+def calculateStructuralPeriod(type, hn):
     """
     Calculate the seismic period based on the type of structure and height.
 
