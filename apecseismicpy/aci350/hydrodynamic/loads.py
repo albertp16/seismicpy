@@ -59,7 +59,7 @@ def calculate_heights_of_centers_of_gravity(l: float, h_l: float, plot: bool = F
     and optionally plot the height factors versus L/H_L ratio.
 
     Parameters:
-        l (float): Base length of the tank.
+        l (float): Base length of the tank (parallel motion).
         h_l (float): Height of the liquid column.
         plot (bool): Whether to generate a plot of height factors vs. L/H_L ratio.
 
@@ -80,7 +80,16 @@ def calculate_heights_of_centers_of_gravity(l: float, h_l: float, plot: bool = F
     h_pi = 0.45 * h_l if ratio_l_hl < 0.75 else ((0.866 * ratio_l_hl) / (2 * math.tanh(0.866 * ratio_l_hl)) - 1/8) * h_l
     h_pc = (1 - (math.cosh(3.16 * (h_l / l)) - 2.01) / (3.16 * (h_l / l) * math.sinh(3.16 * (h_l / l)))) * h_l
     
-    result = {"h_i": h_i, "h_c": h_c, "h_pi": h_pi, "h_pc": h_pc}
+    result = {
+        "EPB" : {
+            "h_i": h_i, 
+            "h_c": h_c, 
+        }, 
+        "IBP" : {
+            "h_pi": h_pi, 
+            "h_pc": h_pc
+        }
+        }
     
     # Generate separate plots if requested
     if plot:
