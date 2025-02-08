@@ -5,7 +5,7 @@ class responseSpectrum:
     def __init__(self, ca, cv, R):
         self.ca = ca
         self.cv = cv
-        self.R = R
+        # self.R = R
         self.results = self.calculate_rs_curve()
 
     def calculate_rs_curve(self):
