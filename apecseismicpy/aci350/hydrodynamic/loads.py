@@ -73,21 +73,21 @@ def calculate_heights_of_centers_of_gravity(l: float, h_l: float, plot: bool = F
     ratio_l_hl = l / h_l
     
     # Heights to centers of gravity, EBP
-    h_i = (0.5 - 0.09375 * ratio_l_hl) * h_l if ratio_l_hl < 1.333 else 0.375 * h_l
-    h_c = (1 - (math.cosh(3.16 * (h_l / l)) - 1) / (3.16 * (h_l / l) * math.sinh(3.16 * (h_l / l)))) * h_l
+    hi = (0.5 - 0.09375 * ratio_l_hl) * h_l if ratio_l_hl < 1.333 else 0.375 * h_l
+    hc = (1 - (math.cosh(3.16 * (h_l / l)) - 1) / (3.16 * (h_l / l) * math.sinh(3.16 * (h_l / l)))) * h_l
     
     # Heights to centers of gravity, IBP
-    h_pi = 0.45 * h_l if ratio_l_hl < 0.75 else ((0.866 * ratio_l_hl) / (2 * math.tanh(0.866 * ratio_l_hl)) - 1/8) * h_l
-    h_pc = (1 - (math.cosh(3.16 * (h_l / l)) - 2.01) / (3.16 * (h_l / l) * math.sinh(3.16 * (h_l / l)))) * h_l
+    hpi = 0.45 * h_l if ratio_l_hl < 0.75 else ((0.866 * ratio_l_hl) / (2 * math.tanh(0.866 * ratio_l_hl)) - 1/8) * h_l
+    hpc = (1 - (math.cosh(3.16 * (h_l / l)) - 2.01) / (3.16 * (h_l / l) * math.sinh(3.16 * (h_l / l)))) * h_l
     
     result = {
         "EPB" : {
-            "h_i": h_i, 
-            "h_c": h_c, 
+            "hi": hi, 
+            "hc": hc, 
         }, 
         "IBP" : {
-            "h_pi": h_pi, 
-            "h_pc": h_pc
+            "hpi": hpi, 
+            "hpc": hpc
         }
         }
     
