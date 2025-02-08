@@ -3,33 +3,32 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-def effective_liquid_weights(base_length: float, liquid_weight: float, chamber_height: float, plot: bool = False) -> dict:
+def effective_liquid_weights(L: float, height: float, liquid_weight: float, plot: bool = False) -> dict:
     """
     Calculate the effective acceleration liquid weights based on ACI 350 (Eq. 9.2.1a & 9.2.1b),
     and optionally plot the mass factors versus L/H_L ratio.
 
     Parameters:
-        B (float): Length of the base perpendicular (L).
-        L (float): Length of the base parallel (B)
-        liquid_weight (float): Total weight of the liquid (W_L).
-        chamber_height (float): Height of the chamber (H_L).
+        L (float): Length of the base parallel motion (L)
+        height (float): Height of the tank (height).
+        liquid_weight (float): Liquid Weight of the tank (liquid_weight).
         plot (bool): Whether to generate a plot of mass factors vs. L/H_L ratio.
 
     Returns:
         dict: A dictionary with the impulsive and convective weight components.
     """
     # Guard clauses for input validation
-    if base_length <= 0 or liquid_weight <= 0 or chamber_height <= 0:
+    if L <= 0 or liquid_weight <= 0 or height <= 0:
         raise ValueError("All input parameters must be positive nonzero values.")
     
-    ratio_l_hl = base_length / chamber_height
+    ratio_l_hl = L / height
     
     # Impulsive Weight Calculation (Eq. 9.2.1a)
     wi_ratio = math.tanh(0.866 * ratio_l_hl) / (0.866 * ratio_l_hl)
     wi = wi_ratio * liquid_weight
     
     # Convective Weight Calculation (Eq. 9.2.1b)
-    wc_ratio = 0.264 * ratio_l_hl * math.tanh(3.16 * (chamber_height / base_length))
+    wc_ratio = 0.264 * ratio_l_hl * math.tanh(3.16 * (height / L))
     wc = wc_ratio * liquid_weight
     
     result = {"impulsive": wi, "convective": wc}
