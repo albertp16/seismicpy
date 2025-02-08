@@ -1,6 +1,3 @@
-import math
-import numpy as np
-import matplotlib.pyplot as plt
 
 import math
 import numpy as np
@@ -12,7 +9,8 @@ def effective_liquid_weights(base_length: float, liquid_weight: float, chamber_h
     and optionally plot the mass factors versus L/H_L ratio.
 
     Parameters:
-        base_length (float): Length of the base dimension (L).
+        B (float): Length of the base perpendicular (L).
+        L (float): Length of the base parallel (B)
         liquid_weight (float): Total weight of the liquid (W_L).
         chamber_height (float): Height of the chamber (H_L).
         plot (bool): Whether to generate a plot of mass factors vs. L/H_L ratio.
@@ -119,11 +117,11 @@ def calculate_heights_of_centers_of_gravity(l: float, h_l: float, plot: bool = F
     return result
 
 
-test = calculate_heights_of_centers_of_gravity(2,3, True)
-print("h_i",test["h_i"])
-print("h_c",test["h_c"])
-print("h_pi",test["h_pi"])
-print("h_pc",test["h_pc"])
+# test = calculate_heights_of_centers_of_gravity(2,3, True)
+# print("h_i",test["h_i"])
+# print("h_c",test["h_c"])
+# print("h_pi",test["h_pi"])
+# print("h_pc",test["h_pc"])
 
 
 # def calculate_dynamic_properties(h_w, t_w_ave, gamma_c, g, e_c):
