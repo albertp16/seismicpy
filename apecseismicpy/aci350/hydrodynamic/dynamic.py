@@ -55,18 +55,76 @@ def effective_liquid_weights(base_length: float, liquid_weight: float, chamber_h
     return result
 
 
-effective_liquid_weights(3,3,3,True)
+# effective_liquid_weights(3,3,3,True)
 
-def calculate_heights_of_centers_of_gravity(l, h_l):
+def calculate_heights_of_centers_of_gravity(l: float, h_l: float, plot: bool = False) -> dict:
+    """
+    Calculate the heights to centers of gravity for EBP and IBP based on ACI 350 (Section 9.2.2 & 9.2.3),
+    and optionally plot the height factors versus L/H_L ratio.
+
+    Parameters:
+        l (float): Base length of the tank.
+        h_l (float): Height of the liquid column.
+        plot (bool): Whether to generate a plot of height factors vs. L/H_L ratio.
+
+    Returns:
+        dict: A dictionary containing the heights to centers of gravity for both EBP and IBP.
+    """
+    # Guard clauses for input validation
+    if l <= 0 or h_l <= 0:
+        raise ValueError("Both base length and liquid height must be positive nonzero values.")
+    
+    ratio_l_hl = l / h_l
+    
     # Heights to centers of gravity, EBP
-    h_i = (0.5 - 0.09375 * (l / h_l)) * h_l if (l / h_l) < 1.333 else 0.375 * h_l
+    h_i = (0.5 - 0.09375 * ratio_l_hl) * h_l if ratio_l_hl < 1.333 else 0.375 * h_l
     h_c = (1 - (math.cosh(3.16 * (h_l / l)) - 1) / (3.16 * (h_l / l) * math.sinh(3.16 * (h_l / l)))) * h_l
     
     # Heights to centers of gravity, IBP
-    h_pi = 0.45 * h_l if (l / h_l) < 0.75 else ((0.866 * (l / h_l)) / (2 * math.tanh(0.866 * (l / h_l))) - 1/8) * h_l
+    h_pi = 0.45 * h_l if ratio_l_hl < 0.75 else ((0.866 * ratio_l_hl) / (2 * math.tanh(0.866 * ratio_l_hl)) - 1/8) * h_l
     h_pc = (1 - (math.cosh(3.16 * (h_l / l)) - 2.01) / (3.16 * (h_l / l) * math.sinh(3.16 * (h_l / l)))) * h_l
     
-    return h_i, h_c, h_pi, h_pc
+    result = {"h_i": h_i, "h_c": h_c, "h_pi": h_pi, "h_pc": h_pc}
+    
+    # Generate separate plots if requested
+    if plot:
+        l_hl_ratios = np.linspace(0.5, 8, 100)
+        h_i_values = [(0.5 - 0.09375 * r) if r < 1.333 else 0.375 for r in l_hl_ratios]
+        h_c_values = [1 - (math.cosh(3.16 * (1 / r)) - 1) / (3.16 * (1 / r) * math.sinh(3.16 * (1 / r))) for r in l_hl_ratios]
+        h_pi_values = [0.45 if r < 0.75 else ((0.866 * r) / (2 * math.tanh(0.866 * r)) - 1/8) for r in l_hl_ratios]
+        h_pc_values = [1 - (math.cosh(3.16 * (1 / r)) - 2.01) / (3.16 * (1 / r) * math.sinh(3.16 * (1 / r))) for r in l_hl_ratios]
+        
+        # Plot EBP factors
+        plt.figure(figsize=(8, 6))
+        plt.plot(l_hl_ratios, h_i_values, label="$h_i / H_L$", color='blue')
+        plt.plot(l_hl_ratios, h_c_values, label="$h_c / H_L$", color='purple')
+        plt.xlabel("L / H_L Ratio")
+        plt.ylabel("EBP Height Factors")
+        plt.title("Impulsive and Convective Height Factors (EBP) vs. L/H_L Ratio")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+        
+        # Plot IBP factors
+        plt.figure(figsize=(8, 6))
+        plt.plot(l_hl_ratios, h_pi_values, label="$h'_i / H_L$", color='blue')
+        plt.plot(l_hl_ratios, h_pc_values, label="$h'_c / H_L$", color='purple')
+        plt.xlabel("L / H_L Ratio")
+        plt.ylabel("IBP Height Factors")
+        plt.title("Impulsive and Convective Height Factors (IBP) vs. L/H_L Ratio")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+    
+    return result
+
+
+test = calculate_heights_of_centers_of_gravity(2,3, True)
+print("h_i",test["h_i"])
+print("h_c",test["h_c"])
+print("h_pi",test["h_pi"])
+print("h_pc",test["h_pc"])
+
 
 # def calculate_dynamic_properties(h_w, t_w_ave, gamma_c, g, e_c):
 #     # Wall weight per linear meter
