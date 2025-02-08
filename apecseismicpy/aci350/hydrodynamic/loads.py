@@ -40,8 +40,8 @@ def effective_liquid_weights(L: float, height: float, liquid_weight: float, plot
         wc_values = [0.264 * r * math.tanh(3.16 * (1 / r)) for r in l_hl_ratios]
         
         plt.figure(figsize=(8, 6))
-        plt.plot(l_hl_ratios, wi_values, label="$W_i / W_L$")
-        plt.plot(l_hl_ratios, wc_values, label="$W_c / W_L$")
+        plt.plot(l_hl_ratios, wi_values, label="$W_i / W_L$", color='blue')
+        plt.plot(l_hl_ratios, wc_values, label="$W_c / W_L$", color='purple')
         plt.xlabel("L / H_L Ratio")
         plt.ylabel("Mass Factors")
         plt.title("Impulsive and Convective Mass Factors vs. L/H_L Ratio")
@@ -50,7 +50,6 @@ def effective_liquid_weights(L: float, height: float, liquid_weight: float, plot
         plt.show()
     
     return result
-
 
 # effective_liquid_weights(3,3,3,True)
 
