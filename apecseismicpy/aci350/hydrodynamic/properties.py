@@ -1,58 +1,146 @@
-# def calculate_dynamic_properties(h_w, t_w_ave, gamma_c, g, e_c):
-#     # Wall weight per linear meter
-#     m_w = h_w * t_w_ave * gamma_c / g
-    
-#     # Impulsive weight of contents per linear meter
-#     m_i = ((w_i / w_l) * (l / 2) * h_l * gamma_l / g)
-    
-#     # Equivalent cantilever wall height
-#     h = ((0.5 * h_w * m_w + h_i * m_i) / (m_w + m_i))
-    
-#     # Wall stiffness per linear meter
-#     k = (e_c / 4) * ((t_w_ave / h) ** 3)
-    
-#     # Total weight per linear meter
-#     m_t = m_w + m_i
-    
-#     # Fundamental period of oscillation
-#     t_i = 2 * math.pi * math.sqrt((m_t * h) / k)
-    
-#     return m_w, m_i, h, k, m_t, t_i
+import numpy as np
+import math
 
-# # Given Data
-# l = 14.5  # Parallel to Motion (m)
-# b = 7.2    # Perpendicular to Motion (m)
-# h_l = 10.0 # Liquid Height (m) - assumed value
-# gamma_l = 9.81  # Unit weight of liquid (kN/m^3) - assumed value
-# h_w = 8.0  # Wall height (m) - assumed value
-# t_w_ave = 0.3  # Average wall thickness (m) - assumed value
-# gamma_c = 25.0  # Unit weight of concrete (kN/m^3) - assumed value
-# g = 9.81  # Acceleration due to gravity (m/s^2)
-# e_c = 30e6  # Elastic modulus of concrete (kN/m^2) - assumed value
+def compute_k(ec, tw, h):
+    """
+    Compute the spring constant k based on material properties.
+    
+    Parameters:
+    ec (float): Young's modulus (Pa)
+    tw (float): Web thickness (m)
+    h (float): Section height (m)
+    
+    Returns:
+    float: Spring constant (N/m)
+    """
+    if tw <= 0 or h <= 0:
+        raise ValueError("tw and h must be greater than zero.")
+    return (ec / (4 * 1000)) * math.pow(tw / h, 3)
 
-# # Compute Values
-# w_l, w_i, w_c = calculate_liquid_weights(l, b, h_l, gamma_l)
-# h_i, h_c, h_pi, h_pc = calculate_heights_of_centers_of_gravity(l, h_l)
-# m_w, m_i, h, k, m_t, t_i = calculate_dynamic_properties(h_w, t_w_ave, gamma_c, g, e_c)
+def compute_h(hw, mw, hi, mi):
+    """
+    Compute the effective height h.
+    
+    Parameters:
+    hw (float): Wall height factor (m)
+    mw (float): Wall mass (kg)
+    hi (float): Influence height (m)
+    mi (float): Influence mass (kg)
+    
+    Returns:
+    float: Effective height (m)
+    """
+    if mw + mi == 0:
+        raise ValueError("Total mass must be greater than zero.")
+    return (hw * mw + hi * mi) / (mw + mi)
 
-# # Plotting Seismic Response Spectrum
-# ti_values = [i * 0.5 for i in range(20)]
-# ci_values = [1.1 if ti <= 1.0 else 1.0 / ti for ti in ti_values]
+def compute_mw(hw, tw, gamma_c, g):
+    """
+    Compute the mass of the wall.
+    
+    Parameters:
+    hw (float): Wall height (m)
+    tw (float): Web thickness (m)
+    gamma_c (float): Unit weight (kN/m^3)
+    g (float): Gravity acceleration (m/s^2)
+    
+    Returns:
+    float: Wall mass (kg)
+    """
+    if hw <= 0 or tw <= 0:
+        raise ValueError("hw and tw must be greater than zero.")
+    return hw * tw * (gamma_c / g)
 
-# plt.figure(figsize=(8, 5))
-# plt.plot(ti_values, ci_values, marker='o', linestyle='-', color='r')
-# plt.axvline(x=t_i, color='b', linestyle='dashed', label=f'T_i = {t_i:.3f}s')
-# plt.xlabel('Period, T_i (s)')
-# plt.ylabel('Seismic Coefficient, C_i')
-# plt.title('Impulsive Design Response Spectrum')
-# plt.legend()
-# plt.grid()
-# plt.show()
+def compute_mi(wi, wl, l, hl, gamma_l, g):
+    """
+    Compute the mass of the influence area.
+    
+    Parameters:
+    wi (float): Influence weight (kN)
+    wl (float): Total weight (kN)
+    l (float): Span length (m)
+    hl (float): Characteristic height (m)
+    gamma_l (float): Unit weight (kN/m^3)
+    g (float): Gravity acceleration (m/s^2)
+    
+    Returns:
+    float: Influence mass (kg)
+    """
+    if wl <= 0 or l <= 0 or hl <= 0:
+        raise ValueError("wl, l, and hl must be greater than zero.")
+    return ((wi / wl) * (l / 2) * hl * (gamma_l / g)) * 1000
 
-# # Display Results
-# print(f"Wall weight per linear meter (m_w): {m_w:.3f} kg/m")
-# print(f"Impulsive weight per linear meter (m_i): {m_i:.3f} kg/m")
-# print(f"Equivalent cantilever wall height (h): {h:.3f} m")
-# print(f"Wall stiffness per linear meter (k): {k:.3f} kN/m")
-# print(f"Total weight per linear meter (m_t): {m_t:.3f} kg/m")
-# print(f"Fundamental period of oscillation (t_i): {t_i:.3f} s")
+def compute_omega_i(k, m):
+    """
+    Compute natural frequency omega_i.
+    
+    Parameters:
+    k (float): Spring constant (N/m)
+    m (float): Mass (kg)
+    
+    Returns:
+    float: Natural frequency (rad/s)
+    """
+    if m <= 0:
+        raise ValueError("Mass must be greater than zero.")
+    return math.sqrt(k / m)
+
+def compute_ti(omega_i):
+    """
+    Compute period ti.
+    
+    Parameters:
+    omega_i (float): Natural frequency (rad/s)
+    
+    Returns:
+    float: Period (s)
+    """
+    if omega_i <= 0:
+        raise ValueError("omega_i must be greater than zero.")
+    return 2 * math.pi / omega_i
+
+def compute_omega_c(lambda_, l):
+    """
+    Compute omega_c.
+    
+    Parameters:
+    lambda_ (float): Wave number
+    l (float): Characteristic length (m)
+    
+    Returns:
+    float: Circular frequency (rad/s)
+    """
+    if l <= 0:
+        raise ValueError("l must be greater than zero.")
+    return lambda_ / math.sqrt(l)
+
+def compute_tc(lambda_, l):
+    """
+    Compute period tc.
+    
+    Parameters:
+    lambda_ (float): Wave number
+    l (float): Characteristic length (m)
+    
+    Returns:
+    float: Period (s)
+    """
+    if lambda_ <= 0:
+        raise ValueError("lambda must be greater than zero.")
+    return (2 * math.pi / lambda_) * math.sqrt(l)
+
+def compute_lambda(g, hl, l):
+    """
+    Compute wave number lambda.
+    
+    Parameters:
+    g (float): Gravity acceleration (m/s^2)
+    hl (float): Characteristic height (m)
+    l (float): Characteristic length (m)
+    
+    Returns:
+    float: Wave number
+    """
+    if l <= 0 or hl <= 0:
+        raise ValueError("l and hl must be greater than zero.")
+    return math.sqrt(3.16 * g * math.tanh(3.16 * hl / l))
