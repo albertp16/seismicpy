@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='apecseismicpy',
-    version='0.1',
+    version='0.2',
     description='This APEC internal use only',
     author='Albert Pamonag',
     author_email='albert@apeconsultancy.net',

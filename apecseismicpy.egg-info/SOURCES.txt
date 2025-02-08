@@ -2,6 +2,9 @@ README.md
 setup.py
 apecseismicpy/__init__.py
 apecseismicpy/baseshear.py
+apecseismicpy/period.py
+apecseismicpy/response_spectrum.py
+apecseismicpy/site_coefficients.py
 apecseismicpy.egg-info/PKG-INFO
 apecseismicpy.egg-info/SOURCES.txt
 apecseismicpy.egg-info/dependency_links.txt
