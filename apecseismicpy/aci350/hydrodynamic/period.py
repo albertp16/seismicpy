@@ -92,21 +92,16 @@ class dynamicProperties:
             "value" : value,
             "units" : units
         }
-
-    # def compute_omega_c(self):
-    #     if self.lambda_ is None or self.l is None:
-    #         raise ValueError("lambda_ and l must be set.")
-    #     if self.l <= 0:
-    #         raise ValueError("l must be greater than zero.")
-    #     return self.lambda_ / math.sqrt(self.l)
-
-    # def compute_tc(self):
-    #     if self.lambda_ is None or self.l is None:
-    #         raise ValueError("lambda_ and l must be set.")
-    #     if self.lambda_ <= 0:
-    #         raise ValueError("lambda_ must be greater than zero.")
-    #     return (2 * math.pi / self.lambda_) * math.sqrt(self.l)
-
+    def compute_tc(self):
+        """
+        Natural Period of the first convective mode of sloshing
+        """
+        value = (2 * math.pi) / math.sqrt(3.16 * self.g * math.tanh(3.16 * (self.hl / self.l)))
+        units = "s"
+        return {
+            "value" : value,
+            "units" : units
+        }
     # def compute_lambda(self):
     #     if self.hl is None or self.l is None:
     #         raise ValueError("hl and l must be set.")
