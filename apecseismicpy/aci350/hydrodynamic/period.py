@@ -1,7 +1,7 @@
 import math
 
 class dynamicProperties:
-    def __init__(self, length,hw,tw,wi,wl,hl,hi, gamma_c=23.6,gamma_l=9.81, g=9.81):
+    def __init__(self, length,hw,tw,wi,wl,hl,hi,ec, gamma_c=23.6,gamma_l=9.81, g=9.81):
         self.g = g  # Gravity acceleration (m/s^2)
         self.length = length  # Length in Parallel Motion
         self.hw = hw  # Wall Height (meter)
@@ -9,7 +9,7 @@ class dynamicProperties:
         self.wi = wi  # Implusive Weight
         self.wl = wl  # Liquid Weight
         self.hl = hl  # Liquid Height      
-        # self.mw = mw  # Mass of wall
+        self.ec = ec  # Modulus of Elasciticity of Concrete (MPa)
         self.hi = hi  # Height influence
         # self.mi = mi  # Mass influence
         # self.wi = wi  # Load influence
@@ -61,19 +61,19 @@ class dynamicProperties:
             "units" : units
         }
     
-    # def compute_k(self):
-    #     if self.tw is None or self.h is None or self.ec is None:
-    #         raise ValueError("tw, h, and ec must be set.")
-    #     if self.tw <= 0 or self.h <= 0:
-    #         raise ValueError("tw and h must be greater than zero.")
-    #     return (self.ec / (4 * 1000)) * math.pow(self.tw / self.h, 3)
+    def compute_k(self):
+        """
+        wall stiffness per linear meter
 
-    # def compute_h(self):
-    #     if self.hw is None or self.mw is None or self.hi is None or self.mi is None:
-    #         raise ValueError("hw, mw, hi, and mi must be set.")
-    #     if self.mw + self.mi == 0:
-    #         raise ValueError("Total mass must be greater than zero.")
-    #     return (self.hw * self.mw + self.hi * self.mi) / (self.mw + self.mi)
+        """
+        ec_kpa = self.ec * 1000 #convert from MPa to KPa
+        value = (ec_kpa / 4000) * math.pow(self.tw / self.compute_h()["value"], 3)
+        units = "kN/m"
+        return {
+            "value" : value,
+            "units" : units
+        }
+
 
     # def compute_omega_i(self, k, m):
     #     if m <= 0:
