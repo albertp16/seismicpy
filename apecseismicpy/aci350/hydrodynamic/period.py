@@ -111,5 +111,8 @@ class DynamicProperties:
         Returns:
             dict: Period of convective motion (s) and units.
         """
-        value = (2 * math.pi) / math.sqrt(3.16 * self.g * math.tanh(3.16 * (self.hl / self.length)))
+
+        # Compute Tc using the corrected formula
+        value = (2 * math.pi) * math.sqrt(self.length) / math.sqrt(3.16 * self.g * math.tanh(3.16 * (self.hl / self.length)))
+
         return {"value": value, "units": "s"}
