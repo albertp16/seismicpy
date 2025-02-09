@@ -79,7 +79,7 @@ class DynamicProperties:
         """
         ec_kpa = self.ec * 1000  # Convert MPa to kPa
         h_eq = self.compute_h()["value"]
-        value = (ec_kpa / 4000) * math.pow(self.tw / h_eq, 3)
+        value = (ec_kpa / 4) * math.pow(self.tw / h_eq, 3)
         return {"value": value, "units": "kN/m"}
     
     def compute_mt(self):
@@ -100,7 +100,7 @@ class DynamicProperties:
             dict: Period of impulsive motion (s) and units.
         """
         mt = self.compute_mt()["value"]
-        k = self.compute_k()["value"]
+        k = self.compute_k()["value"] * 1000 # Convert k from kN/m to N/m
         value = 2 * math.pi * math.sqrt(mt / k)
         return {"value": value, "units": "s"}
     
