@@ -9,9 +9,9 @@ def effective_liquid_weights(L: float, height: float, liquid_weight: float, plot
     and optionally plot the mass factors versus L/H_L ratio.
 
     Parameters:
-        L (float): Length of the base parallel motion (L)
-        height (float): Height of the tank (height).
-        liquid_weight (float): Liquid Weight of the tank (liquid_weight).
+        L (float): Length of the base parallel motion (L) in meters
+        height (float): Height of the tank (height) in meters 
+        liquid_weight (float): Liquid Weight of the tank (liquid_weight) in kN
         plot (bool): Whether to generate a plot of mass factors vs. L/H_L ratio.
 
     Returns:
@@ -31,7 +31,18 @@ def effective_liquid_weights(L: float, height: float, liquid_weight: float, plot
     wc_ratio = 0.264 * ratio_l_hl * math.tanh(3.16 * (height / L))
     wc = wc_ratio * liquid_weight
     
-    result = {"impulsive": wi, "convective": wc}
+
+
+    result = {
+        "impulsive": {
+            "value" : wi,
+            "units" : "kN"
+            },
+        "convective": {
+            "value" : wc,
+            "units" : "kN"
+        }
+        }
     
     # Generate plot if requested
     if plot:

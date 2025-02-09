@@ -55,7 +55,7 @@ class DynamicProperties:
         """
         KN_TO_N = 1000
         unit_weight = (self.gamma_l * KN_TO_N) / self.g
-        value = ((self.wi / self.wl) * (self.length / 2) * self.hl * unit_weight) * 1000
+        value = ((self.wi / self.wl) * (self.length / 2) * self.hl * unit_weight) 
         return {"value": value, "units": "kg/m"}
     
     def compute_h(self):
