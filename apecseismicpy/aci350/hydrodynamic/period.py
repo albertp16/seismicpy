@@ -73,17 +73,25 @@ class dynamicProperties:
             "value" : value,
             "units" : units
         }
-
-
-    # def compute_omega_i(self, k, m):
-    #     if m <= 0:
-    #         raise ValueError("Mass must be greater than zero.")
-    #     return math.sqrt(k / m)
-
-    # def compute_ti(self, omega_i):
-    #     if omega_i <= 0:
-    #         raise ValueError("omega_i must be greater than zero.")
-    #     return 2 * math.pi / omega_i
+    def compute_mt(self):
+        """
+        total weight per linear meter
+        """
+        value = self.compute_mw()["value"] + self.compute_mi()["value"]
+        units = "kg/m"
+        return {
+            "value" : value,
+            "units" : units
+        }
+    def compute_ti(self):
+        mt = self.compute_mt()["value"]
+        k = self.compute_k()["value"]
+        value = 2*math.pi*math.sqrt(mt/k)
+        units = "s"
+        return {
+            "value" : value,
+            "units" : units
+        }
 
     # def compute_omega_c(self):
     #     if self.lambda_ is None or self.l is None:
