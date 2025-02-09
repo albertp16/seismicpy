@@ -1,7 +1,7 @@
 import math
 
 class dynamicProperties:
-    def __init__(self, length,hw,tw,wi,wl,hl, gamma_c=23.6,gamma_l=9.81, g=9.81):
+    def __init__(self, length,hw,tw,wi,wl,hl,hi, gamma_c=23.6,gamma_l=9.81, g=9.81):
         self.g = g  # Gravity acceleration (m/s^2)
         self.length = length  # Length in Parallel Motion
         self.hw = hw  # Wall Height (meter)
@@ -10,7 +10,7 @@ class dynamicProperties:
         self.wl = wl  # Liquid Weight
         self.hl = hl  # Liquid Height      
         # self.mw = mw  # Mass of wall
-        # # self.hi = hi  # Height influence
+        self.hi = hi  # Height influence
         # self.mi = mi  # Mass influence
         # self.wi = wi  # Load influence
         # self.wl = wl  # Load width
@@ -21,8 +21,7 @@ class dynamicProperties:
         # self.lambda_ = lambda_  # Wave number
     def compute_mw(self):
         '''
-        Per ACI 350 R.9.2.4
-        wall weight per linear meter
+        Per ACI 350 R.9.2.4 wall weight per linear meter
         '''
 
         if self.hw <= 0 or self.tw <= 0:
@@ -39,12 +38,24 @@ class dynamicProperties:
 
     def compute_mi(self):
         '''
-        Per ACI 350 R.9.2.4
+        Per ACI 350 R.9.2.4 impulsive weight of contents per linear meter
         '''
         KN_TO_N = 1000  # Convert kN to N
         unit_weight = (self.gamma_l * KN_TO_N) / self.g  # Convert kN/m³ to kg/m³
         value = ((self.wi / self.wl) * (self.length / 2) * self.hl * unit_weight) * 1000
         units = "kg/m" 
+        return {
+            "value" : value,
+            "units" : units
+        }
+    def compute_h(self):
+        """
+        equivalent cantilever wall height
+        """
+        mw = self.compute_mw()["value"]
+        mi = self.compute_mi()["value"]
+        value = ((0.5*self.hw*mw)+(self.hi*mi))/(mw+mi)
+        units = "m"
         return {
             "value" : value,
             "units" : units
