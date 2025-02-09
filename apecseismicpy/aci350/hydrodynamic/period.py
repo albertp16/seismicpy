@@ -4,7 +4,7 @@ class dynamicProperties:
     def __init__(self, hw, tw, gamma_c=23.6, g=9.81):
         self.g = g  # Gravity acceleration (m/s^2)
         self.hw = hw  # Wall Height (meter)
-        self.tw = tw  # Wall thickness (average)
+        self.tw = tw  # Wall thickness (average) (meters)
         # self.h = h  # Effective height
         # self.hw = hw  # Wall height
         # self.mw = mw  # Mass of wall
@@ -14,18 +14,24 @@ class dynamicProperties:
         # self.wl = wl  # Load width
         # self.l = l  # Span length
         # self.hl = hl  # Height level
-        self.gamma_c = gamma_c  # Concrete density
+        self.gamma_c = gamma_c  # Concrete density (kN/m^3)
         # self.gamma_l = gamma_l  # Live load density
         # self.lambda_ = lambda_  # Wave number
     def compute_mw(self):
         '''
         Per ACI 350 R.9.2.4
+        wall weight per linear meter
         '''
-        # if self.hw is None or self.tw is None or self.gamma_c is None:
-        #     raise ValueError("hw, tw, and gamma_c must be set.")
+
         if self.hw <= 0 or self.tw <= 0:
             raise ValueError("hw and tw must be greater than zero.")
-        return self.hw * self.tw * (self.gamma_c / self.g)
+        value = self.hw * self.tw * (self.gamma_c / self.g)
+        units = "kg/m" 
+
+        return {
+            "value" : value,
+            "units" : units
+        }
 
     # def compute_mi(self):
     #     '''
