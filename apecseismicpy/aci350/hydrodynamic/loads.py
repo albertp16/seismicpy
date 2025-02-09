@@ -51,8 +51,6 @@ def effective_liquid_weights(L: float, height: float, liquid_weight: float, plot
     
     return result
 
-# effective_liquid_weights(3,3,3,True)
-
 def calculate_heights_of_centers_of_gravity(l: float, h_l: float, plot: bool = False) -> dict:
     """
     Calculate the heights to centers of gravity for EBP and IBP based on ACI 350 (Section 9.2.2 & 9.2.3),
@@ -124,75 +122,3 @@ def calculate_heights_of_centers_of_gravity(l: float, h_l: float, plot: bool = F
     return result
 
 
-# test = calculate_heights_of_centers_of_gravity(2,3, True)
-# print("h_i",test["h_i"])
-# print("h_c",test["h_c"])
-# print("h_pi",test["h_pi"])
-# print("h_pc",test["h_pc"])
-
-
-# def calculate_dynamic_properties(h_w, t_w_ave, gamma_c, g, e_c):
-#     # Wall weight per linear meter
-#     m_w = h_w * t_w_ave * gamma_c / g
-    
-#     # Impulsive weight of contents per linear meter
-#     m_i = ((w_i / w_l) * (l / 2) * h_l * gamma_l / g)
-    
-#     # Equivalent cantilever wall height
-#     h = ((0.5 * h_w * m_w + h_i * m_i) / (m_w + m_i))
-    
-#     # Wall stiffness per linear meter
-#     k = (e_c / 4) * ((t_w_ave / h) ** 3)
-    
-#     # Total weight per linear meter
-#     m_t = m_w + m_i
-    
-#     # Fundamental period of oscillation
-#     t_i = 2 * math.pi * math.sqrt((m_t * h) / k)
-    
-#     return m_w, m_i, h, k, m_t, t_i
-
-# # Given Data
-# l = 14.5  # Parallel to Motion (m)
-# b = 7.2    # Perpendicular to Motion (m)
-# h_l = 10.0 # Liquid Height (m) - assumed value
-# gamma_l = 9.81  # Unit weight of liquid (kN/m^3) - assumed value
-# h_w = 8.0  # Wall height (m) - assumed value
-# t_w_ave = 0.3  # Average wall thickness (m) - assumed value
-# gamma_c = 25.0  # Unit weight of concrete (kN/m^3) - assumed value
-# g = 9.81  # Acceleration due to gravity (m/s^2)
-# e_c = 30e6  # Elastic modulus of concrete (kN/m^2) - assumed value
-
-# # Compute Values
-# w_l, w_i, w_c = calculate_liquid_weights(l, b, h_l, gamma_l)
-# h_i, h_c, h_pi, h_pc = calculate_heights_of_centers_of_gravity(l, h_l)
-# m_w, m_i, h, k, m_t, t_i = calculate_dynamic_properties(h_w, t_w_ave, gamma_c, g, e_c)
-
-# # Plotting Seismic Response Spectrum
-# ti_values = [i * 0.5 for i in range(20)]
-# ci_values = [1.1 if ti <= 1.0 else 1.0 / ti for ti in ti_values]
-
-# plt.figure(figsize=(8, 5))
-# plt.plot(ti_values, ci_values, marker='o', linestyle='-', color='r')
-# plt.axvline(x=t_i, color='b', linestyle='dashed', label=f'T_i = {t_i:.3f}s')
-# plt.xlabel('Period, T_i (s)')
-# plt.ylabel('Seismic Coefficient, C_i')
-# plt.title('Impulsive Design Response Spectrum')
-# plt.legend()
-# plt.grid()
-# plt.show()
-
-# # Display Results
-# print(f"Total Liquid Weight (w_l): {w_l:.3f} kN")
-# print(f"Impulsive Weight (w_i): {w_i:.3f} kN")
-# print(f"Convective Weight (w_c): {w_c:.3f} kN")
-# print(f"Height to center of gravity, EBP (h_i): {h_i:.3f} m")
-# print(f"Height to center of gravity, EBP (h_c): {h_c:.3f} m")
-# print(f"Height to center of gravity, IBP (h_pi): {h_pi:.3f} m")
-# print(f"Height to center of gravity, IBP (h_pc): {h_pc:.3f} m")
-# print(f"Wall weight per linear meter (m_w): {m_w:.3f} kg/m")
-# print(f"Impulsive weight per linear meter (m_i): {m_i:.3f} kg/m")
-# print(f"Equivalent cantilever wall height (h): {h:.3f} m")
-# print(f"Wall stiffness per linear meter (k): {k:.3f} kN/m")
-# print(f"Total weight per linear meter (m_t): {m_t:.3f} kg/m")
-# print(f"Fundamental period of oscillation (t_i): {t_i:.3f} s")
