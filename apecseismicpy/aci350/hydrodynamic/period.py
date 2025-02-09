@@ -1,110 +1,115 @@
 import math
 
-class dynamicProperties:
-    def __init__(self, length,hw,tw,wi,wl,hl,hi,ec, gamma_c=23.6,gamma_l=9.81, g=9.81):
-        self.g = g  # Gravity acceleration (m/s^2)
-        self.length = length  # Length in Parallel Motion
-        self.hw = hw  # Wall Height (meter)
-        self.tw = tw  # Wall thickness (average) (meters)
-        self.wi = wi  # Implusive Weight
-        self.wl = wl  # Liquid Weight
-        self.hl = hl  # Liquid Height      
-        self.ec = ec  # Modulus of Elasciticity of Concrete (MPa)
-        self.hi = hi  # Height influence
-        # self.mi = mi  # Mass influence
-        # self.wi = wi  # Load influence
-        # self.wl = wl  # Load width
-        # self.l = l  # Span length
-        # self.hl = hl  # Height level
-        self.gamma_c = gamma_c  # Concrete density (kN/m^3)
-        self.gamma_l = gamma_l  # Live load density
-        # self.lambda_ = lambda_  # Wave number
-    def compute_mw(self):
-        '''
-        Per ACI 350 R.9.2.4 wall weight per linear meter
-        '''
-
-        if self.hw <= 0 or self.tw <= 0:
-            raise ValueError("hw and tw must be greater than zero.")
-        KN_TO_N = 1000  # Convert kN to N
+class DynamicProperties:
+    """
+    A class to compute various dynamic properties of a wall-liquid system based on ACI 350 R.9.2.4.
+    
+    Attributes:
+        length (float): Length of the wall in parallel motion (m).
+        hw (float): Wall height (m).
+        tw (float): Wall thickness (m).
+        wi (float): Impulsive weight (kN).
+        wl (float): Liquid weight (kN).
+        hl (float): Liquid height (m).
+        hi (float): Height influence factor.
+        ec (float): Modulus of Elasticity of Concrete (MPa).
+        gamma_c (float): Concrete density (default 23.6 kN/m³).
+        gamma_l (float): Liquid density (default 9.81 kN/m³).
+        g (float): Acceleration due to gravity (default 9.81 m/s²).
+    """
+    
+    def __init__(self, length, hw, tw, wi, wl, hl, hi, ec, gamma_c=23.6, gamma_l=9.81, g=9.81):
+        if length <= 0 or hw <= 0 or tw <= 0 or wl <= 0 or hl <= 0 or ec <= 0:
+            raise ValueError("All physical dimensions and material properties must be greater than zero.")
         
+        self.length = length
+        self.hw = hw
+        self.tw = tw
+        self.wi = wi
+        self.wl = wl
+        self.hl = hl
+        self.hi = hi
+        self.ec = ec
+        self.gamma_c = gamma_c
+        self.gamma_l = gamma_l
+        self.g = g
+    
+    def compute_mw(self):
+        """
+        Computes the wall weight per linear meter based on ACI 350 R.9.2.4.
+        
+        Returns:
+            dict: Value of wall weight (kg/m) and units.
+        """
+        KN_TO_N = 1000  # Convert kN to N
         unit_weight = (self.gamma_c * KN_TO_N) / self.g  # Convert kN/m³ to kg/m³
         value = self.hw * self.tw * unit_weight  # Compute mass per unit length
-        units = "kg/m" 
-        return {
-            "value" : value,
-            "units" : units
-        }
-
+        return {"value": value, "units": "kg/m"}
+    
     def compute_mi(self):
-        '''
-        Per ACI 350 R.9.2.4 impulsive weight of contents per linear meter
-        '''
-        KN_TO_N = 1000  # Convert kN to N
-        unit_weight = (self.gamma_l * KN_TO_N) / self.g  # Convert kN/m³ to kg/m³
+        """
+        Computes the impulsive weight of contents per linear meter based on ACI 350 R.9.2.4.
+        
+        Returns:
+            dict: Value of impulsive weight (kg/m) and units.
+        """
+        KN_TO_N = 1000
+        unit_weight = (self.gamma_l * KN_TO_N) / self.g
         value = ((self.wi / self.wl) * (self.length / 2) * self.hl * unit_weight) * 1000
-        units = "kg/m" 
-        return {
-            "value" : value,
-            "units" : units
-        }
+        return {"value": value, "units": "kg/m"}
+    
     def compute_h(self):
         """
-        equivalent cantilever wall height
+        Computes the equivalent cantilever wall height.
+        
+        Returns:
+            dict: Equivalent height (m) and units.
         """
         mw = self.compute_mw()["value"]
         mi = self.compute_mi()["value"]
-        value = ((0.5*self.hw*mw)+(self.hi*mi))/(mw+mi)
-        units = "m"
-        return {
-            "value" : value,
-            "units" : units
-        }
+        value = ((0.5 * self.hw * mw) + (self.hi * mi)) / (mw + mi)
+        return {"value": value, "units": "m"}
     
     def compute_k(self):
         """
-        wall stiffness per linear meter
-
+        Computes the wall stiffness per linear meter.
+        
+        Returns:
+            dict: Stiffness value (kN/m) and units.
         """
-        ec_kpa = self.ec * 1000 #convert from MPa to KPa
-        value = (ec_kpa / 4000) * math.pow(self.tw / self.compute_h()["value"], 3)
-        units = "kN/m"
-        return {
-            "value" : value,
-            "units" : units
-        }
+        ec_kpa = self.ec * 1000  # Convert MPa to kPa
+        h_eq = self.compute_h()["value"]
+        value = (ec_kpa / 4000) * math.pow(self.tw / h_eq, 3)
+        return {"value": value, "units": "kN/m"}
+    
     def compute_mt(self):
         """
-        total weight per linear meter
+        Computes the total weight per linear meter.
+        
+        Returns:
+            dict: Total weight (kg/m) and units.
         """
         value = self.compute_mw()["value"] + self.compute_mi()["value"]
-        units = "kg/m"
-        return {
-            "value" : value,
-            "units" : units
-        }
+        return {"value": value, "units": "kg/m"}
+    
     def compute_ti(self):
+        """
+        Computes the natural period of impulsive motion.
+        
+        Returns:
+            dict: Period of impulsive motion (s) and units.
+        """
         mt = self.compute_mt()["value"]
         k = self.compute_k()["value"]
-        value = 2*math.pi*math.sqrt(mt/k)
-        units = "s"
-        return {
-            "value" : value,
-            "units" : units
-        }
+        value = 2 * math.pi * math.sqrt(mt / k)
+        return {"value": value, "units": "s"}
+    
     def compute_tc(self):
         """
-        Natural Period of the first convective mode of sloshing
+        Computes the natural period of the first convective mode of sloshing.
+        
+        Returns:
+            dict: Period of convective motion (s) and units.
         """
-        value = (2 * math.pi) / math.sqrt(3.16 * self.g * math.tanh(3.16 * (self.hl / self.l)))
-        units = "s"
-        return {
-            "value" : value,
-            "units" : units
-        }
-    # def compute_lambda(self):
-    #     if self.hl is None or self.l is None:
-    #         raise ValueError("hl and l must be set.")
-    #     if self.l <= 0 or self.hl <= 0:
-    #         raise ValueError("l and hl must be greater than zero.")
-    #     return math.sqrt(3.16 * self.g * math.tanh(3.16 * self.hl / self.l))
+        value = (2 * math.pi) / math.sqrt(3.16 * self.g * math.tanh(3.16 * (self.hl / self.length)))
+        return {"value": value, "units": "s"}
