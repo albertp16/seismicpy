@@ -1,12 +1,14 @@
 import math
 
 class dynamicProperties:
-    def __init__(self, hw, tw, gamma_c=23.6, g=9.81):
+    def __init__(self, length,hw,tw,wi,wl,hl, gamma_c=23.6,gamma_l=9.81, g=9.81):
         self.g = g  # Gravity acceleration (m/s^2)
+        self.length = length  # Length in Parallel Motion
         self.hw = hw  # Wall Height (meter)
         self.tw = tw  # Wall thickness (average) (meters)
-        # self.h = h  # Effective height
-        # self.hw = hw  # Wall height
+        self.wi = wi  # Implusive Weight
+        self.wl = wl  # Liquid Weight
+        self.hl = hl  # Liquid Height      
         # self.mw = mw  # Mass of wall
         # # self.hi = hi  # Height influence
         # self.mi = mi  # Mass influence
@@ -15,7 +17,7 @@ class dynamicProperties:
         # self.l = l  # Span length
         # self.hl = hl  # Height level
         self.gamma_c = gamma_c  # Concrete density (kN/m^3)
-        # self.gamma_l = gamma_l  # Live load density
+        self.gamma_l = gamma_l  # Live load density
         # self.lambda_ = lambda_  # Wave number
     def compute_mw(self):
         '''
@@ -25,23 +27,28 @@ class dynamicProperties:
 
         if self.hw <= 0 or self.tw <= 0:
             raise ValueError("hw and tw must be greater than zero.")
-        value = self.hw * self.tw * (self.gamma_c / self.g)
+        KN_TO_N = 1000  # Convert kN to N
+        
+        unit_weight = (self.gamma_c * KN_TO_N) / self.g  # Convert kN/m³ to kg/m³
+        value = self.hw * self.tw * unit_weight  # Compute mass per unit length
         units = "kg/m" 
-
         return {
             "value" : value,
             "units" : units
         }
 
-    # def compute_mi(self):
-    #     '''
-    #     Per ACI 350 R.9.2.4
-    #     '''
-    #     if self.wi is None or self.wl is None or self.l is None or self.hl is None or self.gamma_l is None:
-    #         raise ValueError("wi, wl, l, hl, and gamma_l must be set.")
-    #     if self.wl <= 0 or self.l <= 0 or self.hl <= 0:
-    #         raise ValueError("wl, l, and hl must be greater than zero.")
-    #     return ((self.wi / self.wl) * (self.l / 2) * self.hl * (self.gamma_l / self.g)) * 1000
+    def compute_mi(self):
+        '''
+        Per ACI 350 R.9.2.4
+        '''
+        KN_TO_N = 1000  # Convert kN to N
+        unit_weight = (self.gamma_l * KN_TO_N) / self.g  # Convert kN/m³ to kg/m³
+        value = ((self.wi / self.wl) * (self.length / 2) * self.hl * unit_weight) * 1000
+        units = "kg/m" 
+        return {
+            "value" : value,
+            "units" : units
+        }
     
     # def compute_k(self):
     #     if self.tw is None or self.h is None or self.ec is None:
