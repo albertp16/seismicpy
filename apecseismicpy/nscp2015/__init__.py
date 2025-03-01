@@ -1,3 +1,3 @@
-from .response_spectrum import responseSpectrum
+from .response_spectrum import ResponseSpectrum
 from .period import calculateStructuralPeriod
 from .site_coefficients import site_coefficients

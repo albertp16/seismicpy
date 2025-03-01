@@ -61,3 +61,4 @@ def moment_calculation(Pi, hi, Pw, HW, Pr, tslab, Pc, hc):
 
 def srss_mat(Mo, Mb, L, B):
     return (6 * (Mo - Mb)) / (L ** 2 * B)
+
