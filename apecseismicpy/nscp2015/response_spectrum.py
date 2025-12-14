@@ -4,86 +4,55 @@ import matplotlib.pyplot as plt
 
 class ResponseSpectrum:
     """
-    NSCP/UBC-style elastic response spectrum using Ca and Cv with:
-      1) Linear ramp: 0 <= T <= 0.2
-      2) Plateau:     0.2 < T <= 1.0
-      3) Decay:       T > 1.0  -> Sa = Cv / T
-
-    Continuity fix at T=1.0:
-      Use Sa_max = min(2.5*Ca, Cv) so Sa(1-) = Sa(1+) = Cv when Cv governs.
+    NSCP-style Design Response Spectrum
+    Plateau fixed from T = 0.2 s to T = 1.0 s
+    Plateau level = 2.5 * Ca
     """
 
-    def __init__(self, ca: float, cv: float, R: float = None,
-                 to: float = 0.2, tp: float = 1.0):
-        """
-        Parameters:
-            ca (float): short-period acceleration parameter
-            cv (float): long-period velocity parameter
-            R (float, optional): response modification factor (not used here)
-            T0 (float): ramp end period (default 0.2s)
-            Tp (float): plateau end period (default 1.0s per your NSCP intent)
-        """
-        if ca <= 0 or cv <= 0:
-            raise ValueError("ca and cv must be positive.")
-
-        if tp <= to:
-            raise ValueError("Tp (plateau end) must be greater than T0 (ramp end).")
+    def __init__(self, ca: float):
+        if ca <= 0:
+            raise ValueError("Ca must be positive.")
 
         self.ca = ca
-        self.cv = cv
-        self.R = R
 
-        self.to = to
-        self.tp = tp
+        # Fixed NSCP-style parameters
+        self.T0 = 0.2           # start of plateau
+        self.Tp = 1.0           # end of plateau
+        self.sa_max = 2.5 * ca  # plateau value
 
-        # Plateau level (continuity-friendly)
-        self.plateau_sa = min(2.5 * self.ca, self.cv)
+    def calculate(self, t_max: float = 5.0, n_points: int = 800):
+        T = np.linspace(0.0, t_max, n_points)
+        Sa = np.zeros_like(T)
 
-    def calculate_rs_curve(self, t_max: float = 5.0, n_points: int = 501) -> dict:
-        """
-        Returns:
-            dict with:
-              elastic: {x: periods, y: Sa}
-              parameters: {T0, Tp, Sa_max}
-        """
-        t_values = np.linspace(0.0, t_max, n_points)
-        sa_values = np.zeros_like(t_values)
+        for i, t in enumerate(T):
+            if t <= self.T0:
+                # Linear ramp from Ca to 2.5Ca
+                Sa[i] = self.ca + (self.sa_max - self.ca) * (t / self.T0)
 
-        for i, T in enumerate(t_values):
-            if T <= self.to:
-                # Linear ramp to plateau_sa at T0
-                sa = self.plateau_sa * (T / self.to)
-
-            elif T <= self.tp:
-                # Constant plateau up to 1.0s (Tp)
-                sa = self.plateau_sa
+            elif t <= self.Tp:
+                # Constant plateau (0.2 to 1.0 s)
+                Sa[i] = self.sa_max
 
             else:
-                # Decay branch (NSCP/UBC): Cv/T
-                sa = self.cv / T
+                # Long-period decay (anchored to plateau at T = 1.0)
+                Sa[i] = self.sa_max / t
 
-            sa_values[i] = sa
+        return T, Sa
 
-        return {
-            "elastic": {"x": t_values, "y": sa_values},
-            "parameters": {"to": self.to, "tp": self.tp, "Sa_max": self.plateau_sa}
-        }
-
-    def plot(self, t_max: float = 5.0, n_points: int = 501) -> None:
-        rs = self.calculate_rs_curve(t_max=t_max, n_points=n_points)
-        t = rs["elastic"]["x"]
-        sa = rs["elastic"]["y"]
-        p = rs["parameters"]
+    def plot(self, t_max: float = 5.0):
+        T, Sa = self.calculate(t_max=t_max)
 
         plt.figure(figsize=(9, 5))
-        plt.plot(t, sa, lw=2, color="red",label="Inelastic Response Spectrum")
+        plt.plot(T, Sa, lw=2.5, color="black",
+                 label="Design Response Spectrum")
 
-        plt.axvline(p["to"], ls="--", lw=1, color="gray")
-        plt.axvline(p["tp"], ls="--", lw=1, color="gray")
+        # Mark plateau limits
+        plt.axvline(self.T0, ls="--", color="gray", label="T = 0.2 s")
+        plt.axvline(self.Tp, ls="--", color="gray", label="T = 1.0 s")
 
-        plt.title("Design Response Spectrum")
+        plt.title("Design Response Spectrum (Plateau 0.2–1.0 s)")
         plt.xlabel("Period, T (s)")
-        plt.ylabel("Spectral Acceleration, Sa")
+        plt.ylabel("Spectral Acceleration, Sa (g)")
         plt.grid(True, which="both", ls="--", alpha=0.5)
         plt.xlim(0, t_max)
         plt.ylim(bottom=0)
@@ -92,10 +61,11 @@ class ResponseSpectrum:
         plt.show()
 
 
+# ==========================
+# Example usage
+# ==========================
 if __name__ == "__main__":
-    # Example values (replace with your NSCP Ca and Cv)
-    ca = 0.64
-    cv = 0.96
-
-    rs = ResponseSpectrum(ca=ca, cv=cv, tp=1.0)
-    rs.plot(t_max=5.0)
+    Ca = 0.66  # example value (g)
+    Cv = 1.28
+    rs = ResponseSpectrum(Ca)
+    rs.plot()
