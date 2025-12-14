@@ -2,59 +2,62 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-class ResponseSpectrum:
+class ResponseSpectrumNSCP:
     """
-    NSCP-style Design Response Spectrum
-    Plateau fixed from T = 0.2 s to T = 1.0 s
-    Plateau level = 2.5 * Ca
+    NSCP Ca–Cv Design Response Spectrum
+    x-axis plotted as T / Ts (NSCP Figure 208-3)
     """
 
-    def __init__(self, ca: float):
-        if ca <= 0:
-            raise ValueError("Ca must be positive.")
+    def __init__(self, ca: float, cv: float):
+        if ca <= 0 or cv <= 0:
+            raise ValueError("Ca and Cv must be positive.")
 
         self.ca = ca
+        self.cv = cv
 
-        # Fixed NSCP-style parameters
-        self.T0 = 0.2           # start of plateau
-        self.Tp = 1.0           # end of plateau
-        self.sa_max = 2.5 * ca  # plateau value
+        # NSCP control periods
+        self.sa_max = 2.5 * ca
+        self.Ts = cv / self.sa_max
+        self.T0 = 0.2 * self.Ts
 
-    def calculate(self, t_max: float = 5.0, n_points: int = 800):
-        T = np.linspace(0.0, t_max, n_points)
-        Sa = np.zeros_like(T)
+    def calculate(self, x_max: float = 5.0, n_points: int = 800):
+        """
+        Compute spectrum using normalized period x = T / Ts
+        """
+        x = np.linspace(0.0, x_max, n_points)
+        Sa = np.zeros_like(x)
 
-        for i, t in enumerate(T):
-            if t <= self.T0:
+        for i, xi in enumerate(x):
+            if xi <= 0.2:
                 # Linear ramp from Ca to 2.5Ca
-                Sa[i] = self.ca + (self.sa_max - self.ca) * (t / self.T0)
+                Sa[i] = self.ca + (self.sa_max - self.ca) * (xi / 0.2)
 
-            elif t <= self.Tp:
-                # Constant plateau (0.2 to 1.0 s)
+            elif xi <= 1.0:
+                # Constant plateau
                 Sa[i] = self.sa_max
 
             else:
-                # Long-period decay (anchored to plateau at T = 1.0)
-                Sa[i] = self.sa_max / t
+                # Long-period decay (Cv/T -> 2.5Ca/x)
+                Sa[i] = self.sa_max / xi
 
-        return T, Sa
+        return x, Sa
 
-    def plot(self, t_max: float = 5.0):
-        T, Sa = self.calculate(t_max=t_max)
+    def plot(self, x_max: float = 5.0):
+        x, Sa = self.calculate(x_max=x_max)
 
         plt.figure(figsize=(9, 5))
-        plt.plot(T, Sa, lw=2.5, color="black",
-                 label="Design Response Spectrum")
+        plt.plot(x, Sa, lw=2.5, color="black",
+                 label="Design Response Spectrum (NSCP)")
 
-        # Mark plateau limits
-        plt.axvline(self.T0, ls="--", color="gray", label="T = 0.2 s")
-        plt.axvline(self.Tp, ls="--", color="gray", label="T = 1.0 s")
+        # Control points
+        plt.axvline(0.2, ls="--", color="gray", label=r"0.2")
+        plt.axvline(1.0, ls="--", color="gray", label=r"1.0")
 
-        plt.title("Design Response Spectrum (Plateau 0.2–1.0 s)")
-        plt.xlabel("Period, T (s)")
+        plt.title("Design Response Spectrum")
+        plt.xlabel(r"Period, $T/T_s$")
         plt.ylabel("Spectral Acceleration, Sa (g)")
         plt.grid(True, which="both", ls="--", alpha=0.5)
-        plt.xlim(0, t_max)
+        plt.xlim(0, x_max)
         plt.ylim(bottom=0)
         plt.legend()
         plt.tight_layout()
@@ -62,10 +65,11 @@ class ResponseSpectrum:
 
 
 # ==========================
-# Example usage
+# Example (your values)
 # ==========================
 if __name__ == "__main__":
-    Ca = 0.66  # example value (g)
+    Ca = 0.66
     Cv = 1.28
-    rs = ResponseSpectrum(Ca)
+
+    rs = ResponseSpectrumNSCP(Ca, Cv)
     rs.plot()
