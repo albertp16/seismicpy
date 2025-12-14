@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-class ResponseSpectrumNSCP:
+class ResponseSpectrum:
     """
     NSCP Ca–Cv Design Response Spectrum
     x-axis plotted as T / Ts (NSCP Figure 208-3)
@@ -47,7 +47,7 @@ class ResponseSpectrumNSCP:
 
         plt.figure(figsize=(9, 5))
         plt.plot(x, Sa, lw=2.5, color="black",
-                 label="Design Response Spectrum (NSCP)")
+                 label="NSCP 2015")
 
         # Control points
         plt.axvline(0.2, ls="--", color="gray", label=r"0.2")
@@ -71,5 +71,5 @@ if __name__ == "__main__":
     Ca = 0.66
     Cv = 1.28
 
-    rs = ResponseSpectrumNSCP(Ca, Cv)
+    rs = ResponseSpectrum(Ca, Cv)
     rs.plot()
