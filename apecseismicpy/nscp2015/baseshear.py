@@ -42,9 +42,9 @@ class calculate_base_shear:
         return govern_shear
     
     
-# data_one = nscp2015(4,1.20,0.44,0.768,1,8.5,0.82,56898.60)
-# print(data_one.totalBaseShear())
-# print(data_one.maxBaseShear())
-# print(data_one.minBaseShear())
-# print(data_one.maxBaseShearZ4())
-# print(data_one.governingShear())
+data_one = calculate_base_shear(4,1.29,0.42,0.72,1,8.0,0.62,21000)
+print(data_one.totalBaseShear())
+print(data_one.maxBaseShear())
+print(data_one.minBaseShear())
+print(data_one.maxBaseShearZ4())
+print(data_one.governingShear())

@@ -63,13 +63,54 @@ class ResponseSpectrum:
         plt.tight_layout()
         plt.show()
 
+    def plotTH(self, T: float, x_max: float = 5.0):
+        """
+        Plot design spectrum with:
+        - 1.4x amplified spectrum (red)
+        - Vertical red dashed lines at 0.2T and 1.5T
+        """
+
+        x, Sa = self.calculate(x_max=x_max)
+
+        # 1.4x spectrum
+        Sa_14 = 1.4 * Sa
+
+        plt.figure(figsize=(9, 5))
+
+        # Original spectrum
+        plt.plot(x, Sa, lw=2.5, color="black", label="NSCP 2015")
+
+        # Amplified spectrum
+        plt.plot(x, Sa_14, lw=2.0, color="red", 
+                label="1.4 × NSCP 2015")
+
+        # Original control points
+        plt.axvline(0.2, ls="--", color="gray")
+        plt.axvline(1.0, ls="--", color="gray")
+
+        # T-based vertical limits
+        plt.axvline(0.2 * T, ls="--", color="red",
+                    label=r"$0.2T$")
+        plt.axvline(1.5 * T, ls="--", color="red",
+                    label=r"$1.5T$")
+
+        plt.title("Design Response Spectrum (Time History Scaling)")
+        plt.xlabel(r"Period, $T/T_s$")
+        plt.ylabel("Spectral Acceleration, Sa (g)")
+        plt.grid(True, which="both", ls="--", alpha=0.5)
+        plt.xlim(0, x_max)
+        plt.ylim(bottom=0)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
 
 # ==========================
 # Example (your values)
 # ==========================
 if __name__ == "__main__":
-    Ca = 0.66
-    Cv = 1.28
+    Ca = 0.42
+    Cv = 0.72
 
     rs = ResponseSpectrum(Ca, Cv)
     rs.plot()
