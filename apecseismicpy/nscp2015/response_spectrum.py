@@ -94,7 +94,7 @@ class ResponseSpectrum:
         plt.axvline(1.5 * T, ls="--", color="red",
                     label=r"$1.5T$")
 
-        plt.title("Design Response Spectrum (Time History Scaling)")
+        plt.title("Design Response Spectrum")
         plt.xlabel(r"Period, $T/T_s$")
         plt.ylabel("Spectral Acceleration, Sa (g)")
         plt.grid(True, which="both", ls="--", alpha=0.5)
