@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>APEC SeismicPy</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <style>
+    :root {
+      --accent: #1a56db;
+      --accent-light: #e8f0fe;
+    }
+    body { background: #f4f6fb; font-family: 'Segoe UI', sans-serif; }
+    .navbar { background: #0f2d6b; }
+    .navbar-brand { color: #fff !important; font-weight: 700; font-size: 1.2rem; letter-spacing: .5px; }
+    .nav-tabs .nav-link { font-weight: 500; color: #555; }
+    .nav-tabs .nav-link.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+    .card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+    .card-header { background: var(--accent); color: #fff; border-radius: 12px 12px 0 0 !important; font-weight: 600; }
+    .result-card { background: var(--accent-light); border-radius: 10px; padding: 1rem 1.25rem; }
+    .result-label { font-size: .78rem; color: #555; text-transform: uppercase; letter-spacing: .5px; }
+    .result-value { font-size: 1.4rem; font-weight: 700; color: #0f2d6b; }
+    .result-unit  { font-size: .85rem; color: #777; }
+    .btn-calc { background: var(--accent); border: none; padding: .5rem 1.8rem; border-radius: 8px; font-weight: 600; }
+    .btn-calc:hover { background: #1347b0; }
+    label { font-weight: 500; font-size: .9rem; }
+    .form-control, .form-select { font-size: .9rem; }
+    #errorBox { display:none; }
+    .tag-zone { display:inline-block; background:#fff3cd; color:#856404; border-radius:6px; padding:2px 8px; font-size:.8rem; font-weight:600; }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg mb-0">
+  <div class="container">
+    <span class="navbar-brand">&#127758; APEC SeismicPy</span>
+    <span class="text-white-50 small ms-auto">NSCP 2015 &amp; ACI 350 Toolkit</span>
+  </div>
+</nav>
+
+<!-- Tabs -->
+<div class="container mt-4 pb-5">
+  <ul class="nav nav-tabs mb-4" id="mainTabs">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-site">Site Coefficients</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-spectrum">Response Spectrum</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-shear">Base Shear</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-tank">Tank Analysis</button></li>
+    <li class="nav-item ms-auto"><button class="nav-link text-success fw-bold" data-bs-toggle="tab" data-bs-target="#tab-report">&#128196; LaTeX Report</button></li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TAB 1 — Site Coefficients
+    ════════════════════════════════════════════════════════════════════ -->
+    <div class="tab-pane fade show active" id="tab-site">
+      <div class="row g-4">
+        <div class="col-md-5">
+          <div class="card">
+            <div class="card-header">NSCP 2015 — Site Coefficients</div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label>Distance to Seismic Source (km)</label>
+                <input type="number" class="form-control" id="sc-distance" value="5" min="0" step="0.5" />
+              </div>
+              <div class="mb-3">
+                <label>Seismic Source Type</label>
+                <select class="form-select" id="sc-source">
+                  <option value="A">Type A — High slip rate, M ≥ 7.0</option>
+                  <option value="B" selected>Type B — Moderate slip rate</option>
+                  <option value="C">Type C — Low slip rate, M &lt; 6.5</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label>Soil Profile Type</label>
+                <select class="form-select" id="sc-soil">
+                  <option value="sa">SA — Hard Rock</option>
+                  <option value="sb">SB — Rock</option>
+                  <option value="sc">SC — Very Dense Soil</option>
+                  <option value="sd" selected>SD — Stiff Soil</option>
+                  <option value="se">SE — Soft Soil</option>
+                </select>
+              </div>
+              <div class="mb-4">
+                <label>Seismic Zone</label>
+                <select class="form-select" id="sc-zone">
+                  <option value="2">Zone 2</option>
+                  <option value="4" selected>Zone 4</option>
+                </select>
+              </div>
+              <button class="btn btn-calc btn-primary text-white w-100" onclick="calcSiteCoef()">Calculate</button>
+              <div id="sc-error" class="alert alert-danger mt-3 d-none"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-7">
+          <div class="card h-100">
+            <div class="card-header">Results</div>
+            <div class="card-body d-flex flex-column justify-content-center" id="sc-results">
+              <p class="text-muted text-center mt-4">Enter parameters and click <strong>Calculate</strong>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TAB 2 — Response Spectrum
+    ════════════════════════════════════════════════════════════════════ -->
+    <div class="tab-pane fade" id="tab-spectrum">
+      <!-- Input row -->
+      <div class="row g-4 mb-4">
+        <div class="col-md-4">
+          <div class="card h-100">
+            <div class="card-header">NSCP 2015 — Response Spectrum</div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label>C<sub>a</sub></label>
+                <input type="number" class="form-control" id="rs-ca" value="0.42" step="0.01" />
+              </div>
+              <div class="mb-3">
+                <label>C<sub>v</sub></label>
+                <input type="number" class="form-control" id="rs-cv" value="0.72" step="0.01" />
+              </div>
+              <div class="mb-3">
+                <label>Structural Period T (s) — for TH Reference</label>
+                <input type="number" class="form-control" id="rs-T" value="0.62" step="0.01" />
+              </div>
+              <div class="mb-4">
+                <label>Max T/T<sub>s</sub> (x-axis)</label>
+                <input type="number" class="form-control" id="rs-xmax" value="5" step="0.5" />
+              </div>
+              <button class="btn btn-calc btn-primary text-white w-100" onclick="calcSpectrum()">Generate Spectrum</button>
+              <div id="rs-error" class="alert alert-danger mt-3 d-none"></div>
+              <div id="rs-params" class="mt-3"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Chart 1 -->
+        <div class="col-md-8">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>&#9312; Design Response Spectrum</span>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart1','spectrum_NSCP2015.png')">&#8615; PNG</button>
+            </div>
+            <div class="card-body"><canvas id="chart1" height="260"></canvas></div>
+          </div>
+        </div>
+      </div>
+      <!-- Charts 2 & 3 -->
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>&#9313; Time-History Reference (1.4&#215; + period markers)</span>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart2','spectrum_TH_reference.png')">&#8615; PNG</button>
+            </div>
+            <div class="card-body"><canvas id="chart2" height="260"></canvas></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>&#9314; ADRS — Acceleration-Displacement Response Spectrum</span>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart3','spectrum_ADRS.png')">&#8615; PNG</button>
+            </div>
+            <div class="card-body"><canvas id="chart3" height="260"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TAB 3 — Base Shear
+    ════════════════════════════════════════════════════════════════════ -->
+    <div class="tab-pane fade" id="tab-shear">
+      <div class="row g-4">
+        <div class="col-md-5">
+          <div class="card">
+            <div class="card-header">NSCP 2015 — Base Shear (Eq. 208-8 to 208-11)</div>
+            <div class="card-body">
+              <div class="row g-2">
+                <div class="col-6 mb-2">
+                  <label>Seismic Zone</label>
+                  <select class="form-select" id="bs-zone">
+                    <option value="2">Zone 2</option>
+                    <option value="4" selected>Zone 4</option>
+                  </select>
+                </div>
+                <div class="col-6 mb-2">
+                  <label>N<sub>v</sub></label>
+                  <input type="number" class="form-control" id="bs-nv" value="1.29" step="0.01" />
+                </div>
+                <div class="col-6 mb-2">
+                  <label>C<sub>a</sub></label>
+                  <input type="number" class="form-control" id="bs-ca" value="0.42" step="0.01" />
+                </div>
+                <div class="col-6 mb-2">
+                  <label>C<sub>v</sub></label>
+                  <input type="number" class="form-control" id="bs-cv" value="0.72" step="0.01" />
+                </div>
+                <div class="col-6 mb-2">
+                  <label>Importance Factor I</label>
+                  <input type="number" class="form-control" id="bs-I" value="1.0" step="0.05" />
+                </div>
+                <div class="col-6 mb-2">
+                  <label>R — Response Modification</label>
+                  <input type="number" class="form-control" id="bs-R" value="8.0" step="0.5" />
+                </div>
+                <div class="col-6 mb-2">
+                  <label>Period T (s)</label>
+                  <input type="number" class="form-control" id="bs-T" value="0.62" step="0.01" />
+                </div>
+                <div class="col-6 mb-3">
+                  <label>Seismic Weight W (kN)</label>
+                  <input type="number" class="form-control" id="bs-W" value="21000" step="100" />
+                </div>
+              </div>
+              <button class="btn btn-calc btn-primary text-white w-100" onclick="calcBaseShear()">Calculate</button>
+              <div id="bs-error" class="alert alert-danger mt-3 d-none"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-7">
+          <div class="card h-100">
+            <div class="card-header">Results</div>
+            <div class="card-body" id="bs-results">
+              <p class="text-muted text-center mt-4">Enter parameters and click <strong>Calculate</strong>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TAB 4 — Tank Analysis
+    ════════════════════════════════════════════════════════════════════ -->
+    <div class="tab-pane fade" id="tab-tank">
+      <!-- Sub-tabs -->
+      <ul class="nav nav-pills mb-4" id="tankSubTabs">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tank-loads-pane">Hydrodynamic Loads</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tank-dynamics-pane">Dynamic Properties</button></li>
+      </ul>
+      <div class="tab-content">
+
+        <!-- Tank Loads -->
+        <div class="tab-pane fade show active" id="tank-loads-pane">
+          <div class="row g-4">
+            <div class="col-md-5">
+              <div class="card">
+                <div class="card-header">ACI 350 — Effective Liquid Weights &amp; Heights</div>
+                <div class="card-body">
+                  <div class="mb-3">
+                    <label>Base Length L (m) — parallel to motion</label>
+                    <input type="number" class="form-control" id="tl-L" value="10.0" step="0.5" />
+                  </div>
+                  <div class="mb-3">
+                    <label>Liquid Height H<sub>L</sub> (m)</label>
+                    <input type="number" class="form-control" id="tl-H" value="4.5" step="0.1" />
+                  </div>
+                  <div class="mb-4">
+                    <label>Total Liquid Weight W<sub>L</sub> (kN)</label>
+                    <input type="number" class="form-control" id="tl-WL" value="1975" step="10" />
+                  </div>
+                  <button class="btn btn-calc btn-primary text-white w-100" onclick="calcTankLoads()">Calculate</button>
+                  <div id="tl-error" class="alert alert-danger mt-3 d-none"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-7">
+              <div class="card h-100">
+                <div class="card-header">Results</div>
+                <div class="card-body" id="tl-results">
+                  <p class="text-muted text-center mt-4">Enter parameters and click <strong>Calculate</strong>.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tank Dynamics -->
+        <div class="tab-pane fade" id="tank-dynamics-pane">
+          <div class="row g-4">
+            <div class="col-md-5">
+              <div class="card">
+                <div class="card-header">ACI 350 — Wall-Liquid Dynamic Properties</div>
+                <div class="card-body">
+                  <div class="row g-2">
+                    <div class="col-6 mb-2">
+                      <label>Wall Length L (m)</label>
+                      <input type="number" class="form-control" id="td-length" value="10.0" step="0.5" />
+                    </div>
+                    <div class="col-6 mb-2">
+                      <label>Wall Height h<sub>w</sub> (m)</label>
+                      <input type="number" class="form-control" id="td-hw" value="5.0" step="0.1" />
+                    </div>
+                    <div class="col-6 mb-2">
+                      <label>Wall Thickness t<sub>w</sub> (m)</label>
+                      <input type="number" class="form-control" id="td-tw" value="0.3" step="0.05" />
+                    </div>
+                    <div class="col-6 mb-2">
+                      <label>Impulsive Weight W<sub>i</sub> (kN)</label>
+                      <input type="number" class="form-control" id="td-wi" value="1200" step="10" />
+                    </div>
+                    <div class="col-6 mb-2">
+                      <label>Liquid Weight W<sub>L</sub> (kN)</label>
+                      <input type="number" class="form-control" id="td-wl" value="1975" step="10" />
+                    </div>
+                    <div class="col-6 mb-2">
+                      <label>Liquid Height H<sub>L</sub> (m)</label>
+                      <input type="number" class="form-control" id="td-hl" value="4.5" step="0.1" />
+                    </div>
+                    <div class="col-6 mb-2">
+                      <label>Height Influence h<sub>i</sub> (m)</label>
+                      <input type="number" class="form-control" id="td-hi" value="1.5" step="0.1" />
+                    </div>
+                    <div class="col-6 mb-3">
+                      <label>E<sub>c</sub> Concrete (MPa)</label>
+                      <input type="number" class="form-control" id="td-ec" value="24870" step="100" />
+                    </div>
+                  </div>
+                  <button class="btn btn-calc btn-primary text-white w-100" onclick="calcTankDynamics()">Calculate</button>
+                  <div id="td-error" class="alert alert-danger mt-3 d-none"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-7">
+              <div class="card h-100">
+                <div class="card-header">Results</div>
+                <div class="card-body" id="td-results">
+                  <p class="text-muted text-center mt-4">Enter parameters and click <strong>Calculate</strong>.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /tank tab-content -->
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TAB 5 — LaTeX Report
+    ════════════════════════════════════════════════════════════════════ -->
+    <div class="tab-pane fade" id="tab-report">
+      <div class="row g-4">
+        <!-- Left: form -->
+        <div class="col-md-5">
+          <div class="card">
+            <div class="card-header">&#128196; Generate LaTeX Calculation Report</div>
+            <div class="card-body">
+              <p class="text-muted small mb-3">Parameters are pulled from the other tabs. Fill in project info below.</p>
+
+              <h6 class="text-uppercase text-muted small mb-2">Project Information</h6>
+              <div class="mb-2">
+                <label>Project Name</label>
+                <input type="text" class="form-control" id="rpt-name" value="Seismic Design" />
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-6">
+                  <label>Project No.</label>
+                  <input type="text" class="form-control" id="rpt-no" value="" />
+                </div>
+                <div class="col-6">
+                  <label>Date</label>
+                  <input type="text" class="form-control" id="rpt-date" placeholder="e.g. March 2026" />
+                </div>
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label>Engineer</label>
+                  <input type="text" class="form-control" id="rpt-engineer" value="" />
+                </div>
+                <div class="col-6">
+                  <label>Checker</label>
+                  <input type="text" class="form-control" id="rpt-checker" value="" />
+                </div>
+              </div>
+
+              <h6 class="text-uppercase text-muted small mb-2">Structure (for Period Calc.)</h6>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label>Structure Type</label>
+                  <select class="form-select" id="rpt-stype">
+                    <option value="concrete" selected>Concrete</option>
+                    <option value="steel">Steel</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label>Building Height h<sub>n</sub> (m)</label>
+                  <input type="number" class="form-control" id="rpt-hn" value="20" step="0.5" />
+                </div>
+              </div>
+
+              <h6 class="text-uppercase text-muted small mb-2">Tank Analysis (optional)</h6>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="rpt-tank-toggle" onchange="toggleRptTank()" />
+                <label class="form-check-label">Include ACI 350 Tank Section</label>
+              </div>
+              <div id="rpt-tank-fields" class="d-none">
+                <div class="row g-2 mb-3">
+                  <div class="col-4">
+                    <label>L (m)</label>
+                    <input type="number" class="form-control" id="rpt-L" value="10.0" step="0.5" />
+                  </div>
+                  <div class="col-4">
+                    <label>H<sub>L</sub> (m)</label>
+                    <input type="number" class="form-control" id="rpt-tankH" value="4.5" step="0.1" />
+                  </div>
+                  <div class="col-4">
+                    <label>W<sub>L</sub> (kN)</label>
+                    <input type="number" class="form-control" id="rpt-WL" value="1975" step="10" />
+                  </div>
+                </div>
+              </div>
+
+              <button class="btn btn-success text-white w-100 fw-bold" onclick="generateReport()">
+                &#8615;&nbsp; Download LaTeX Report (.tex)
+              </button>
+              <div id="rpt-error" class="alert alert-danger mt-3 d-none"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: what's included -->
+        <div class="col-md-7">
+          <div class="card mb-3">
+            <div class="card-header">Report Contents</div>
+            <div class="card-body p-0">
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item">&#128203; Design Parameters Summary</li>
+                <li class="list-group-item">&#128202; Site Seismicity Coefficients &mdash; NSCP 2015 Tables 208-7/8</li>
+                <li class="list-group-item">&#128200; Structural Period &mdash; Method A (Eq. 208-23)</li>
+                <li class="list-group-item">&#128225; Design Response Spectrum &mdash; T<sub>0</sub>, T<sub>s</sub>, S<sub>a,max</sub></li>
+                <li class="list-group-item">&#9878; Base Shear &mdash; Eq. 208-8 to 208-11 with governing check</li>
+                <li class="list-group-item" id="rpt-tank-item" style="opacity:0.35;">&#128167; Tank Hydrodynamic Analysis &mdash; ACI 350.3 &sect;9.2</li>
+              </ul>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">How to Compile</div>
+            <div class="card-body">
+              <p class="mb-2 small"><strong>Option 1 &mdash; Local (pdflatex):</strong></p>
+              <code class="d-block bg-light p-2 rounded small mb-3">pdflatex report.tex</code>
+              <p class="mb-2 small"><strong>Option 2 &mdash; Overleaf (online):</strong></p>
+              <ol class="small mb-0">
+                <li>Go to <strong>overleaf.com</strong> → New Project → Upload Project</li>
+                <li>Upload the downloaded <code>.tex</code> file</li>
+                <li>Click <strong>Recompile</strong></li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main tab-content -->
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function resultCard(label, value, unit = "") {
+  return `
+    <div class="result-card mb-3">
+      <div class="result-label">${label}</div>
+      <span class="result-value">${value}</span>
+      ${unit ? `<span class="result-unit ms-1">${unit}</span>` : ""}
+    </div>`;
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.remove("d-none");
+}
+
+function clearError(id) {
+  document.getElementById(id).classList.add("d-none");
+}
+
+async function postJSON(url, body) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+function fmt(v, d = 3) {
+  return typeof v === "number" ? v.toFixed(d) : v;
+}
+
+// ── Site Coefficients ────────────────────────────────────────────────────────
+
+async function calcSiteCoef() {
+  clearError("sc-error");
+  const body = {
+    distance:    parseFloat(document.getElementById("sc-distance").value),
+    source_type: document.getElementById("sc-source").value,
+    soil_type:   document.getElementById("sc-soil").value,
+    zone:        parseInt(document.getElementById("sc-zone").value),
+  };
+  const r = await postJSON("/api/site-coefficients", body);
+  const el = document.getElementById("sc-results");
+  if (!r.success) { showError("sc-error", r.error); return; }
+  const d = r.data;
+  el.innerHTML = `
+    <div class="row g-3">
+      ${resultCard("Near-Source Factor N<sub>a</sub>", fmt(d.na, 3))}
+      ${resultCard("Near-Source Factor N<sub>v</sub>", fmt(d.nv, 3))}
+      ${resultCard("Site Coefficient C<sub>a</sub>", fmt(d.ca, 3))}
+      ${resultCard("Site Coefficient C<sub>v</sub>", fmt(d.cv, 3))}
+    </div>
+    <div class="mt-3 text-muted small">
+      Soil: <strong>${body.soil_type.toUpperCase()}</strong> &nbsp;|&nbsp;
+      Source: <strong>Type ${body.source_type}</strong> &nbsp;|&nbsp;
+      Distance: <strong>${body.distance} km</strong> &nbsp;|&nbsp;
+      Zone: <strong>${body.zone}</strong>
+    </div>`;
+}
+
+// ── Response Spectrum ────────────────────────────────────────────────────────
+
+const specCharts = { c1: null, c2: null, c3: null };
+
+function destroyAll() {
+  Object.keys(specCharts).forEach(k => { if (specCharts[k]) { specCharts[k].destroy(); specCharts[k] = null; } });
+}
+
+function makeAnnotation(xVal, color, dash, label) {
+  return {
+    type: "line", xMin: xVal, xMax: xVal,
+    borderColor: color, borderWidth: 1.5,
+    borderDash: dash || [],
+    label: label ? { display: true, content: label, position: "start", color, font: { size: 11 } } : undefined,
+  };
+}
+
+function baseChartOpts(xLabel, yLabel, xMax) {
+  return {
+    responsive: true, animation: false,
+    scales: {
+      x: { type: "linear", min: 0, max: xMax, title: { display: true, text: xLabel } },
+      y: { min: 0, title: { display: true, text: yLabel } },
+    },
+    plugins: {
+      legend: { position: "top" },
+      tooltip: { mode: "index", intersect: false },
+    },
+  };
+}
+
+async function calcSpectrum() {
+  clearError("rs-error");
+  const body = {
+    ca:    parseFloat(document.getElementById("rs-ca").value),
+    cv:    parseFloat(document.getElementById("rs-cv").value),
+    x_max: parseFloat(document.getElementById("rs-xmax").value),
+    T:     parseFloat(document.getElementById("rs-T").value) || 1.0,
+    show_th: true,
+  };
+  const r = await postJSON("/api/response-spectrum", body);
+  if (!r.success) { showError("rs-error", r.error); return; }
+  const d = r.data;
+  const xMax = body.x_max;
+
+  destroyAll();
+
+  // ── Chart 1: Standard Design Response Spectrum ──────────────────────────
+  specCharts.c1 = new Chart(document.getElementById("chart1"), {
+    type: "line",
+    data: {
+      datasets: [{
+        label: "NSCP 2015",
+        data: d.x.map((xi, i) => ({ x: xi, y: d.Sa[i] })),
+        borderColor: "#0f2d6b", borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
+      }],
+    },
+    options: {
+      ...baseChartOpts("Period  T / Tₛ", "Sa  (g)", xMax),
+      plugins: {
+        ...baseChartOpts("", "", xMax).plugins,
+        annotation: {
+          annotations: {
+            t0:  makeAnnotation(0.2, "#999", [4, 4], "0.2"),
+            ts:  makeAnnotation(1.0, "#999", [4, 4], "1.0"),
+          },
+        },
+      },
+    },
+  });
+
+  // ── Chart 2: TH Reference (1.4× + 0.2T / 1.5T) ─────────────────────────
+  specCharts.c2 = new Chart(document.getElementById("chart2"), {
+    type: "line",
+    data: {
+      datasets: [
+        {
+          label: "NSCP 2015",
+          data: d.x.map((xi, i) => ({ x: xi, y: d.Sa[i] })),
+          borderColor: "#0f2d6b", borderWidth: 2, pointRadius: 0, tension: 0, fill: false,
+        },
+        {
+          label: "1.4 × NSCP 2015",
+          data: d.x.map((xi, i) => ({ x: xi, y: d.Sa_14[i] })),
+          borderColor: "#e63946", borderWidth: 2, pointRadius: 0, tension: 0, fill: false,
+        },
+      ],
+    },
+    options: {
+      ...baseChartOpts("Period  T / Tₛ", "Sa  (g)", xMax),
+      plugins: {
+        ...baseChartOpts("", "", xMax).plugins,
+        annotation: {
+          annotations: {
+            t0:  makeAnnotation(0.2,    "#999",     [4, 4], "0.2"),
+            ts:  makeAnnotation(1.0,    "#999",     [4, 4], "1.0"),
+            t02: makeAnnotation(d.T_02, "#e63946",  [5, 3], "0.2T"),
+            t15: makeAnnotation(d.T_15, "#e63946",  [5, 3], "1.5T"),
+          },
+        },
+      },
+    },
+  });
+
+  // ── Chart 3: ADRS ────────────────────────────────────────────────────────
+  specCharts.c3 = new Chart(document.getElementById("chart3"), {
+    type: "line",
+    data: {
+      datasets: [{
+        label: "ADRS",
+        data: d.Sd.map((sd, i) => ({ x: sd, y: d.Sa[i] })),
+        borderColor: "#1a7abf", borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
+      }],
+    },
+    options: baseChartOpts("Spectral Displacement  Sd  (m)", "Sa  (g)", Math.max(...d.Sd) * 1.05),
+  });
+
+  document.getElementById("rs-params").innerHTML = `
+    <hr class="my-3"/>
+    <div class="row g-2">
+      ${resultCard("T<sub>s</sub>", fmt(d.Ts, 4), "s")}
+      ${resultCard("S<sub>a,max</sub>", fmt(d.sa_max, 4), "g")}
+    </div>`;
+}
+
+// ── Base Shear ───────────────────────────────────────────────────────────────
+
+async function calcBaseShear() {
+  clearError("bs-error");
+  const zone = parseInt(document.getElementById("bs-zone").value);
+  const body = {
+    zone,
+    nv:                   parseFloat(document.getElementById("bs-nv").value),
+    ca:                   parseFloat(document.getElementById("bs-ca").value),
+    cv:                   parseFloat(document.getElementById("bs-cv").value),
+    importance_factor:    parseFloat(document.getElementById("bs-I").value),
+    response_modification:parseFloat(document.getElementById("bs-R").value),
+    period:               parseFloat(document.getElementById("bs-T").value),
+    weight:               parseFloat(document.getElementById("bs-W").value),
+  };
+  const r = await postJSON("/api/base-shear", body);
+  const el = document.getElementById("bs-results");
+  if (!r.success) { showError("bs-error", r.error); return; }
+  const d = r.data;
+
+  let html = `
+    <div class="row g-3">
+      ${resultCard("V — Total Base Shear (Eq. 208-8)", fmt(d.total), "kN")}
+      ${resultCard("V<sub>max</sub> — Maximum Base Shear (Eq. 208-9)", fmt(d.max), "kN")}
+      ${resultCard("V<sub>min</sub> — Minimum Base Shear (Eq. 208-10)", fmt(d.min), "kN")}`;
+
+  if (zone === 4 && d.max_z4 !== undefined) {
+    html += resultCard("V<sub>max,Z4</sub> — Zone 4 Max (Eq. 208-11)", fmt(d.max_z4), "kN");
+    html += resultCard("&#9654; Governing Base Shear", fmt(d.governing), "kN");
+  }
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+// ── Tank Loads ───────────────────────────────────────────────────────────────
+
+async function calcTankLoads() {
+  clearError("tl-error");
+  const body = {
+    L:             parseFloat(document.getElementById("tl-L").value),
+    height:        parseFloat(document.getElementById("tl-H").value),
+    liquid_weight: parseFloat(document.getElementById("tl-WL").value),
+  };
+  const r = await postJSON("/api/tank-loads", body);
+  const el = document.getElementById("tl-results");
+  if (!r.success) { showError("tl-error", r.error); return; }
+  const { weights, heights } = r.data;
+
+  el.innerHTML = `
+    <h6 class="text-muted mb-3">Effective Weights <small>(ACI 350 Eq. 9.2.1a/b)</small></h6>
+    <div class="row g-3 mb-4">
+      ${resultCard("Impulsive Weight W<sub>i</sub>", fmt(weights.impulsive.value), weights.impulsive.units)}
+      ${resultCard("Convective Weight W<sub>c</sub>", fmt(weights.convective.value), weights.convective.units)}
+    </div>
+    <h6 class="text-muted mb-3">Heights of Centers of Gravity <small>(ACI 350 §9.2.2–9.2.3)</small></h6>
+    <div class="row g-3">
+      <div class="col-6">
+        <div class="result-card mb-2"><div class="result-label">EBP — h<sub>i</sub></div>
+          <span class="result-value">${fmt(heights.EPB.hi)}</span> <span class="result-unit">m</span></div>
+        <div class="result-card"><div class="result-label">EBP — h<sub>c</sub></div>
+          <span class="result-value">${fmt(heights.EPB.hc)}</span> <span class="result-unit">m</span></div>
+      </div>
+      <div class="col-6">
+        <div class="result-card mb-2"><div class="result-label">IBP — h'<sub>i</sub></div>
+          <span class="result-value">${fmt(heights.IBP.hpi)}</span> <span class="result-unit">m</span></div>
+        <div class="result-card"><div class="result-label">IBP — h'<sub>c</sub></div>
+          <span class="result-value">${fmt(heights.IBP.hpc)}</span> <span class="result-unit">m</span></div>
+      </div>
+    </div>
+    <p class="text-muted small mt-3">L/H<sub>L</sub> = ${fmt(body.L / body.height, 3)}</p>`;
+}
+
+// ── Tank Dynamics ────────────────────────────────────────────────────────────
+
+async function calcTankDynamics() {
+  clearError("td-error");
+  const body = {
+    length:  parseFloat(document.getElementById("td-length").value),
+    hw:      parseFloat(document.getElementById("td-hw").value),
+    tw:      parseFloat(document.getElementById("td-tw").value),
+    wi:      parseFloat(document.getElementById("td-wi").value),
+    wl:      parseFloat(document.getElementById("td-wl").value),
+    hl:      parseFloat(document.getElementById("td-hl").value),
+    hi:      parseFloat(document.getElementById("td-hi").value),
+    ec:      parseFloat(document.getElementById("td-ec").value),
+  };
+  const r = await postJSON("/api/tank-dynamics", body);
+  const el = document.getElementById("td-results");
+  if (!r.success) { showError("td-error", r.error); return; }
+  const d = r.data;
+
+  const rows = [
+    ["Wall Mass m<sub>w</sub>",          d.mw.value,   d.mw.units],
+    ["Impulsive Mass m<sub>i</sub>",     d.mi.value,   d.mi.units],
+    ["Total Mass m<sub>t</sub>",         d.mt.value,   d.mt.units],
+    ["Equivalent Height h<sub>eq</sub>", d.h_eq.value, d.h_eq.units],
+    ["Wall Stiffness k",                 d.k.value,    d.k.units],
+  ];
+
+  let html = `
+    <div class="row g-2 mb-4">
+      ${rows.map(([l, v, u]) => `<div class="col-6">${resultCard(l, fmt(v, 4), u)}</div>`).join("")}
+    </div>
+    <h6 class="text-muted mb-3">Natural Periods <small>(ACI 350 R.9.2.4)</small></h6>
+    <div class="row g-3">
+      <div class="col-6">
+        <div class="result-card">
+          <div class="result-label">Impulsive Period T<sub>i</sub></div>
+          <span class="result-value">${fmt(d.Ti.value, 4)}</span>
+          <span class="result-unit">s</span>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="result-card">
+          <div class="result-label">Convective Period T<sub>c</sub></div>
+          <span class="result-value">${fmt(d.Tc.value, 4)}</span>
+          <span class="result-unit">s</span>
+        </div>
+      </div>
+    </div>`;
+  el.innerHTML = html;
+}
+
+// ── Download chart as PNG ────────────────────────────────────────────────────
+
+function downloadCanvas(canvasId, filename) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) { alert("Generate the spectrum first."); return; }
+  const url = canvas.toDataURL("image/png");
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// ── LaTeX Report ─────────────────────────────────────────────────────────────
+
+function toggleRptTank() {
+  const on = document.getElementById("rpt-tank-toggle").checked;
+  document.getElementById("rpt-tank-fields").classList.toggle("d-none", !on);
+  document.getElementById("rpt-tank-item").style.opacity = on ? "1" : "0.35";
+}
+
+async function generateReport() {
+  clearError("rpt-error");
+
+  // Pull values from all tabs
+  const body = {
+    project_name: document.getElementById("rpt-name").value,
+    project_no:   document.getElementById("rpt-no").value,
+    engineer:     document.getElementById("rpt-engineer").value,
+    checker:      document.getElementById("rpt-checker").value,
+    date:         document.getElementById("rpt-date").value,
+    // Site coefficients tab
+    distance:    parseFloat(document.getElementById("sc-distance").value),
+    source_type: document.getElementById("sc-source").value,
+    soil_type:   document.getElementById("sc-soil").value,
+    zone:        parseInt(document.getElementById("sc-zone").value),
+    // Structure
+    structure_type:        document.getElementById("rpt-stype").value,
+    hn:                    parseFloat(document.getElementById("rpt-hn").value),
+    // Base shear tab
+    importance_factor:     parseFloat(document.getElementById("bs-I").value),
+    response_modification: parseFloat(document.getElementById("bs-R").value),
+    weight:                parseFloat(document.getElementById("bs-W").value),
+  };
+
+  const incTank = document.getElementById("rpt-tank-toggle").checked;
+  body.include_tank = incTank;
+  if (incTank) {
+    body.L             = parseFloat(document.getElementById("rpt-L").value);
+    body.tank_height   = parseFloat(document.getElementById("rpt-tankH").value);
+    body.liquid_weight = parseFloat(document.getElementById("rpt-WL").value);
+  }
+
+  try {
+    const res = await fetch("/api/generate-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showError("rpt-error", err.error || `Server error ${res.status}`);
+      return;
+    }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = (body.project_name || "seismic_report").replace(/\s+/g, "_") + ".tex";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    showError("rpt-error", e.message);
+  }
+}
+
+</script>
+</body>
+</html>
