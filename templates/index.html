@@ -48,6 +48,7 @@
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-spectrum">Response Spectrum</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-shear">Base Shear</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-tank">Tank Analysis</button></li>
+    <li class="nav-item ms-auto"><button class="nav-link text-success fw-bold" data-bs-toggle="tab" data-bs-target="#tab-report">&#128196; LaTeX Report</button></li>
   </ul>
 
   <div class="tab-content">
@@ -141,7 +142,10 @@
         <!-- Chart 1 -->
         <div class="col-md-8">
           <div class="card h-100">
-            <div class="card-header">① Design Response Spectrum</div>
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>&#9312; Design Response Spectrum</span>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart1','spectrum_NSCP2015.png')">&#8615; PNG</button>
+            </div>
             <div class="card-body"><canvas id="chart1" height="260"></canvas></div>
           </div>
         </div>
@@ -150,13 +154,19 @@
       <div class="row g-4">
         <div class="col-md-6">
           <div class="card">
-            <div class="card-header">② Time-History Reference (1.4× + period markers)</div>
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>&#9313; Time-History Reference (1.4&#215; + period markers)</span>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart2','spectrum_TH_reference.png')">&#8615; PNG</button>
+            </div>
             <div class="card-body"><canvas id="chart2" height="260"></canvas></div>
           </div>
         </div>
         <div class="col-md-6">
           <div class="card">
-            <div class="card-header">③ ADRS — Acceleration-Displacement Response Spectrum</div>
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>&#9314; ADRS — Acceleration-Displacement Response Spectrum</span>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart3','spectrum_ADRS.png')">&#8615; PNG</button>
+            </div>
             <div class="card-body"><canvas id="chart3" height="260"></canvas></div>
           </div>
         </div>
@@ -329,6 +339,122 @@
         </div>
 
       </div><!-- /tank tab-content -->
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TAB 5 — LaTeX Report
+    ════════════════════════════════════════════════════════════════════ -->
+    <div class="tab-pane fade" id="tab-report">
+      <div class="row g-4">
+        <!-- Left: form -->
+        <div class="col-md-5">
+          <div class="card">
+            <div class="card-header">&#128196; Generate LaTeX Calculation Report</div>
+            <div class="card-body">
+              <p class="text-muted small mb-3">Parameters are pulled from the other tabs. Fill in project info below.</p>
+
+              <h6 class="text-uppercase text-muted small mb-2">Project Information</h6>
+              <div class="mb-2">
+                <label>Project Name</label>
+                <input type="text" class="form-control" id="rpt-name" value="Seismic Design" />
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-6">
+                  <label>Project No.</label>
+                  <input type="text" class="form-control" id="rpt-no" value="" />
+                </div>
+                <div class="col-6">
+                  <label>Date</label>
+                  <input type="text" class="form-control" id="rpt-date" placeholder="e.g. March 2026" />
+                </div>
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label>Engineer</label>
+                  <input type="text" class="form-control" id="rpt-engineer" value="" />
+                </div>
+                <div class="col-6">
+                  <label>Checker</label>
+                  <input type="text" class="form-control" id="rpt-checker" value="" />
+                </div>
+              </div>
+
+              <h6 class="text-uppercase text-muted small mb-2">Structure (for Period Calc.)</h6>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label>Structure Type</label>
+                  <select class="form-select" id="rpt-stype">
+                    <option value="concrete" selected>Concrete</option>
+                    <option value="steel">Steel</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label>Building Height h<sub>n</sub> (m)</label>
+                  <input type="number" class="form-control" id="rpt-hn" value="20" step="0.5" />
+                </div>
+              </div>
+
+              <h6 class="text-uppercase text-muted small mb-2">Tank Analysis (optional)</h6>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="rpt-tank-toggle" onchange="toggleRptTank()" />
+                <label class="form-check-label">Include ACI 350 Tank Section</label>
+              </div>
+              <div id="rpt-tank-fields" class="d-none">
+                <div class="row g-2 mb-3">
+                  <div class="col-4">
+                    <label>L (m)</label>
+                    <input type="number" class="form-control" id="rpt-L" value="10.0" step="0.5" />
+                  </div>
+                  <div class="col-4">
+                    <label>H<sub>L</sub> (m)</label>
+                    <input type="number" class="form-control" id="rpt-tankH" value="4.5" step="0.1" />
+                  </div>
+                  <div class="col-4">
+                    <label>W<sub>L</sub> (kN)</label>
+                    <input type="number" class="form-control" id="rpt-WL" value="1975" step="10" />
+                  </div>
+                </div>
+              </div>
+
+              <button class="btn btn-success text-white w-100 fw-bold" onclick="generateReport()">
+                &#8615;&nbsp; Download LaTeX Report (.tex)
+              </button>
+              <div id="rpt-error" class="alert alert-danger mt-3 d-none"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: what's included -->
+        <div class="col-md-7">
+          <div class="card mb-3">
+            <div class="card-header">Report Contents</div>
+            <div class="card-body p-0">
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item">&#128203; Design Parameters Summary</li>
+                <li class="list-group-item">&#128202; Site Seismicity Coefficients &mdash; NSCP 2015 Tables 208-7/8</li>
+                <li class="list-group-item">&#128200; Structural Period &mdash; Method A (Eq. 208-23)</li>
+                <li class="list-group-item">&#128225; Design Response Spectrum &mdash; T<sub>0</sub>, T<sub>s</sub>, S<sub>a,max</sub></li>
+                <li class="list-group-item">&#9878; Base Shear &mdash; Eq. 208-8 to 208-11 with governing check</li>
+                <li class="list-group-item" id="rpt-tank-item" style="opacity:0.35;">&#128167; Tank Hydrodynamic Analysis &mdash; ACI 350.3 &sect;9.2</li>
+              </ul>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">How to Compile</div>
+            <div class="card-body">
+              <p class="mb-2 small"><strong>Option 1 &mdash; Local (pdflatex):</strong></p>
+              <code class="d-block bg-light p-2 rounded small mb-3">pdflatex report.tex</code>
+              <p class="mb-2 small"><strong>Option 2 &mdash; Overleaf (online):</strong></p>
+              <ol class="small mb-0">
+                <li>Go to <strong>overleaf.com</strong> → New Project → Upload Project</li>
+                <li>Upload the downloaded <code>.tex</code> file</li>
+                <li>Click <strong>Recompile</strong></li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div><!-- /main tab-content -->
@@ -646,6 +772,85 @@ async function calcTankDynamics() {
       </div>
     </div>`;
   el.innerHTML = html;
+}
+
+// ── Download chart as PNG ────────────────────────────────────────────────────
+
+function downloadCanvas(canvasId, filename) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) { alert("Generate the spectrum first."); return; }
+  const url = canvas.toDataURL("image/png");
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// ── LaTeX Report ─────────────────────────────────────────────────────────────
+
+function toggleRptTank() {
+  const on = document.getElementById("rpt-tank-toggle").checked;
+  document.getElementById("rpt-tank-fields").classList.toggle("d-none", !on);
+  document.getElementById("rpt-tank-item").style.opacity = on ? "1" : "0.35";
+}
+
+async function generateReport() {
+  clearError("rpt-error");
+
+  // Pull values from all tabs
+  const body = {
+    project_name: document.getElementById("rpt-name").value,
+    project_no:   document.getElementById("rpt-no").value,
+    engineer:     document.getElementById("rpt-engineer").value,
+    checker:      document.getElementById("rpt-checker").value,
+    date:         document.getElementById("rpt-date").value,
+    // Site coefficients tab
+    distance:    parseFloat(document.getElementById("sc-distance").value),
+    source_type: document.getElementById("sc-source").value,
+    soil_type:   document.getElementById("sc-soil").value,
+    zone:        parseInt(document.getElementById("sc-zone").value),
+    // Structure
+    structure_type:        document.getElementById("rpt-stype").value,
+    hn:                    parseFloat(document.getElementById("rpt-hn").value),
+    // Base shear tab
+    importance_factor:     parseFloat(document.getElementById("bs-I").value),
+    response_modification: parseFloat(document.getElementById("bs-R").value),
+    weight:                parseFloat(document.getElementById("bs-W").value),
+  };
+
+  const incTank = document.getElementById("rpt-tank-toggle").checked;
+  body.include_tank = incTank;
+  if (incTank) {
+    body.L             = parseFloat(document.getElementById("rpt-L").value);
+    body.tank_height   = parseFloat(document.getElementById("rpt-tankH").value);
+    body.liquid_weight = parseFloat(document.getElementById("rpt-WL").value);
+  }
+
+  try {
+    const res = await fetch("/api/generate-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showError("rpt-error", err.error || `Server error ${res.status}`);
+      return;
+    }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = (body.project_name || "seismic_report").replace(/\s+/g, "_") + ".tex";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    showError("rpt-error", e.message);
+  }
 }
 
 </script>
