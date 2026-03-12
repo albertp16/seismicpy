@@ -12,7 +12,8 @@ setup(
     url='https://github.com/albertp16/apec-py',
     packages=find_packages(),
     install_requires=[
-        # Add required dependencies here, e.g., 'numpy', 'pandas', etc.
+        'numpy>=1.26.0',
+        'matplotlib>=3.9.0',
     ],
     classifiers=[
         'Programming Language :: Python :: 3',
