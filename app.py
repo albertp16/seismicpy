@@ -96,17 +96,23 @@ async def api_response_spectrum(data: SpectrumInput):
     try:
         rs = ResponseSpectrum(data.ca, data.cv)
         x, Sa = rs.calculate(x_max=data.x_max)
+
+        # ADRS conversion: T = x * Ts, Sd = Sa*g*T²/(4π²)
+        T_actual = x * rs.Ts
+        Sd = Sa * 9.81 * T_actual**2 / (4 * np.pi**2)
+
+        T = data.T if data.T > 0 else 1.0
         payload = {
-            "x": x.tolist(),
-            "Sa": Sa.tolist(),
-            "Ts": rs.Ts,
-            "T0": rs.T0,
+            "x":     x.tolist(),
+            "Sa":    Sa.tolist(),
+            "Sa_14": (1.4 * Sa).tolist(),
+            "Sd":    Sd.tolist(),
+            "Ts":    rs.Ts,
+            "T0":    rs.T0,
             "sa_max": rs.sa_max,
+            "T_02":  0.2 * T / rs.Ts,
+            "T_15":  1.5 * T / rs.Ts,
         }
-        if data.show_th:
-            payload["Sa_14"] = (1.4 * Sa).tolist()
-            payload["T_02"] = 0.2 * data.T / rs.Ts
-            payload["T_15"] = 1.5 * data.T / rs.Ts
         return {"success": True, "data": payload}
     except Exception as e:
         return {"success": False, "error": str(e)}
