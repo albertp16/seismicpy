@@ -1,11 +1,10 @@
 import sys
+import math
 import datetime
-import numpy as np
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from typing import Optional
 
 sys.path.insert(0, ".")
 
@@ -13,11 +12,6 @@ from apecseismicpy.nscp2015.site_coefficients import site_coefficients
 from apecseismicpy.nscp2015.response_spectrum import ResponseSpectrum
 from apecseismicpy.nscp2015.period import calculateStructuralPeriod
 from apecseismicpy.nscp2015.baseshear import calculate_base_shear
-from apecseismicpy.aci350.hydrodynamic.loads import (
-    effective_liquid_weights,
-    calculate_heights_of_centers_of_gravity,
-)
-from apecseismicpy.aci350.hydrodynamic.period import DynamicProperties
 
 app = FastAPI(title="APEC SeismicPy")
 templates = Jinja2Templates(directory="templates")
@@ -56,25 +50,6 @@ class BaseShearInput(BaseModel):
     weight: float
 
 
-class TankLoadsInput(BaseModel):
-    L: float
-    height: float
-    liquid_weight: float
-
-
-class TankDynamicsInput(BaseModel):
-    length: float
-    hw: float
-    tw: float
-    wi: float
-    wl: float
-    hl: float
-    hi: float
-    ec: float
-    gamma_c: float = 23.6
-    gamma_l: float = 9.81
-
-
 # ── Routes ───────────────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
@@ -99,15 +74,15 @@ async def api_response_spectrum(data: SpectrumInput):
         x, Sa = rs.calculate(x_max=data.x_max)
 
         # ADRS conversion: T = x * Ts, Sd = Sa*g*T²/(4π²)
-        T_actual = x * rs.Ts
-        Sd = Sa * 9.81 * T_actual**2 / (4 * np.pi**2)
+        T_actual = [xi * rs.Ts for xi in x]
+        Sd = [s * 9.81 * t**2 / (4 * math.pi**2) for s, t in zip(Sa, T_actual)]
 
         T = data.T if data.T > 0 else 1.0
         payload = {
-            "x":     x.tolist(),
-            "Sa":    Sa.tolist(),
-            "Sa_14": (1.4 * Sa).tolist(),
-            "Sd":    Sd.tolist(),
+            "x":     x,
+            "Sa":    Sa,
+            "Sa_14": [1.4 * s for s in Sa],
+            "Sd":    Sd,
             "Ts":    rs.Ts,
             "T0":    rs.T0,
             "sa_max": rs.sa_max,
@@ -149,40 +124,6 @@ async def api_base_shear(data: BaseShearInput):
         return {"success": False, "error": str(e)}
 
 
-@app.post("/api/tank-loads")
-async def api_tank_loads(data: TankLoadsInput):
-    try:
-        weights = effective_liquid_weights(data.L, data.height, data.liquid_weight)
-        heights = calculate_heights_of_centers_of_gravity(data.L, data.height)
-        return {"success": True, "data": {"weights": weights, "heights": heights}}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-
-@app.post("/api/tank-dynamics")
-async def api_tank_dynamics(data: TankDynamicsInput):
-    try:
-        dp = DynamicProperties(
-            data.length, data.hw, data.tw, data.wi, data.wl,
-            data.hl, data.hi, data.ec, data.gamma_c, data.gamma_l,
-        )
-        result = {
-            "mw":   dp.compute_mw(),
-            "mi":   dp.compute_mi(),
-            "h_eq": dp.compute_h(),
-            "k":    dp.compute_k(),
-            "mt":   dp.compute_mt(),
-            "Ti":   dp.compute_ti(),
-            "Tc":   dp.compute_tc(),
-        }
-        # Round the value fields for display
-        for key in result:
-            result[key]["value"] = round(result[key]["value"], 4)
-        return {"success": True, "data": result}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-
 # ── LaTeX Report ─────────────────────────────────────────────────────────────
 
 class ReportInput(BaseModel):
@@ -203,11 +144,6 @@ class ReportInput(BaseModel):
     importance_factor:     float
     response_modification: float
     weight:                float
-    # Tank (optional)
-    include_tank:  bool = False
-    L:             Optional[float] = None
-    tank_height:   Optional[float] = None
-    liquid_weight: Optional[float] = None
 
 
 def _e(s: str) -> str:
@@ -408,52 +344,6 @@ $h_n = """ + _v(data.hn, 2) + r"""$ m.
     doc += r"""  \bottomrule
 \end{tabular}
 \end{center}
-"""
-
-    # ── optional tank section ────────────────────────────────────────────────
-    if data.include_tank and data.L and data.tank_height and data.liquid_weight:
-        wts  = effective_liquid_weights(data.L, data.tank_height, data.liquid_weight)
-        hts  = calculate_heights_of_centers_of_gravity(data.L, data.tank_height)
-        wi   = wts["impulsive"]["value"]
-        wc   = wts["convective"]["value"]
-        ratio = data.L / data.tank_height
-
-        doc += r"""
-% ══════════════════════════════════════════════════════════════════════════════
-\section{Tank Hydrodynamic Analysis (ACI 350.3 \S9.2)}
-% ══════════════════════════════════════════════════════════════════════════════
-\begin{tabular}{@{}p{6.5cm}ccc@{}}
-  \toprule
-  \textbf{Parameter} & \textbf{Symbol} & \textbf{Value} & \textbf{Unit} \\
-  \midrule
-  Base length (parallel to motion) & $L$    & """ + _v(data.L, 2)           + r""" & m  \\
-  Liquid height                    & $H_L$  & """ + _v(data.tank_height, 2) + r""" & m  \\
-  Total liquid weight              & $W_L$  & """ + _v(data.liquid_weight, 1)+ r""" & kN \\
-  $L/H_L$ ratio                   & ---    & """ + _v(ratio, 3)            + r""" & --- \\
-  \bottomrule
-\end{tabular}
-
-\subsection*{Effective Liquid Weights (Eq.\ 9.2.1)}
-\begin{align}
-  \frac{W_i}{W_L} &= \frac{\tanh(0.866\,L/H_L)}{0.866\,L/H_L}
-                   = """ + _v(wi / data.liquid_weight, 4) + r"""
-    \quad\Rightarrow\quad W_i = \mathbf{""" + _v(wi, 2) + r"""\ \text{kN}} \\[4pt]
-  \frac{W_c}{W_L} &= 0.264\,\tfrac{L}{H_L}\tanh\!\left(\tfrac{3.16\,H_L}{L}\right)
-                   = """ + _v(wc / data.liquid_weight, 4) + r"""
-    \quad\Rightarrow\quad W_c = \mathbf{""" + _v(wc, 2) + r"""\ \text{kN}}
-\end{align}
-
-\subsection*{Heights of Centers of Gravity (\S9.2.2--9.2.3)}
-\begin{tabular}{@{}llcc@{}}
-  \toprule
-  \textbf{Case} & \textbf{Symbol} & \textbf{Value (m)} & \textbf{Description} \\
-  \midrule
-  EBP Impulsive  & $h_i$  & """ + _v(hts["EPB"]["hi"],  4) + r""" & Excluding base pressure \\
-  EBP Convective & $h_c$  & """ + _v(hts["EPB"]["hc"],  4) + r""" & Excluding base pressure \\
-  IBP Impulsive  & $h'_i$ & """ + _v(hts["IBP"]["hpi"], 4) + r""" & Including base pressure \\
-  IBP Convective & $h'_c$ & """ + _v(hts["IBP"]["hpc"], 4) + r""" & Including base pressure \\
-  \bottomrule
-\end{tabular}
 """
 
     doc += r"""

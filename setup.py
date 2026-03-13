@@ -11,10 +11,7 @@ setup(
     author_email='albert@apeconsultancy.net',
     url='https://github.com/albertp16/apec-py',
     packages=find_packages(),
-    install_requires=[
-        'numpy>=1.26.0',
-        'matplotlib>=3.9.0',
-    ],
+    install_requires=[],
     classifiers=[
         'Programming Language :: Python :: 3',
         'Operating System :: OS Independent',
