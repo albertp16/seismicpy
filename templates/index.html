@@ -78,12 +78,26 @@
     .form-control, .form-select { font-size: .9rem; }
     .tag-zone { display:inline-block; background:#fff3cd; color:#856404; border-radius:6px; padding:2px 8px; font-size:.8rem; font-weight:600; }
 
-    /* ── Editable Table ──────────────────────────────────────── */
-    .editable-table { width: 100%; border-collapse: collapse; }
-    .editable-table th { background: #e8f0fe; font-size: .8rem; text-transform: uppercase; padding: .4rem .6rem; }
-    .editable-table td { padding: .25rem .4rem; }
-    .editable-table input { width: 100%; border: 1px solid #dee2e6; border-radius: 4px; padding: .3rem .5rem; font-size: .88rem; text-align: center; }
-    .editable-table .row-label { font-weight: 600; font-size: .85rem; text-align: center; background: #f8f9fa; }
+    /* ── Spreadsheet Table ────────────────────────────────────── */
+    .spread-table { width: 100%; border-collapse: collapse; border: 1px solid #bcc3ce; font-size: .88rem; }
+    .spread-table th {
+      background: #dfe6f0; font-size: .75rem; text-transform: uppercase; letter-spacing: .5px;
+      padding: .35rem .5rem; border: 1px solid #bcc3ce; text-align: center; font-weight: 600; color: #444;
+    }
+    .spread-table td {
+      border: 1px solid #d0d5dd; padding: 0; text-align: center; min-width: 80px; height: 32px;
+    }
+    .spread-table td[contenteditable] {
+      outline: none; padding: .25rem .4rem; cursor: cell;
+    }
+    .spread-table td[contenteditable]:focus {
+      background: #eef3ff; box-shadow: inset 0 0 0 2px var(--accent);
+    }
+    .spread-table td.row-label {
+      font-weight: 600; font-size: .82rem; background: #f2f4f8; color: #333; padding: .25rem .5rem;
+      user-select: none;
+    }
+    .spread-table .selected { background: #d4e2ff; }
 
     /* ── Module panes ────────────────────────────────────────── */
     .module-pane { display: none; }
@@ -428,20 +442,12 @@
                 <option value="0.80">0.80</option>
               </select>
             </div>
-            <label class="mb-2">Response Spectrum Data</label>
-            <table class="editable-table mb-3">
+            <label class="mb-2">Response Spectrum Data <small class="text-muted">(paste from Excel)</small></label>
+            <table class="spread-table mb-3" id="sc2-table">
               <thead><tr><th>Direction</th><th>X (kN)</th><th>Y (kN)</th></tr></thead>
               <tbody>
-                <tr>
-                  <td class="row-label">MAJOR</td>
-                  <td><input type="number" id="sc2-major-x" value="106.27" step="0.01" /></td>
-                  <td><input type="number" id="sc2-major-y" value="4499.40" step="0.01" /></td>
-                </tr>
-                <tr>
-                  <td class="row-label">ORTHO</td>
-                  <td><input type="number" id="sc2-ortho-x" value="4299.50" step="0.01" /></td>
-                  <td><input type="number" id="sc2-ortho-y" value="85.74" step="0.01" /></td>
-                </tr>
+                <tr><td class="row-label">MAJOR</td><td contenteditable="true">106.27</td><td contenteditable="true">4499.40</td></tr>
+                <tr><td class="row-label">ORTHO</td><td contenteditable="true">4299.50</td><td contenteditable="true">85.74</td></tr>
               </tbody>
             </table>
             <button class="btn btn-calc btn-primary text-white w-100" onclick="calcScaling()">Calculate Scale Factors</button>
@@ -531,24 +537,12 @@
         <div class="card">
           <div class="card-header">Input Data</div>
           <div class="card-body">
-            <table class="editable-table mb-3" id="ss-table">
+            <table class="spread-table mb-3" id="ss-table">
               <thead><tr><th>Height (m)</th><th>Shear X (kN)</th><th>Shear Y (kN)</th></tr></thead>
               <tbody>
-                <tr>
-                  <td><input type="number" value="6.45" step="0.01" /></td>
-                  <td><input type="number" value="0" step="0.01" /></td>
-                  <td><input type="number" value="0" step="0.01" /></td>
-                </tr>
-                <tr>
-                  <td><input type="number" value="3.35" step="0.01" /></td>
-                  <td><input type="number" value="178.62" step="0.01" /></td>
-                  <td><input type="number" value="173.59" step="0.01" /></td>
-                </tr>
-                <tr>
-                  <td><input type="number" value="0" step="0.01" /></td>
-                  <td><input type="number" value="362.17" step="0.01" /></td>
-                  <td><input type="number" value="356.73" step="0.01" /></td>
-                </tr>
+                <tr><td contenteditable="true">6.45</td><td contenteditable="true">0</td><td contenteditable="true">0</td></tr>
+                <tr><td contenteditable="true">3.35</td><td contenteditable="true">178.62</td><td contenteditable="true">173.59</td></tr>
+                <tr><td contenteditable="true">0</td><td contenteditable="true">362.17</td><td contenteditable="true">356.73</td></tr>
               </tbody>
             </table>
             <div class="d-flex gap-2 mb-3">
@@ -579,24 +573,12 @@
         <div class="card">
           <div class="card-header">Input Data</div>
           <div class="card-body">
-            <table class="editable-table mb-3" id="otm-table">
+            <table class="spread-table mb-3" id="otm-table">
               <thead><tr><th>Height (m)</th><th>Moment X (kN-m)</th><th>Moment Y (kN-m)</th></tr></thead>
               <tbody>
-                <tr>
-                  <td><input type="number" value="6.45" step="0.01" /></td>
-                  <td><input type="number" value="0" step="0.01" /></td>
-                  <td><input type="number" value="0" step="0.01" /></td>
-                </tr>
-                <tr>
-                  <td><input type="number" value="3.35" step="0.01" /></td>
-                  <td><input type="number" value="551.04" step="0.01" /></td>
-                  <td><input type="number" value="535.85" step="0.01" /></td>
-                </tr>
-                <tr>
-                  <td><input type="number" value="0" step="0.01" /></td>
-                  <td><input type="number" value="1749.66" step="0.01" /></td>
-                  <td><input type="number" value="1715.53" step="0.01" /></td>
-                </tr>
+                <tr><td contenteditable="true">6.45</td><td contenteditable="true">0</td><td contenteditable="true">0</td></tr>
+                <tr><td contenteditable="true">3.35</td><td contenteditable="true">551.04</td><td contenteditable="true">535.85</td></tr>
+                <tr><td contenteditable="true">0</td><td contenteditable="true">1749.66</td><td contenteditable="true">1715.53</td></tr>
               </tbody>
             </table>
             <div class="d-flex gap-2 mb-3">
@@ -958,13 +940,19 @@ async function calcPGA() {
 
 async function calcScaling() {
   clearError("sc2-error");
+  const rows = document.querySelectorAll("#sc2-table tbody tr");
+  const dynamic_data = [];
+  rows.forEach(row => {
+    const cells = row.querySelectorAll("td");
+    const label = cells[0].textContent.trim();
+    const x = parseFloat(cells[1].textContent.trim());
+    const y = parseFloat(cells[2].textContent.trim());
+    if (label && !isNaN(x) && !isNaN(y)) dynamic_data.push({ label, x, y });
+  });
   const body = {
     static_shear: parseFloat(document.getElementById("sc2-vstatic").value),
     scale_factor: parseFloat(document.getElementById("sc2-factor").value),
-    dynamic_data: [
-      { label: "MAJOR", x: parseFloat(document.getElementById("sc2-major-x").value), y: parseFloat(document.getElementById("sc2-major-y").value) },
-      { label: "ORTHO", x: parseFloat(document.getElementById("sc2-ortho-x").value), y: parseFloat(document.getElementById("sc2-ortho-y").value) },
-    ],
+    dynamic_data,
   };
   const r = await postJSON("/api/scaling", body);
   const el = document.getElementById("sc2-results");
@@ -1112,13 +1100,18 @@ function downloadBsdsData(level) {
 let ssChart = null;
 let otmChart = null;
 
+// ── Spreadsheet table helpers ──────────────────────────────────────────────
+
 function addDiagramRow(tableId) {
   const tbody = document.querySelector(`#${tableId} tbody`);
+  const numCols = tbody.rows[0] ? tbody.rows[0].cells.length : 3;
   const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td><input type="number" value="0" step="0.01" /></td>
-    <td><input type="number" value="0" step="0.01" /></td>
-    <td><input type="number" value="0" step="0.01" /></td>`;
+  for (let i = 0; i < numCols; i++) {
+    const td = document.createElement("td");
+    td.contentEditable = "true";
+    td.textContent = "0";
+    tr.appendChild(td);
+  }
   tbody.appendChild(tr);
 }
 
@@ -1127,44 +1120,134 @@ function removeDiagramRow(tableId) {
   if (tbody.rows.length > 1) tbody.removeChild(tbody.lastElementChild);
 }
 
-function readDiagramTable(tableId) {
+function readSpreadTable(tableId) {
   const rows = document.querySelectorAll(`#${tableId} tbody tr`);
   const data = [];
   rows.forEach(row => {
-    const inputs = row.querySelectorAll("input");
-    const h = parseFloat(inputs[0].value);
-    const x = parseFloat(inputs[1].value);
-    const y = parseFloat(inputs[2].value);
-    if (!isNaN(h) && !isNaN(x) && !isNaN(y)) data.push({ h, x, y });
+    const cells = row.querySelectorAll("td[contenteditable]");
+    if (cells.length >= 3) {
+      const h = parseFloat(cells[0].textContent.trim());
+      const x = parseFloat(cells[1].textContent.trim());
+      const y = parseFloat(cells[2].textContent.trim());
+      if (!isNaN(h) && !isNaN(x) && !isNaN(y)) data.push({ h, x, y });
+    }
   });
   return data;
 }
 
+// ── Excel paste handler for all spread-tables ──────────────────────────────
+document.addEventListener("paste", function(e) {
+  const target = e.target.closest("td[contenteditable]");
+  if (!target) return;
+  const table = target.closest("table.spread-table");
+  if (!table) return;
+
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData("text");
+  const pastedRows = text.trim().split(/\r?\n/).map(r => r.split("\t"));
+  if (pastedRows.length <= 1 && pastedRows[0].length <= 1) {
+    // Single cell paste
+    target.textContent = pastedRows[0][0].trim();
+    return;
+  }
+
+  // Multi-cell paste: find starting cell position
+  const tbody = table.querySelector("tbody");
+  let startRow = -1, startCol = -1;
+  for (let r = 0; r < tbody.rows.length; r++) {
+    const editCells = Array.from(tbody.rows[r].querySelectorAll("td[contenteditable]"));
+    const ci = editCells.indexOf(target);
+    if (ci !== -1) { startRow = r; startCol = ci; break; }
+  }
+  if (startRow === -1) return;
+
+  // Expand table if needed and fill values
+  const editableCols = tbody.rows[0].querySelectorAll("td[contenteditable]").length;
+  for (let pr = 0; pr < pastedRows.length; pr++) {
+    const rowIdx = startRow + pr;
+    // Add rows if needed
+    while (rowIdx >= tbody.rows.length) {
+      const tr = document.createElement("tr");
+      for (let c = 0; c < editableCols; c++) {
+        const td = document.createElement("td");
+        td.contentEditable = "true";
+        td.textContent = "0";
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+    const editCells = Array.from(tbody.rows[rowIdx].querySelectorAll("td[contenteditable]"));
+    for (let pc = 0; pc < pastedRows[pr].length; pc++) {
+      const colIdx = startCol + pc;
+      if (colIdx < editCells.length) {
+        editCells[colIdx].textContent = pastedRows[pr][pc].trim();
+      }
+    }
+  }
+});
+
+// ── Diagram plot function (horizontal step chart) ──────────────────────────
+
 function plotStepDiagram(canvasId, data, xLabel, title, chartRef) {
   if (chartRef) chartRef.destroy();
+
+  // Sort by height ascending for proper step rendering
+  data.sort((a, b) => a.h - b.h);
+
+  // Build step data: for each point, draw horizontal then vertical line
+  function buildStepData(values) {
+    const pts = [];
+    for (let i = 0; i < data.length; i++) {
+      pts.push({ x: values[i], y: data[i].h });
+      if (i < data.length - 1) {
+        pts.push({ x: values[i], y: data[i + 1].h });
+      }
+    }
+    return pts;
+  }
+
+  const xValues = data.map(d => d.x);
+  const yValues = data.map(d => d.y);
+
   const traceX = {
-    label: xLabel.replace("(kN)", "X").replace("(kN-m)", "X"),
-    data: data.map(d => ({ x: d.x, y: d.h })),
-    borderColor: "#1f77b4", borderWidth: 2.5, pointRadius: 4,
-    pointBackgroundColor: "#1f77b4", stepped: "before", fill: false,
+    label: xLabel.includes("kN-m") ? "Moment X" : "Shear X",
+    data: buildStepData(xValues),
+    borderColor: "#1f77b4", borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0,
+    showLine: true,
   };
   const traceY = {
-    label: xLabel.replace("(kN)", "Y").replace("(kN-m)", "Y"),
-    data: data.map(d => ({ x: d.y, y: d.h })),
-    borderColor: "#2ca02c", borderWidth: 2.5, pointRadius: 4,
-    pointBackgroundColor: "#2ca02c", stepped: "before", fill: false,
+    label: xLabel.includes("kN-m") ? "Moment Y" : "Shear Y",
+    data: buildStepData(yValues),
+    borderColor: "#2ca02c", borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0,
+    showLine: true,
   };
+  // Add markers at actual data points
+  const markersX = {
+    label: "_markX", data: data.map(d => ({ x: d.x, y: d.h })),
+    borderColor: "transparent", backgroundColor: "#1f77b4", pointRadius: 5, showLine: false,
+  };
+  const markersY = {
+    label: "_markY", data: data.map(d => ({ x: d.y, y: d.h })),
+    borderColor: "transparent", backgroundColor: "#2ca02c", pointRadius: 5, showLine: false,
+  };
+
+  const maxVal = Math.max(...xValues, ...yValues) * 1.1 || 1;
+  const maxH = Math.max(...data.map(d => d.h)) * 1.1 || 1;
+
   return new Chart(document.getElementById(canvasId), {
-    type: "line",
-    data: { datasets: [traceX, traceY] },
+    type: "scatter",
+    data: { datasets: [traceX, traceY, markersX, markersY] },
     options: {
-      responsive: true, animation: false, indexAxis: "y",
+      responsive: true, animation: false,
       scales: {
-        x: { title: { display: true, text: xLabel }, min: 0 },
-        y: { title: { display: true, text: "Building Height (m)" }, reverse: false },
+        x: { type: "linear", min: 0, max: maxVal, title: { display: true, text: xLabel } },
+        y: { type: "linear", min: 0, max: maxH, title: { display: true, text: "Building Height (m)" } },
       },
       plugins: {
-        legend: { position: "top" },
+        legend: {
+          position: "top",
+          labels: { filter: item => !item.text.startsWith("_") },
+        },
         title: { display: true, text: title, font: { size: 15, weight: "bold" } },
       },
     },
@@ -1172,13 +1255,13 @@ function plotStepDiagram(canvasId, data, xLabel, title, chartRef) {
 }
 
 function plotStoryShear() {
-  const data = readDiagramTable("ss-table");
+  const data = readSpreadTable("ss-table");
   if (data.length < 2) { alert("Enter at least 2 rows."); return; }
   ssChart = plotStepDiagram("ss-chart", data, "Storey Shear (kN)", "Seismic Story Shear Diagram", ssChart);
 }
 
 function plotOTM() {
-  const data = readDiagramTable("otm-table");
+  const data = readSpreadTable("otm-table");
   if (data.length < 2) { alert("Enter at least 2 rows."); return; }
   otmChart = plotStepDiagram("otm-chart", data, "Overturning Moment (kN-m)", "Seismic Overturning Moment Diagram", otmChart);
 }
