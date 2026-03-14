@@ -9,8 +9,11 @@ sys.path.insert(0, ".")
 
 from apecseismicpy.nscp2015.site_coefficients import site_coefficients
 from apecseismicpy.nscp2015.response_spectrum import ResponseSpectrum
-from apecseismicpy.nscp2015.period import calculateStructuralPeriod
+from apecseismicpy.nscp2015.period import calculateStructuralPeriod, calculatePeriodWithLimit
 from apecseismicpy.nscp2015.baseshear import calculate_base_shear
+from apecseismicpy.nscp2015.pga import calculate_pga
+from apecseismicpy.nscp2015.redundancy import calculate_redundancy
+from apecseismicpy.nscp2015.scaling import calculate_scaling
 from apecseismicpy.bsds import SeismicSiteFactor, SeismicDesignResponse
 
 app = FastAPI(title="APEC SeismicPy")
@@ -57,6 +60,31 @@ class BsdsInput(BaseModel):
     site_class: str        # I, II, III
     damping_ratio: float = 0.02
     max_period: float = 8.0
+
+
+class PgaInput(BaseModel):
+    magnitude: float
+    distance: float
+    soil_type: str = "medium_soil"  # rock, hard_soil, medium_soil, soft_soil
+
+
+class RedundancyInput(BaseModel):
+    v_struc: float
+    v_element: float
+    ab: float
+    factor: float = 1.25  # 1.25 for SMRF, 1.50 for Others
+
+
+class ScalingInput(BaseModel):
+    static_shear: float
+    scale_factor: float = 1.0
+    dynamic_data: list  # [{"label": "MAJOR", "x": 106.27, "y": 4499.40}, ...]
+
+
+class PeriodLimitInput(BaseModel):
+    structure_type: str
+    hn: float
+    zone: int = 4
 
 
 # ── Routes ───────────────────────────────────────────────────────────────────
@@ -108,6 +136,42 @@ async def api_period(data: PeriodInput):
     try:
         period = calculateStructuralPeriod(data.structure_type, data.hn)
         return {"success": True, "data": {"period": round(period, 4)}}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/period-limit")
+async def api_period_limit(data: PeriodLimitInput):
+    try:
+        result = calculatePeriodWithLimit(data.structure_type, data.hn, data.zone)
+        return {"success": True, "data": result}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/pga")
+async def api_pga(data: PgaInput):
+    try:
+        result = calculate_pga(data.magnitude, data.distance, data.soil_type)
+        return {"success": True, "data": result}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/redundancy")
+async def api_redundancy(data: RedundancyInput):
+    try:
+        result = calculate_redundancy(data.v_struc, data.v_element, data.ab, data.factor)
+        return {"success": True, "data": result}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/scaling")
+async def api_scaling(data: ScalingInput):
+    try:
+        result = calculate_scaling(data.static_shear, data.scale_factor, data.dynamic_data)
+        return {"success": True, "data": result}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
