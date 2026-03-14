@@ -3,20 +3,69 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>APEC Seismic Tool</title>
+  <title>APEC SeismicPy</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
   <style>
     :root {
       --accent: #1a56db;
       --accent-light: #e8f0fe;
+      --sidebar-bg: #0f2d6b;
+      --sidebar-w: 240px;
     }
-    body { background: #f4f6fb; font-family: 'Segoe UI', sans-serif; }
-    .navbar { background: #0f2d6b; }
-    .navbar-brand { color: #fff !important; font-weight: 700; font-size: 1.2rem; letter-spacing: .5px; }
-    .nav-tabs .nav-link { font-weight: 500; color: #555; }
-    .nav-tabs .nav-link.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+    body { background: #f4f6fb; font-family: 'Segoe UI', sans-serif; margin: 0; }
+
+    /* ── Sidebar ─────────────────────────────────────────────── */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-w); background: var(--sidebar-bg);
+      overflow-y: auto; z-index: 1040; transition: transform .25s;
+      display: flex; flex-direction: column;
+    }
+    .sidebar-brand {
+      padding: 1.1rem 1.2rem; color: #fff; font-weight: 700; font-size: 1.15rem;
+      border-bottom: 1px solid rgba(255,255,255,.1); letter-spacing: .3px;
+    }
+    .sidebar-brand small { display: block; font-size: .7rem; font-weight: 400; opacity: .55; margin-top: 2px; }
+    .sidebar-group-title {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .6rem 1.2rem; color: rgba(255,255,255,.45);
+      font-size: .72rem; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600;
+      cursor: pointer; user-select: none; margin-top: .5rem;
+    }
+    .sidebar-group-title:hover { color: rgba(255,255,255,.7); }
+    .sidebar-group-title .bi { transition: transform .2s; font-size: .7rem; }
+    .sidebar-group-title.collapsed .bi { transform: rotate(-90deg); }
+    .sidebar-items { overflow: hidden; transition: max-height .25s ease; max-height: 500px; }
+    .sidebar-items.collapsed { max-height: 0; }
+    .sidebar-link {
+      display: block; padding: .45rem 1.2rem .45rem 2rem;
+      color: rgba(255,255,255,.7); text-decoration: none; font-size: .88rem;
+      border-left: 3px solid transparent; transition: all .15s;
+    }
+    .sidebar-link:hover { background: rgba(255,255,255,.06); color: #fff; }
+    .sidebar-link.active { background: rgba(255,255,255,.1); color: #fff; border-left-color: #5b9aff; font-weight: 600; }
+
+    /* ── Main content ────────────────────────────────────────── */
+    .main-content { margin-left: var(--sidebar-w); padding: 1.5rem 2rem 3rem; min-height: 100vh; }
+
+    /* ── Hamburger (mobile) ──────────────────────────────────── */
+    .sidebar-toggle {
+      display: none; position: fixed; top: .7rem; left: .7rem; z-index: 1050;
+      background: var(--sidebar-bg); color: #fff; border: none; border-radius: 8px;
+      padding: .35rem .55rem; font-size: 1.3rem; cursor: pointer;
+    }
+
+    @media (max-width: 991.98px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-left: 0; padding: 1rem; padding-top: 3.5rem; }
+      .sidebar-toggle { display: block; }
+    }
+
+    /* ── Cards & result cards ────────────────────────────────── */
     .card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
     .card-header { background: var(--accent); color: #fff; border-radius: 12px 12px 0 0 !important; font-weight: 600; }
     .result-card { background: var(--accent-light); border-radius: 10px; padding: 1rem 1.25rem; }
@@ -27,300 +76,560 @@
     .btn-calc:hover { background: #1347b0; }
     label { font-weight: 500; font-size: .9rem; }
     .form-control, .form-select { font-size: .9rem; }
-    #errorBox { display:none; }
     .tag-zone { display:inline-block; background:#fff3cd; color:#856404; border-radius:6px; padding:2px 8px; font-size:.8rem; font-weight:600; }
+
+    /* ── Spreadsheet Table ────────────────────────────────────── */
+    .spread-table { width: 100%; border-collapse: collapse; border: 1px solid #bcc3ce; font-size: .88rem; }
+    .spread-table th {
+      background: #dfe6f0; font-size: .75rem; text-transform: uppercase; letter-spacing: .5px;
+      padding: .35rem .5rem; border: 1px solid #bcc3ce; text-align: center; font-weight: 600; color: #444;
+    }
+    .spread-table td {
+      border: 1px solid #d0d5dd; padding: 0; text-align: center; min-width: 80px; height: 32px;
+    }
+    .spread-table td[contenteditable] {
+      outline: none; padding: .25rem .4rem; cursor: cell;
+    }
+    .spread-table td[contenteditable]:focus {
+      background: #eef3ff; box-shadow: inset 0 0 0 2px var(--accent);
+    }
+    .spread-table td.row-label {
+      font-weight: 600; font-size: .82rem; background: #f2f4f8; color: #333; padding: .25rem .5rem;
+      user-select: none;
+    }
+    .spread-table .selected { background: #d4e2ff; }
+
+    /* ── Module panes ────────────────────────────────────────── */
+    .module-pane { display: none; }
+    .module-pane.active { display: block; }
+    .module-title { font-size: 1.3rem; font-weight: 700; color: #0f2d6b; margin-bottom: 1.2rem; }
   </style>
 </head>
 <body>
 
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg mb-0">
-  <div class="container">
-    <span class="navbar-brand">&#127758; APEC Seismic Tool</span>
-    <span class="text-white-50 small ms-auto">Computational Toolkit</span>
+<!-- Mobile toggle -->
+<button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+  <i class="bi bi-list"></i>
+</button>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     SIDEBAR
+════════════════════════════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    &#127758; APEC SeismicPy
+    <small>seismic.apeconsultancy.net</small>
+  </div>
+
+  <!-- NSCP 2015 -->
+  <div class="sidebar-group-title" onclick="toggleGroup(this)">
+    NSCP 2015 <i class="bi bi-chevron-down"></i>
+  </div>
+  <div class="sidebar-items">
+    <a class="sidebar-link active" data-target="tab-site" onclick="switchModule(this)">Site Coefficients</a>
+    <a class="sidebar-link" data-target="tab-spectrum" onclick="switchModule(this)">Response Spectrum</a>
+    <a class="sidebar-link" data-target="tab-shear" onclick="switchModule(this)">Base Shear</a>
+    <a class="sidebar-link" data-target="tab-period" onclick="switchModule(this)">Structural Period</a>
+    <a class="sidebar-link" data-target="tab-redundancy" onclick="switchModule(this)">Redundancy</a>
+    <a class="sidebar-link" data-target="tab-pga" onclick="switchModule(this)">PGA</a>
+    <a class="sidebar-link" data-target="tab-scaling" onclick="switchModule(this)">Scaling Base Shear</a>
+  </div>
+
+  <!-- DPWH BSDS -->
+  <div class="sidebar-group-title" onclick="toggleGroup(this)">
+    DPWH BSDS <i class="bi bi-chevron-down"></i>
+  </div>
+  <div class="sidebar-items">
+    <a class="sidebar-link" data-target="tab-bsds" onclick="switchModule(this)">Design Spectrum</a>
+  </div>
+
+  <!-- Diagrams -->
+  <div class="sidebar-group-title" onclick="toggleGroup(this)">
+    Diagrams <i class="bi bi-chevron-down"></i>
+  </div>
+  <div class="sidebar-items">
+    <a class="sidebar-link" data-target="tab-storyshear" onclick="switchModule(this)">Story Shear</a>
+    <a class="sidebar-link" data-target="tab-otm" onclick="switchModule(this)">Overturning Moment</a>
   </div>
 </nav>
 
-<!-- Tabs -->
-<div class="container mt-4 pb-5">
-  <ul class="nav nav-tabs mb-4" id="mainTabs">
-    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-site">Site Coefficients</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-spectrum">Response Spectrum</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-shear">Base Shear</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-bsds">BSDS</button></li>
-  </ul>
+<!-- ════════════════════════════════════════════════════════════════════
+     MAIN CONTENT
+════════════════════════════════════════════════════════════════════ -->
+<div class="main-content">
 
-  <div class="tab-content">
-
-    <!-- ═══════════════════════════════════════════════════════════════════
-         TAB 1 — Site Coefficients
-    ════════════════════════════════════════════════════════════════════ -->
-    <div class="tab-pane fade show active" id="tab-site">
-      <div class="row g-4">
-        <div class="col-md-5">
-          <div class="card">
-            <div class="card-header">NSCP 2015 — Site Coefficients</div>
-            <div class="card-body">
-              <div class="mb-3">
-                <label>Distance to Seismic Source (km)</label>
-                <input type="number" class="form-control" id="sc-distance" value="5" min="0" step="0.5" />
-              </div>
-              <div class="mb-3">
-                <label>Seismic Source Type</label>
-                <select class="form-select" id="sc-source">
-                  <option value="A">Type A</option>
-                  <option value="B" selected>Type B</option>
-                  <option value="C">Type C</option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label>Soil Profile Type</label>
-                <select class="form-select" id="sc-soil">
-                  <option value="sa">SA — Hard Rock</option>
-                  <option value="sb">SB — Rock</option>
-                  <option value="sc">SC — Very Dense Soil</option>
-                  <option value="sd" selected>SD — Stiff Soil</option>
-                  <option value="se">SE — Soft Soil</option>
-                </select>
-              </div>
-              <div class="mb-4">
-                <label>Seismic Zone</label>
-                <select class="form-select" id="sc-zone">
-                  <option value="2">Zone 2</option>
-                  <option value="4" selected>Zone 4</option>
-                </select>
-              </div>
-              <button class="btn btn-calc btn-primary text-white w-100" onclick="calcSiteCoef()">Calculate</button>
-              <div id="sc-error" class="alert alert-danger mt-3 d-none"></div>
+  <!-- ═══════════ MODULE 1: Site Coefficients ═══════════ -->
+  <div class="module-pane active" id="tab-site">
+    <div class="module-title">NSCP 2015 — Site Coefficients</div>
+    <div class="row g-4">
+      <div class="col-md-5">
+        <div class="card">
+          <div class="card-header">Input Parameters</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label>Distance to Seismic Source (km)</label>
+              <input type="number" class="form-control" id="sc-distance" value="5" min="0" step="0.5" />
             </div>
+            <div class="mb-3">
+              <label>Seismic Source Type</label>
+              <select class="form-select" id="sc-source">
+                <option value="A">Type A — High slip rate, M &#8805; 7.0</option>
+                <option value="B" selected>Type B — Moderate slip rate</option>
+                <option value="C">Type C — Low slip rate, M &lt; 6.5</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label>Soil Profile Type</label>
+              <select class="form-select" id="sc-soil">
+                <option value="sa">SA — Hard Rock</option>
+                <option value="sb">SB — Rock</option>
+                <option value="sc">SC — Very Dense Soil</option>
+                <option value="sd" selected>SD — Stiff Soil</option>
+                <option value="se">SE — Soft Soil</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label>Seismic Zone</label>
+              <select class="form-select" id="sc-zone">
+                <option value="2">Zone 2</option>
+                <option value="4" selected>Zone 4</option>
+              </select>
+            </div>
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="calcSiteCoef()">Calculate</button>
+            <div id="sc-error" class="alert alert-danger mt-3 d-none"></div>
           </div>
         </div>
-        <div class="col-md-7">
-          <div class="card h-100">
-            <div class="card-header">Results</div>
-            <div class="card-body d-flex flex-column justify-content-center" id="sc-results">
-              <p class="text-muted text-center mt-4">Enter parameters and click <strong>Calculate</strong>.</p>
-            </div>
+      </div>
+      <div class="col-md-7">
+        <div class="card h-100">
+          <div class="card-header">Results</div>
+          <div class="card-body d-flex flex-column justify-content-center" id="sc-results">
+            <p class="text-muted text-center mt-4">Enter parameters and click <strong>Calculate</strong>.</p>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════════
-         TAB 2 — Response Spectrum
-    ════════════════════════════════════════════════════════════════════ -->
-    <div class="tab-pane fade" id="tab-spectrum">
-      <!-- Input row -->
-      <div class="row g-4 mb-4">
-        <div class="col-md-4">
-          <div class="card h-100">
-            <div class="card-header">NSCP 2015 — Response Spectrum</div>
-            <div class="card-body">
-              <div class="mb-3">
-                <label>C<sub>a</sub></label>
-                <input type="number" class="form-control" id="rs-ca" value="0.42" step="0.01" />
-              </div>
-              <div class="mb-3">
-                <label>C<sub>v</sub></label>
-                <input type="number" class="form-control" id="rs-cv" value="0.72" step="0.01" />
-              </div>
-              <div class="mb-3">
-                <label>Structural Period T (s) — for TH Reference</label>
-                <input type="number" class="form-control" id="rs-T" value="0.62" step="0.01" />
-              </div>
-              <div class="mb-4">
-                <label>Max T/T<sub>s</sub> (x-axis)</label>
-                <input type="number" class="form-control" id="rs-xmax" value="5" step="0.5" />
-              </div>
-              <button class="btn btn-calc btn-primary text-white w-100" onclick="calcSpectrum()">Generate Spectrum</button>
-              <div id="rs-error" class="alert alert-danger mt-3 d-none"></div>
-              <div id="rs-params" class="mt-3"></div>
-            </div>
-          </div>
-        </div>
-        <!-- Chart 1 -->
-        <div class="col-md-8">
-          <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <span>&#9312; Design Response Spectrum</span>
-              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart1','spectrum_NSCP2015.png')">&#8615; PNG</button>
-            </div>
-            <div class="card-body"><canvas id="chart1" height="260"></canvas></div>
+  <!-- ═══════════ MODULE 2: Response Spectrum ═══════════ -->
+  <div class="module-pane" id="tab-spectrum">
+    <div class="module-title">NSCP 2015 — Response Spectrum</div>
+    <div class="row g-4 mb-4">
+      <div class="col-md-4">
+        <div class="card h-100">
+          <div class="card-header">Input Parameters</div>
+          <div class="card-body">
+            <div class="mb-3"><label>C<sub>a</sub></label><input type="number" class="form-control" id="rs-ca" value="0.42" step="0.01" /></div>
+            <div class="mb-3"><label>C<sub>v</sub></label><input type="number" class="form-control" id="rs-cv" value="0.72" step="0.01" /></div>
+            <div class="mb-3"><label>Structural Period T (s) — for TH Reference</label><input type="number" class="form-control" id="rs-T" value="0.62" step="0.01" /></div>
+            <div class="mb-4"><label>Max T/T<sub>s</sub> (x-axis)</label><input type="number" class="form-control" id="rs-xmax" value="5" step="0.5" /></div>
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="calcSpectrum()">Generate Spectrum</button>
+            <div id="rs-error" class="alert alert-danger mt-3 d-none"></div>
+            <div id="rs-params" class="mt-3"></div>
           </div>
         </div>
       </div>
-      <!-- Charts 2 & 3 -->
-      <div class="row g-4">
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <span>&#9313; Time-History Reference (1.4&#215; + period markers)</span>
-              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart2','spectrum_TH_reference.png')">&#8615; PNG</button>
+      <div class="col-md-8">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>&#9312; Design Response Spectrum</span>
+            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart1','spectrum_NSCP2015.png')">&#8615; PNG</button>
+          </div>
+          <div class="card-body"><canvas id="chart1" height="260"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>&#9313; Time-History Reference (1.4&#215; + period markers)</span>
+            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart2','spectrum_TH_reference.png')">&#8615; PNG</button>
+          </div>
+          <div class="card-body"><canvas id="chart2" height="260"></canvas></div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>&#9314; ADRS — Acceleration-Displacement Response Spectrum</span>
+            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart3','spectrum_ADRS.png')">&#8615; PNG</button>
+          </div>
+          <div class="card-body"><canvas id="chart3" height="260"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MODULE 3: Base Shear ═══════════ -->
+  <div class="module-pane" id="tab-shear">
+    <div class="module-title">NSCP 2015 — Base Shear (Eq. 208-8 to 208-11)</div>
+    <div class="row g-4">
+      <div class="col-md-5">
+        <div class="card">
+          <div class="card-header">Input Parameters</div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-6 mb-2"><label>Seismic Zone</label><select class="form-select" id="bs-zone"><option value="2">Zone 2</option><option value="4" selected>Zone 4</option></select></div>
+              <div class="col-6 mb-2"><label>N<sub>v</sub></label><input type="number" class="form-control" id="bs-nv" value="1.29" step="0.01" /></div>
+              <div class="col-6 mb-2"><label>C<sub>a</sub></label><input type="number" class="form-control" id="bs-ca" value="0.42" step="0.01" /></div>
+              <div class="col-6 mb-2"><label>C<sub>v</sub></label><input type="number" class="form-control" id="bs-cv" value="0.72" step="0.01" /></div>
+              <div class="col-6 mb-2"><label>Importance Factor I</label><input type="number" class="form-control" id="bs-I" value="1.0" step="0.05" /></div>
+              <div class="col-6 mb-2"><label>R — Response Modification</label><input type="number" class="form-control" id="bs-R" value="8.0" step="0.5" /></div>
+              <div class="col-6 mb-2"><label>Period T (s)</label><input type="number" class="form-control" id="bs-T" value="0.62" step="0.01" /></div>
+              <div class="col-6 mb-3"><label>Seismic Weight W (kN)</label><input type="number" class="form-control" id="bs-W" value="21000" step="100" /></div>
             </div>
-            <div class="card-body"><canvas id="chart2" height="260"></canvas></div>
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="calcBaseShear()">Calculate</button>
+            <div id="bs-error" class="alert alert-danger mt-3 d-none"></div>
           </div>
         </div>
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <span>&#9314; ADRS — Acceleration-Displacement Response Spectrum</span>
-              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart3','spectrum_ADRS.png')">&#8615; PNG</button>
-            </div>
-            <div class="card-body"><canvas id="chart3" height="260"></canvas></div>
+      </div>
+      <div class="col-md-7">
+        <div class="card h-100">
+          <div class="card-header">Results</div>
+          <div class="card-body" id="bs-results">
+            <p class="text-muted text-center mt-4">Enter parameters and click <strong>Calculate</strong>.</p>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════════
-         TAB 3 — Base Shear
-    ════════════════════════════════════════════════════════════════════ -->
-    <div class="tab-pane fade" id="tab-shear">
-      <div class="row g-4">
-        <div class="col-md-5">
-          <div class="card">
-            <div class="card-header">NSCP 2015 — Base Shear (Eq. 208-8 to 208-11)</div>
-            <div class="card-body">
-              <div class="row g-2">
-                <div class="col-6 mb-2">
-                  <label>Seismic Zone</label>
-                  <select class="form-select" id="bs-zone">
-                    <option value="2">Zone 2</option>
-                    <option value="4" selected>Zone 4</option>
-                  </select>
-                </div>
-                <div class="col-6 mb-2">
-                  <label>N<sub>v</sub></label>
-                  <input type="number" class="form-control" id="bs-nv" value="1.29" step="0.01" />
-                </div>
-                <div class="col-6 mb-2">
-                  <label>C<sub>a</sub></label>
-                  <input type="number" class="form-control" id="bs-ca" value="0.42" step="0.01" />
-                </div>
-                <div class="col-6 mb-2">
-                  <label>C<sub>v</sub></label>
-                  <input type="number" class="form-control" id="bs-cv" value="0.72" step="0.01" />
-                </div>
-                <div class="col-6 mb-2">
-                  <label>Importance Factor I</label>
-                  <input type="number" class="form-control" id="bs-I" value="1.0" step="0.05" />
-                </div>
-                <div class="col-6 mb-2">
-                  <label>R — Response Modification</label>
-                  <input type="number" class="form-control" id="bs-R" value="8.0" step="0.5" />
-                </div>
-                <div class="col-6 mb-2">
-                  <label>Period T (s)</label>
-                  <input type="number" class="form-control" id="bs-T" value="0.62" step="0.01" />
-                </div>
-                <div class="col-6 mb-3">
-                  <label>Seismic Weight W (kN)</label>
-                  <input type="number" class="form-control" id="bs-W" value="21000" step="100" />
-                </div>
-              </div>
-              <button class="btn btn-calc btn-primary text-white w-100" onclick="calcBaseShear()">Calculate</button>
-              <div id="bs-error" class="alert alert-danger mt-3 d-none"></div>
+  <!-- ═══════════ MODULE 4: Structural Period ═══════════ -->
+  <div class="module-pane" id="tab-period">
+    <div class="module-title">NSCP 2015 — Structural Period Calculator</div>
+    <div class="row g-4">
+      <div class="col-md-5">
+        <div class="card">
+          <div class="card-header">Input Parameters</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label>Building Height, h<sub>n</sub> (m)</label>
+              <input type="number" class="form-control" id="pd-hn" value="10" step="0.5" min="0" />
             </div>
+            <div class="mb-3">
+              <label>Numerical Coefficient, C<sub>t</sub></label>
+              <select class="form-select" id="pd-type">
+                <option value="steel">Steel (0.0853)</option>
+                <option value="concrete" selected>Concrete (0.0731)</option>
+                <option value="other">Other (0.0488)</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label>Seismic Zone</label>
+              <select class="form-select" id="pd-zone">
+                <option value="2">Zone 2</option>
+                <option value="4" selected>Zone 4</option>
+              </select>
+            </div>
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="calcPeriod()">Calculate Period</button>
+            <div id="pd-error" class="alert alert-danger mt-3 d-none"></div>
           </div>
         </div>
-        <div class="col-md-7">
-          <div class="card h-100">
-            <div class="card-header">Results</div>
-            <div class="card-body" id="bs-results">
-              <p class="text-muted text-center mt-4">Enter parameters and click <strong>Calculate</strong>.</p>
-            </div>
+      </div>
+      <div class="col-md-7">
+        <div class="card h-100">
+          <div class="card-header">Results</div>
+          <div class="card-body d-flex flex-column justify-content-center" id="pd-results">
+            <p class="text-muted text-center mt-4">Enter parameters and click <strong>Calculate Period</strong>.</p>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-
-    <!-- ═══════════════════════════════════════════════════════════════════
-         TAB 4 — BSDS Design Response Spectrum
-    ════════════════════════════════════════════════════════════════════ -->
-    <div class="tab-pane fade" id="tab-bsds">
-      <div class="row g-4">
-        <!-- Left: Inputs -->
-        <div class="col-md-3">
-          <div class="card">
-            <div class="card-header">DPWH-BSDS — Design Response Spectrum</div>
-            <div class="card-body">
-              <div class="mb-3">
-                <label>PGA</label>
-                <input type="number" class="form-control" id="bsds-pga" value="0.5" step="0.01" min="0" />
-              </div>
-              <div class="mb-3">
-                <label>S<sub>s</sub> (Short Period)</label>
-                <input type="number" class="form-control" id="bsds-ss" value="1.1" step="0.01" min="0" />
-              </div>
-              <div class="mb-3">
-                <label>S<sub>1</sub> (Long Period)</label>
-                <input type="number" class="form-control" id="bsds-s1" value="0.4" step="0.01" min="0" />
-              </div>
-              <div class="mb-3">
-                <label>Site Class (Ground Type)</label>
-                <select class="form-select" id="bsds-site">
-                  <option value="I">Ground Type I</option>
-                  <option value="II" selected>Ground Type II</option>
-                  <option value="III">Ground Type III</option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label>Damping Ratio (Level 1)</label>
-                <input type="number" class="form-control" id="bsds-damping" value="0.02" step="0.01" min="0" />
-              </div>
-              <div class="mb-3">
-                <label>Max Period (s)</label>
-                <input type="number" class="form-control" id="bsds-maxT" value="8" step="0.5" min="1" />
-              </div>
-              <div class="form-check mb-4">
-                <input class="form-check-input" type="checkbox" id="bsds-show23" checked />
-                <label class="form-check-label" for="bsds-show23">Include 2/3 Minimum</label>
-              </div>
-              <button class="btn btn-calc btn-primary text-white w-100" onclick="calcBsds()">Generate Spectrum</button>
-              <div id="bsds-error" class="alert alert-danger mt-3 d-none"></div>
+  <!-- ═══════════ MODULE 5: Redundancy ═══════════ -->
+  <div class="module-pane" id="tab-redundancy">
+    <div class="module-title">NSCP 2015 — Structural Redundancy (&rho;)</div>
+    <div class="row g-4">
+      <div class="col-md-5">
+        <div class="card">
+          <div class="card-header">Input Parameters</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label>Structure Story Shear, V<sub>struc</sub> (kN)</label>
+              <input type="number" class="form-control" id="rd-vstruc" value="512.57" step="0.01" />
             </div>
+            <div class="mb-3">
+              <label>Element Story Shear, V<sub>element</sub> (kN)</label>
+              <input type="number" class="form-control" id="rd-velement" value="5.23" step="0.01" />
+            </div>
+            <div class="mb-3">
+              <label>Floor Area, A<sub>B</sub> (m&sup2;)</label>
+              <input type="number" class="form-control" id="rd-ab" value="737.3" step="0.1" />
+            </div>
+            <div class="mb-4">
+              <label>Structural System</label>
+              <select class="form-select" id="rd-factor">
+                <option value="1.25" selected>SMRF (1.25)</option>
+                <option value="1.50">Others (1.50)</option>
+              </select>
+            </div>
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="calcRedundancy()">Calculate</button>
+            <div id="rd-error" class="alert alert-danger mt-3 d-none"></div>
           </div>
         </div>
-        <!-- Middle: Charts stacked -->
-        <div class="col-md-6">
-          <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <span>BSDS Level II — Design Response Spectrum</span>
+      </div>
+      <div class="col-md-7">
+        <div class="card h-100">
+          <div class="card-header">Results</div>
+          <div class="card-body d-flex flex-column justify-content-center" id="rd-results">
+            <p class="text-muted text-center mt-4">Enter parameters and click <strong>Calculate</strong>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MODULE 6: PGA ═══════════ -->
+  <div class="module-pane" id="tab-pga">
+    <div class="module-title">PGA — Fukushima-Tanaka Attenuation Model</div>
+    <div class="row g-4">
+      <div class="col-md-5">
+        <div class="card">
+          <div class="card-header">Input Parameters</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label>Earthquake Magnitude (M)</label>
+              <input type="number" class="form-control" id="pga-mag" value="7.7" step="0.1" min="0" />
+            </div>
+            <div class="mb-3">
+              <label>Distance to Source, R (km)</label>
+              <input type="number" class="form-control" id="pga-dist" value="2.1" step="0.1" min="0" />
+            </div>
+            <div class="mb-4">
+              <label>Soil Type</label>
+              <select class="form-select" id="pga-soil">
+                <option value="rock">Rock</option>
+                <option value="hard_soil">Hard Soil</option>
+                <option value="medium_soil" selected>Medium Soil</option>
+                <option value="soft_soil">Soft Soil</option>
+              </select>
+            </div>
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="calcPGA()">Calculate PGA</button>
+            <div id="pga-error" class="alert alert-danger mt-3 d-none"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-7">
+        <div class="card h-100">
+          <div class="card-header">Results</div>
+          <div class="card-body d-flex flex-column justify-content-center" id="pga-results">
+            <p class="text-muted text-center mt-4">Enter parameters and click <strong>Calculate PGA</strong>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MODULE 7: Scaling Base Shear ═══════════ -->
+  <div class="module-pane" id="tab-scaling">
+    <div class="module-title">Scaling Base Shear Calculator</div>
+    <div class="row g-4">
+      <div class="col-md-5">
+        <div class="card">
+          <div class="card-header">Input Parameters</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label>Static Base Shear, V<sub>static</sub> (kN)</label>
+              <input type="number" class="form-control" id="sc2-vstatic" value="5846.88" step="0.01" />
+            </div>
+            <div class="mb-3">
+              <label>Scale Factor</label>
+              <select class="form-select" id="sc2-factor">
+                <option value="1.0" selected>1.00</option>
+                <option value="0.90">0.90</option>
+                <option value="0.80">0.80</option>
+              </select>
+            </div>
+            <label class="mb-2">Response Spectrum Data <small class="text-muted">(paste from Excel)</small></label>
+            <table class="spread-table mb-3" id="sc2-table">
+              <thead><tr><th>Direction</th><th>X (kN)</th><th>Y (kN)</th></tr></thead>
+              <tbody>
+                <tr><td class="row-label">MAJOR</td><td contenteditable="true">106.27</td><td contenteditable="true">4499.40</td></tr>
+                <tr><td class="row-label">ORTHO</td><td contenteditable="true">4299.50</td><td contenteditable="true">85.74</td></tr>
+              </tbody>
+            </table>
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="calcScaling()">Calculate Scale Factors</button>
+            <div id="sc2-error" class="alert alert-danger mt-3 d-none"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-7">
+        <div class="card h-100">
+          <div class="card-header">Results</div>
+          <div class="card-body d-flex flex-column justify-content-center" id="sc2-results">
+            <p class="text-muted text-center mt-4">Enter parameters and click <strong>Calculate Scale Factors</strong>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MODULE 8: BSDS Design Spectrum ═══════════ -->
+  <div class="module-pane" id="tab-bsds">
+    <div class="module-title">DPWH-BSDS — Design Response Spectrum</div>
+    <div class="row g-4">
+      <div class="col-md-3">
+        <div class="card">
+          <div class="card-header">Input Parameters</div>
+          <div class="card-body">
+            <div class="mb-3"><label>PGA</label><input type="number" class="form-control" id="bsds-pga" value="0.5" step="0.01" min="0" /></div>
+            <div class="mb-3"><label>S<sub>s</sub> (Short Period)</label><input type="number" class="form-control" id="bsds-ss" value="1.1" step="0.01" min="0" /></div>
+            <div class="mb-3"><label>S<sub>1</sub> (Long Period)</label><input type="number" class="form-control" id="bsds-s1" value="0.4" step="0.01" min="0" /></div>
+            <div class="mb-3">
+              <label>Site Class (Ground Type)</label>
+              <select class="form-select" id="bsds-site">
+                <option value="I">Ground Type I</option>
+                <option value="II" selected>Ground Type II</option>
+                <option value="III">Ground Type III</option>
+              </select>
+            </div>
+            <div class="mb-3"><label>Damping Ratio (Level 1)</label><input type="number" class="form-control" id="bsds-damping" value="0.02" step="0.01" min="0" /></div>
+            <div class="mb-3"><label>Max Period (s)</label><input type="number" class="form-control" id="bsds-maxT" value="8" step="0.5" min="1" /></div>
+            <div class="form-check mb-4">
+              <input class="form-check-input" type="checkbox" id="bsds-show23" checked />
+              <label class="form-check-label" for="bsds-show23">Include 2/3 Minimum</label>
+            </div>
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="calcBsds()">Generate Spectrum</button>
+            <div id="bsds-error" class="alert alert-danger mt-3 d-none"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>BSDS Level II — Design Response Spectrum</span>
+            <span>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('bsds-chart-l2','BSDS_Level2.png')">&#8615; PNG</button>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadBsdsData('l2')">&#8615; Data</button>
-            </div>
-            <div class="card-body"><canvas id="bsds-chart-l2" height="280"></canvas></div>
+            </span>
           </div>
-          <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <span>BSDS Level I — EGM Response Spectrum</span>
+          <div class="card-body"><canvas id="bsds-chart-l2" height="280"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>BSDS Level I — EGM Response Spectrum</span>
+            <span>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('bsds-chart-l1','BSDS_Level1.png')">&#8615; PNG</button>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadBsdsData('l1')">&#8615; Data</button>
-            </div>
-            <div class="card-body"><canvas id="bsds-chart-l1" height="280"></canvas></div>
+            </span>
           </div>
+          <div class="card-body"><canvas id="bsds-chart-l1" height="280"></canvas></div>
         </div>
-        <!-- Right: Parameters -->
-        <div class="col-md-3">
-          <div class="card h-100">
-            <div class="card-header">Results</div>
-            <div class="card-body" id="bsds-params">
-              <p class="text-muted text-center mt-4">Enter parameters and click <strong>Generate Spectrum</strong>.</p>
-            </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card h-100">
+          <div class="card-header">Results</div>
+          <div class="card-body" id="bsds-params">
+            <p class="text-muted text-center mt-4">Enter parameters and click <strong>Generate Spectrum</strong>.</p>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
+  <!-- ═══════════ MODULE 9: Story Shear Diagram ═══════════ -->
+  <div class="module-pane" id="tab-storyshear">
+    <div class="module-title">Seismic Story Shear Diagram</div>
+    <div class="row g-4">
+      <div class="col-md-5">
+        <div class="card">
+          <div class="card-header">Input Data</div>
+          <div class="card-body">
+            <table class="spread-table mb-3" id="ss-table">
+              <thead><tr><th>Height (m)</th><th>Shear X (kN)</th><th>Shear Y (kN)</th></tr></thead>
+              <tbody>
+                <tr><td contenteditable="true">6.45</td><td contenteditable="true">0</td><td contenteditable="true">0</td></tr>
+                <tr><td contenteditable="true">3.35</td><td contenteditable="true">178.62</td><td contenteditable="true">173.59</td></tr>
+                <tr><td contenteditable="true">0</td><td contenteditable="true">362.17</td><td contenteditable="true">356.73</td></tr>
+              </tbody>
+            </table>
+            <div class="d-flex gap-2 mb-3">
+              <button class="btn btn-sm btn-outline-secondary" onclick="addDiagramRow('ss-table')"><i class="bi bi-plus"></i> Add Row</button>
+              <button class="btn btn-sm btn-outline-danger" onclick="removeDiagramRow('ss-table')"><i class="bi bi-dash"></i> Remove Row</button>
+            </div>
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="plotStoryShear()">Generate Plot</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-7">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Story Shear Diagram</span>
+            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('ss-chart','StoryShear.png')">&#8615; PNG</button>
+          </div>
+          <div class="card-body"><canvas id="ss-chart" height="360"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  </div><!-- /main tab-content -->
-</div><!-- /container -->
+  <!-- ═══════════ MODULE 10: Overturning Moment Diagram ═══════════ -->
+  <div class="module-pane" id="tab-otm">
+    <div class="module-title">Seismic Overturning Moment Diagram</div>
+    <div class="row g-4">
+      <div class="col-md-5">
+        <div class="card">
+          <div class="card-header">Input Data</div>
+          <div class="card-body">
+            <table class="spread-table mb-3" id="otm-table">
+              <thead><tr><th>Height (m)</th><th>Moment X (kN-m)</th><th>Moment Y (kN-m)</th></tr></thead>
+              <tbody>
+                <tr><td contenteditable="true">6.45</td><td contenteditable="true">0</td><td contenteditable="true">0</td></tr>
+                <tr><td contenteditable="true">3.35</td><td contenteditable="true">551.04</td><td contenteditable="true">535.85</td></tr>
+                <tr><td contenteditable="true">0</td><td contenteditable="true">1749.66</td><td contenteditable="true">1715.53</td></tr>
+              </tbody>
+            </table>
+            <div class="d-flex gap-2 mb-3">
+              <button class="btn btn-sm btn-outline-secondary" onclick="addDiagramRow('otm-table')"><i class="bi bi-plus"></i> Add Row</button>
+              <button class="btn btn-sm btn-outline-danger" onclick="removeDiagramRow('otm-table')"><i class="bi bi-dash"></i> Remove Row</button>
+            </div>
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="plotOTM()">Generate Plot</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-7">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Overturning Moment Diagram</span>
+            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('otm-chart','OverturningMoment.png')">&#8615; PNG</button>
+          </div>
+          <div class="card-body"><canvas id="otm-chart" height="360"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main-content -->
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+//  SIDEBAR NAVIGATION
+// ══════════════════════════════════════════════════════════════════════════════
+
+function toggleGroup(el) {
+  el.classList.toggle("collapsed");
+  el.nextElementSibling.classList.toggle("collapsed");
+}
+
+function switchModule(el) {
+  // Deactivate all links
+  document.querySelectorAll(".sidebar-link").forEach(l => l.classList.remove("active"));
+  el.classList.add("active");
+  // Show target pane
+  const target = el.getAttribute("data-target");
+  document.querySelectorAll(".module-pane").forEach(p => p.classList.remove("active"));
+  document.getElementById(target).classList.add("active");
+  // Close sidebar on mobile
+  document.querySelector(".sidebar").classList.remove("open");
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════════════════════════════
 
 function resultCard(label, value, unit = "") {
   return `
@@ -354,7 +663,9 @@ function fmt(v, d = 3) {
   return typeof v === "number" ? v.toFixed(d) : v;
 }
 
-// ── Site Coefficients ────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 1: Site Coefficients
+// ══════════════════════════════════════════════════════════════════════════════
 
 async function calcSiteCoef() {
   clearError("sc-error");
@@ -383,7 +694,9 @@ async function calcSiteCoef() {
     </div>`;
 }
 
-// ── Response Spectrum ────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 2: Response Spectrum
+// ══════════════════════════════════════════════════════════════════════════════
 
 const specCharts = { c1: null, c2: null, c3: null };
 
@@ -430,7 +743,6 @@ async function calcSpectrum() {
 
   destroyAll();
 
-  // ── Chart 1: Standard Design Response Spectrum ──────────────────────────
   specCharts.c1 = new Chart(document.getElementById("chart1"), {
     type: "line",
     data: {
@@ -441,7 +753,7 @@ async function calcSpectrum() {
       }],
     },
     options: {
-      ...baseChartOpts("Period  T / Tₛ", "Sa  (g)", xMax),
+      ...baseChartOpts("Period  T / T\u209b", "Sa  (g)", xMax),
       plugins: {
         ...baseChartOpts("", "", xMax).plugins,
         annotation: {
@@ -454,7 +766,6 @@ async function calcSpectrum() {
     },
   });
 
-  // ── Chart 2: TH Reference (1.4× + 0.2T / 1.5T) ─────────────────────────
   specCharts.c2 = new Chart(document.getElementById("chart2"), {
     type: "line",
     data: {
@@ -465,14 +776,14 @@ async function calcSpectrum() {
           borderColor: "#0f2d6b", borderWidth: 2, pointRadius: 0, tension: 0, fill: false,
         },
         {
-          label: "1.4 × NSCP 2015",
+          label: "1.4 \u00d7 NSCP 2015",
           data: d.x.map((xi, i) => ({ x: xi, y: d.Sa_14[i] })),
           borderColor: "#e63946", borderWidth: 2, pointRadius: 0, tension: 0, fill: false,
         },
       ],
     },
     options: {
-      ...baseChartOpts("Period  T / Tₛ", "Sa  (g)", xMax),
+      ...baseChartOpts("Period  T / T\u209b", "Sa  (g)", xMax),
       plugins: {
         ...baseChartOpts("", "", xMax).plugins,
         annotation: {
@@ -487,7 +798,6 @@ async function calcSpectrum() {
     },
   });
 
-  // ── Chart 3: ADRS ────────────────────────────────────────────────────────
   specCharts.c3 = new Chart(document.getElementById("chart3"), {
     type: "line",
     data: {
@@ -508,7 +818,9 @@ async function calcSpectrum() {
     </div>`;
 }
 
-// ── Base Shear ───────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 3: Base Shear
+// ══════════════════════════════════════════════════════════════════════════════
 
 async function calcBaseShear() {
   clearError("bs-error");
@@ -530,19 +842,138 @@ async function calcBaseShear() {
 
   let html = `
     <div class="row g-3">
-      ${resultCard("V — Total Base Shear (Eq. 208-8)", fmt(d.total), "kN")}
-      ${resultCard("V<sub>max</sub> — Maximum Base Shear (Eq. 208-9)", fmt(d.max), "kN")}
-      ${resultCard("V<sub>min</sub> — Minimum Base Shear (Eq. 208-10)", fmt(d.min), "kN")}`;
+      ${resultCard("V \u2014 Total Base Shear (Eq. 208-8)", fmt(d.total), "kN")}
+      ${resultCard("V<sub>max</sub> \u2014 Maximum Base Shear (Eq. 208-9)", fmt(d.max), "kN")}
+      ${resultCard("V<sub>min</sub> \u2014 Minimum Base Shear (Eq. 208-10)", fmt(d.min), "kN")}`;
 
   if (zone === 4 && d.max_z4 !== undefined) {
-    html += resultCard("V<sub>max,Z4</sub> — Zone 4 Max (Eq. 208-11)", fmt(d.max_z4), "kN");
-    html += resultCard("&#9654; Governing Base Shear", fmt(d.governing), "kN");
+    html += resultCard("V<sub>max,Z4</sub> \u2014 Zone 4 Max (Eq. 208-11)", fmt(d.max_z4), "kN");
+    html += resultCard("\u25b6 Governing Base Shear", fmt(d.governing), "kN");
   }
   html += `</div>`;
   el.innerHTML = html;
 }
 
-// ── BSDS Spectrum ─────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 4: Structural Period
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function calcPeriod() {
+  clearError("pd-error");
+  const body = {
+    structure_type: document.getElementById("pd-type").value,
+    hn: parseFloat(document.getElementById("pd-hn").value),
+    zone: parseInt(document.getElementById("pd-zone").value),
+  };
+  const r = await postJSON("/api/period-limit", body);
+  const el = document.getElementById("pd-results");
+  if (!r.success) { showError("pd-error", r.error); return; }
+  const d = r.data;
+  el.innerHTML = `
+    <div class="row g-3">
+      ${resultCard("Computed Period, T", fmt(d.period, 4), "s")}
+      ${resultCard("Upper Limit (Zone " + body.zone + ")", fmt(d.limit, 4), "s")}
+    </div>
+    <div class="mt-3 text-muted small">
+      T = C<sub>t</sub> &times; h<sub>n</sub><sup>3/4</sup> &nbsp;|&nbsp;
+      Limit = T &times; ${body.zone === 2 ? "1.40" : "1.70"} (Zone ${body.zone})
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 5: Redundancy
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function calcRedundancy() {
+  clearError("rd-error");
+  const body = {
+    v_struc:   parseFloat(document.getElementById("rd-vstruc").value),
+    v_element: parseFloat(document.getElementById("rd-velement").value),
+    ab:        parseFloat(document.getElementById("rd-ab").value),
+    factor:    parseFloat(document.getElementById("rd-factor").value),
+  };
+  const r = await postJSON("/api/redundancy", body);
+  const el = document.getElementById("rd-results");
+  if (!r.success) { showError("rd-error", r.error); return; }
+  const d = r.data;
+  el.innerHTML = `
+    <div class="row g-3">
+      ${resultCard("r<sub>max</sub> = V<sub>element</sub> / V<sub>struc</sub>", fmt(d.r_max, 6))}
+      ${resultCard("\u03c1 (raw)", fmt(d.rho_raw, 4))}
+      ${resultCard("MAX(\u03c1, 1.0)", fmt(d.rho_clamped, 4))}
+      ${resultCard("\u25b6 \u03c1 = MIN(" + fmt(d.rho_clamped, 4) + ", " + fmt(d.factor, 2) + ")", fmt(d.rho, 4))}
+    </div>
+    <div class="mt-3 text-muted small">
+      \u03c1 = 2 &minus; 6.1 / (r<sub>max</sub> &times; &radic;A<sub>B</sub>)
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 6: PGA
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function calcPGA() {
+  clearError("pga-error");
+  const body = {
+    magnitude: parseFloat(document.getElementById("pga-mag").value),
+    distance:  parseFloat(document.getElementById("pga-dist").value),
+    soil_type: document.getElementById("pga-soil").value,
+  };
+  const r = await postJSON("/api/pga", body);
+  const el = document.getElementById("pga-results");
+  if (!r.success) { showError("pga-error", r.error); return; }
+  const d = r.data;
+  el.innerHTML = `
+    <div class="row g-3">
+      ${resultCard("PGA (corrected)", fmt(d.pga_cm_s2, 2), "cm/s\u00b2")}
+      ${resultCard("PGA (in g)", fmt(d.pga_g, 4), "g")}
+      ${resultCard("Correction Factor", fmt(d.correction_factor, 2))}
+    </div>
+    <div class="mt-3 text-muted small">
+      Fukushima-Tanaka: log<sub>10</sub>(A) = 0.41M &minus; log[R + 0.032(10<sup>0.41M</sup>)] &minus; 0.0034R + 1.30
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 7: Scaling Base Shear
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function calcScaling() {
+  clearError("sc2-error");
+  const rows = document.querySelectorAll("#sc2-table tbody tr");
+  const dynamic_data = [];
+  rows.forEach(row => {
+    const cells = row.querySelectorAll("td");
+    const label = cells[0].textContent.trim();
+    const x = parseFloat(cells[1].textContent.trim());
+    const y = parseFloat(cells[2].textContent.trim());
+    if (label && !isNaN(x) && !isNaN(y)) dynamic_data.push({ label, x, y });
+  });
+  const body = {
+    static_shear: parseFloat(document.getElementById("sc2-vstatic").value),
+    scale_factor: parseFloat(document.getElementById("sc2-factor").value),
+    dynamic_data,
+  };
+  const r = await postJSON("/api/scaling", body);
+  const el = document.getElementById("sc2-results");
+  if (!r.success) { showError("sc2-error", r.error); return; }
+  const d = r.data;
+  let html = '<div class="row g-3">';
+  d.results.forEach(item => {
+    html += resultCard(item.label + " \u2014 SRSS", fmt(item.srt, 2), "kN");
+    html += resultCard(item.label + " \u2014 Scale Factor", fmt(item.ratio, 4));
+  });
+  html += '</div>';
+  html += `<div class="mt-3 text-muted small">
+    SRT = &radic;(X&sup2; + Y&sup2;) &nbsp;|&nbsp;
+    Ratio = Scale &times; V<sub>static</sub> / SRT
+  </div>`;
+  el.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 8: BSDS Spectrum
+// ══════════════════════════════════════════════════════════════════════════════
 
 const bsdsCharts = { l2: null, l1: null };
 let bsdsLastData = null;
@@ -570,7 +1001,6 @@ async function calcBsds() {
 
   destroyBsds();
 
-  // ── Level II Chart ──
   const l2Datasets = [{
     label: "BSDS Level 2",
     data: d.level2.periods.map((t, i) => ({ x: t, y: d.level2.accelerations[i] })),
@@ -592,15 +1022,14 @@ async function calcBsds() {
         ...baseChartOpts("", "", maxT).plugins,
         annotation: {
           annotations: {
-            t0: makeAnnotation(d.T_0, "#999", [4, 4], "T₀"),
-            ts: makeAnnotation(d.T_s, "#999", [4, 4], "Tₛ"),
+            t0: makeAnnotation(d.T_0, "#999", [4, 4], "T\u2080"),
+            ts: makeAnnotation(d.T_s, "#999", [4, 4], "T\u209b"),
           },
         },
       },
     },
   });
 
-  // ── Level I Chart ──
   const l1Datasets = [{
     label: "BSDS Level 1",
     data: d.level1.periods.map((t, i) => ({ x: t, y: d.level1.accelerations[i] })),
@@ -619,7 +1048,6 @@ async function calcBsds() {
     options: baseChartOpts("Period, T (s)", "Spectral Acceleration, Sa (g)", maxT),
   });
 
-  // ── Parameters ──
   document.getElementById("bsds-params").innerHTML = `
     ${resultCard("F<sub>pga</sub>", fmt(d.fpga, 4))}
     ${resultCard("F<sub>a</sub>", fmt(d.fa, 4))}
@@ -634,8 +1062,6 @@ async function calcBsds() {
       c<sub>D</sub> = <strong>${d.level1.cD}</strong>
     </div>`;
 }
-
-// ── Download BSDS data as text ───────────────────────────────────────────────
 
 function downloadBsdsData(level) {
   if (!bsdsLastData) { alert("Generate the spectrum first."); return; }
@@ -667,11 +1093,186 @@ function downloadBsdsData(level) {
   URL.revokeObjectURL(url);
 }
 
-// ── Download chart as high-resolution PNG ────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULES 9 & 10: Story Shear + OTM Diagrams (client-side)
+// ══════════════════════════════════════════════════════════════════════════════
+
+let ssChart = null;
+let otmChart = null;
+
+// ── Spreadsheet table helpers ──────────────────────────────────────────────
+
+function addDiagramRow(tableId) {
+  const tbody = document.querySelector(`#${tableId} tbody`);
+  const numCols = tbody.rows[0] ? tbody.rows[0].cells.length : 3;
+  const tr = document.createElement("tr");
+  for (let i = 0; i < numCols; i++) {
+    const td = document.createElement("td");
+    td.contentEditable = "true";
+    td.textContent = "0";
+    tr.appendChild(td);
+  }
+  tbody.appendChild(tr);
+}
+
+function removeDiagramRow(tableId) {
+  const tbody = document.querySelector(`#${tableId} tbody`);
+  if (tbody.rows.length > 1) tbody.removeChild(tbody.lastElementChild);
+}
+
+function readSpreadTable(tableId) {
+  const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+  const data = [];
+  rows.forEach(row => {
+    const cells = row.querySelectorAll("td[contenteditable]");
+    if (cells.length >= 3) {
+      const h = parseFloat(cells[0].textContent.trim());
+      const x = parseFloat(cells[1].textContent.trim());
+      const y = parseFloat(cells[2].textContent.trim());
+      if (!isNaN(h) && !isNaN(x) && !isNaN(y)) data.push({ h, x, y });
+    }
+  });
+  return data;
+}
+
+// ── Excel paste handler for all spread-tables ──────────────────────────────
+document.addEventListener("paste", function(e) {
+  const target = e.target.closest("td[contenteditable]");
+  if (!target) return;
+  const table = target.closest("table.spread-table");
+  if (!table) return;
+
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData("text");
+  const pastedRows = text.trim().split(/\r?\n/).map(r => r.split("\t"));
+  if (pastedRows.length <= 1 && pastedRows[0].length <= 1) {
+    // Single cell paste
+    target.textContent = pastedRows[0][0].trim();
+    return;
+  }
+
+  // Multi-cell paste: find starting cell position
+  const tbody = table.querySelector("tbody");
+  let startRow = -1, startCol = -1;
+  for (let r = 0; r < tbody.rows.length; r++) {
+    const editCells = Array.from(tbody.rows[r].querySelectorAll("td[contenteditable]"));
+    const ci = editCells.indexOf(target);
+    if (ci !== -1) { startRow = r; startCol = ci; break; }
+  }
+  if (startRow === -1) return;
+
+  // Expand table if needed and fill values
+  const editableCols = tbody.rows[0].querySelectorAll("td[contenteditable]").length;
+  for (let pr = 0; pr < pastedRows.length; pr++) {
+    const rowIdx = startRow + pr;
+    // Add rows if needed
+    while (rowIdx >= tbody.rows.length) {
+      const tr = document.createElement("tr");
+      for (let c = 0; c < editableCols; c++) {
+        const td = document.createElement("td");
+        td.contentEditable = "true";
+        td.textContent = "0";
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+    const editCells = Array.from(tbody.rows[rowIdx].querySelectorAll("td[contenteditable]"));
+    for (let pc = 0; pc < pastedRows[pr].length; pc++) {
+      const colIdx = startCol + pc;
+      if (colIdx < editCells.length) {
+        editCells[colIdx].textContent = pastedRows[pr][pc].trim();
+      }
+    }
+  }
+});
+
+// ── Diagram plot function (horizontal step chart) ──────────────────────────
+
+function plotStepDiagram(canvasId, data, xLabel, title, chartRef) {
+  if (chartRef) chartRef.destroy();
+
+  // Sort by height ascending for proper step rendering
+  data.sort((a, b) => a.h - b.h);
+
+  // Build step data: for each point, draw horizontal then vertical line
+  function buildStepData(values) {
+    const pts = [];
+    for (let i = 0; i < data.length; i++) {
+      pts.push({ x: values[i], y: data[i].h });
+      if (i < data.length - 1) {
+        pts.push({ x: values[i], y: data[i + 1].h });
+      }
+    }
+    return pts;
+  }
+
+  const xValues = data.map(d => d.x);
+  const yValues = data.map(d => d.y);
+
+  const traceX = {
+    label: xLabel.includes("kN-m") ? "Moment X" : "Shear X",
+    data: buildStepData(xValues),
+    borderColor: "#1f77b4", borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0,
+    showLine: true,
+  };
+  const traceY = {
+    label: xLabel.includes("kN-m") ? "Moment Y" : "Shear Y",
+    data: buildStepData(yValues),
+    borderColor: "#2ca02c", borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0,
+    showLine: true,
+  };
+  // Add markers at actual data points
+  const markersX = {
+    label: "_markX", data: data.map(d => ({ x: d.x, y: d.h })),
+    borderColor: "transparent", backgroundColor: "#1f77b4", pointRadius: 5, showLine: false,
+  };
+  const markersY = {
+    label: "_markY", data: data.map(d => ({ x: d.y, y: d.h })),
+    borderColor: "transparent", backgroundColor: "#2ca02c", pointRadius: 5, showLine: false,
+  };
+
+  const maxVal = Math.max(...xValues, ...yValues) * 1.1 || 1;
+  const maxH = Math.max(...data.map(d => d.h)) * 1.1 || 1;
+
+  return new Chart(document.getElementById(canvasId), {
+    type: "scatter",
+    data: { datasets: [traceX, traceY, markersX, markersY] },
+    options: {
+      responsive: true, animation: false,
+      scales: {
+        x: { type: "linear", min: 0, max: maxVal, title: { display: true, text: xLabel } },
+        y: { type: "linear", min: 0, max: maxH, title: { display: true, text: "Building Height (m)" } },
+      },
+      plugins: {
+        legend: {
+          position: "top",
+          labels: { filter: item => !item.text.startsWith("_") },
+        },
+        title: { display: true, text: title, font: { size: 15, weight: "bold" } },
+      },
+    },
+  });
+}
+
+function plotStoryShear() {
+  const data = readSpreadTable("ss-table");
+  if (data.length < 2) { alert("Enter at least 2 rows."); return; }
+  ssChart = plotStepDiagram("ss-chart", data, "Storey Shear (kN)", "Seismic Story Shear Diagram", ssChart);
+}
+
+function plotOTM() {
+  const data = readSpreadTable("otm-table");
+  if (data.length < 2) { alert("Enter at least 2 rows."); return; }
+  otmChart = plotStepDiagram("otm-chart", data, "Overturning Moment (kN-m)", "Seismic Overturning Moment Diagram", otmChart);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  Download chart as high-resolution PNG
+// ══════════════════════════════════════════════════════════════════════════════
 
 function downloadCanvas(canvasId, filename) {
   const canvas = document.getElementById(canvasId);
-  if (!canvas) { alert("Generate the spectrum first."); return; }
+  if (!canvas) { alert("Generate the chart first."); return; }
   const scale = 3;
   const hiRes = document.createElement("canvas");
   hiRes.width = canvas.width * scale;
