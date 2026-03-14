@@ -5,15 +5,17 @@
 [![License](https://img.shields.io/github/license/albertp16/apec-py)](https://github.com/albertp16/apec-py/blob/main/LICENSE)
 [![Issues](https://img.shields.io/github/issues/albertp16/apec-py)](https://github.com/albertp16/apec-py/issues)
 
-A Python library for seismic engineering calculations under the **National Structural Code of the Philippines (NSCP 2015)** and **ACI 350.3** hydrodynamic tank load provisions. Built by [APEC Engineering Consultancy](mailto:albert@apeconsultancy.net) to streamline code-compliant structural analysis workflows.
+A Python library for seismic engineering calculations under the **National Structural Code of the Philippines (NSCP 2015)** and the **DPWH Bridge Seismic Design Specifications (BSDS)**. Built by [APEC Engineering Consultancy](https://seismic.apeconsultancy.net) to streamline code-compliant structural analysis workflows.
+
+🌐 **Live Web App:** [seismic.apeconsultancy.net](https://seismic.apeconsultancy.net)
 
 ---
 
 ## Features
 
 - **NSCP 2015 Seismic Design** — site coefficients, design response spectrum, structural period, and lateral base shear (Equations 208-4 through 208-11)
-- **ACI 350.3 Hydrodynamic Loads** — impulsive and convective liquid weights, heights of centers of gravity (EBP and IBP), and dynamic periods for rectangular tanks
-- **Interactive Web Application** — browser-based UI with live charts, PNG export, and LaTeX calculation report generation
+- **DPWH BSDS Design Spectrum** — Level I and Level II design response spectra with site factor interpolation (Fa, Fv, FPGA), 2/3-rule minimum overlay, and data export
+- **Interactive Web Application** — browser-based UI with live charts, PNG export, and period/acceleration data download
 - **Modular Python API** — import individual functions or classes for integration into your own workflows
 
 ---
@@ -58,42 +60,33 @@ V = calculate_base_shear(zone=4, I=1.0, R=8.5, W=5000.0, Ca=0.44, Cv=0.64, T=0.4
 print(V)   # {'V': 294.1, 'units': 'kN', 'equation': '208-8'}
 ```
 
-### ACI 350.3 Tank Hydrodynamic Loads
+### DPWH BSDS Design Response Spectrum
 
 ```python
-from apecseismicpy import (
-    effective_liquid_weights,
-    calculate_heights_of_centers_of_gravity,
-    DynamicProperties,
-)
+from apecseismicpy.bsds import site_factors, generate_spectrum
 
-# Effective liquid weights
-weights = effective_liquid_weights(L=6.0, height=3.0, liquid_weight=500.0)
-print(weights)
-# {'impulsive': {'value': 302.4, 'units': 'kN'}, 'convective': {'value': 177.6, 'units': 'kN'}}
+# Site amplification factors
+factors = site_factors(pga=0.4, site_class="D")
+print(factors)
+# {'Fpga': 0.9, 'Fa': 0.96, 'Fv': 1.6, 'As': 0.45, 'Sds': 1.056, 'Sd1': 0.64, 'Ts': 0.606, 'T0': 0.121}
 
-# Heights of centers of gravity (EBP and IBP)
-heights = calculate_heights_of_centers_of_gravity(l=6.0, h_l=3.0)
-print(heights)
-# {'EPB': {'hi': 1.125, 'hc': 1.82}, 'IBP': {'hpi': 1.35, 'hpc': 2.01}}
+# Level II spectrum
+lv2 = generate_spectrum(Sds=1.056, Sd1=0.64, T_max=4.0, level="II")
+# Returns {'T': [...], 'Sa': [...]}
 
-# Dynamic periods
-dp = DynamicProperties(
-    length=6.0, hw=4.0, tw=0.3,
-    wi=302.4, wl=500.0, hl=3.0, hi=1.125,
-    ec=27000.0
-)
-print(dp.compute_ti())  # {'value': 0.12, 'units': 's'}
-print(dp.compute_tc())  # {'value': 3.45, 'units': 's'}
+# Level I spectrum (2/3 of Level II)
+lv1 = generate_spectrum(Sds=1.056, Sd1=0.64, T_max=4.0, level="I")
 ```
 
 ---
 
 ## Web Application
 
-The package includes a FastAPI web application for interactive calculations with chart visualizations and downloadable LaTeX reports.
+The package includes a FastAPI web application for interactive calculations with chart visualizations and downloadable data.
 
-### Running the App
+🌐 **Try it live:** [seismic.apeconsultancy.net](https://seismic.apeconsultancy.net)
+
+### Running Locally
 
 ```bash
 # Clone the repository
@@ -101,7 +94,7 @@ git clone https://github.com/albertp16/apec-py.git
 cd apec-py
 
 # Install dependencies
-pip install fastapi uvicorn jinja2 numpy matplotlib
+pip install fastapi uvicorn jinja2
 
 # Start the server
 uvicorn app:app --reload
@@ -116,16 +109,15 @@ Then open your browser at **http://127.0.0.1:8000**.
 | **Site Coefficients** | Compute Na, Nv, Ca, Cv for any seismic zone, source type, and soil profile |
 | **Response Spectrum** | Generate and plot the NSCP 2015 design spectrum with TH-reference and ADRS curves |
 | **Base Shear** | Calculate governing lateral seismic force per NSCP 2015 Section 208 |
-| **Tank Analysis** | ACI 350.3 hydrodynamic loads — impulsive/convective weights, heights, Ti, Tc |
-| **LaTeX Report** | Auto-generate a formatted `.tex` calculation report from all entered values |
-
-Each chart supports **PNG export** via the download button in the chart header.
+| **BSDS Spectrum** | DPWH BSDS Level II and Level I design response spectra with site factor table, 2/3-minimum overlay, PNG export, and period/acceleration data download |
 
 ---
 
 ## API Reference
 
-### `site_coefficients(distance, source_type, soil_profile)`
+### NSCP 2015
+
+#### `site_coefficients(distance, source_type, soil_profile)`
 
 Returns near-source factors and seismic coefficients per NSCP 2015 Table 208-4 through 208-7.
 
@@ -137,7 +129,7 @@ Returns near-source factors and seismic coefficients per NSCP 2015 Table 208-4 t
 
 ---
 
-### `ResponseSpectrum(Ca, Cv)`
+#### `ResponseSpectrum(Ca, Cv)`
 
 Class for generating NSCP 2015 design response spectra.
 
@@ -148,7 +140,7 @@ Class for generating NSCP 2015 design response spectra.
 
 ---
 
-### `calculateStructuralPeriod(method, **kwargs)`
+#### `calculateStructuralPeriod(method, **kwargs)`
 
 Computes the fundamental period of vibration.
 
@@ -159,7 +151,7 @@ Computes the fundamental period of vibration.
 
 ---
 
-### `calculate_base_shear(zone, I, R, W, Ca, Cv, T)`
+#### `calculate_base_shear(zone, I, R, W, Ca, Cv, T)`
 
 Returns the governing lateral base shear per NSCP 2015 Section 208.
 
@@ -174,29 +166,31 @@ Returns the governing lateral base shear per NSCP 2015 Section 208.
 
 ---
 
-### `effective_liquid_weights(L, height, liquid_weight, plot=False)`
+### DPWH BSDS
 
-Computes impulsive and convective liquid weights per ACI 350.3 Eq. 9.2.1a–b.
+#### `site_factors(pga, site_class)`
+
+Returns BSDS site amplification factors and design spectral parameters.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `pga` | `float` | Peak ground acceleration (g) |
+| `site_class` | `str` | Site class: `"A"` to `"E"` |
+
+Returns: `Fpga`, `Fa`, `Fv`, `As`, `Sds`, `Sd1`, `Ts`, `T0`
 
 ---
 
-### `calculate_heights_of_centers_of_gravity(l, h_l, plot=False)`
+#### `generate_spectrum(Sds, Sd1, T_max, level)`
 
-Returns hi, hc (EBP) and h'i, h'c (IBP) per ACI 350.3 Section 9.2.2–9.2.3.
+Generates a BSDS design response spectrum.
 
----
-
-### `DynamicProperties(length, hw, tw, wi, wl, hl, hi, ec, ...)`
-
-Class for computing wall-liquid system dynamic properties per ACI 350.3 R.9.2.4.
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `compute_mw()` | `dict` | Wall mass per unit length (kg/m) |
-| `compute_mi()` | `dict` | Impulsive liquid mass per unit length (kg/m) |
-| `compute_k()` | `dict` | Wall stiffness (kN/m) |
-| `compute_ti()` | `dict` | Impulsive period Ti (s) |
-| `compute_tc()` | `dict` | Convective (sloshing) period Tc (s) |
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `Sds` | `float` | Design spectral acceleration at short periods (g) |
+| `Sd1` | `float` | Design spectral acceleration at 1-second period (g) |
+| `T_max` | `float` | Maximum period for the spectrum (s) |
+| `level` | `str` | `"I"` (1/3 probability in 75 yrs) or `"II"` (10% in 50 yrs) |
 
 ---
 
@@ -214,11 +208,10 @@ apec-py/
 │   │   ├── response_spectrum.py    # Design spectrum generation
 │   │   ├── period.py               # Structural period methods
 │   │   └── baseshear.py            # Base shear equations
-│   └── aci350/
-│       └── hydrodynamic/
-│           ├── loads.py            # Liquid weights and CG heights
-│           ├── period.py           # Tank dynamic periods
-│           └── pressure.py         # Hydrodynamic pressure distributions
+│   └── bsds/
+│       ├── __init__.py             # BSDS public exports
+│       ├── site_factor.py          # Fa, Fv, Fpga interpolation tables
+│       └── spectrum.py             # Level I and Level II spectrum generation
 └── setup.py
 ```
 
@@ -247,4 +240,5 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 
 **Albert Pamonag** — APEC Engineering Consultancy
 Email: albert@apeconsultancy.net
+Web App: https://seismic.apeconsultancy.net
 Repository: https://github.com/albertp16/apec-py
