@@ -11,6 +11,7 @@ from apecseismicpy.nscp2015.site_coefficients import site_coefficients
 from apecseismicpy.nscp2015.response_spectrum import ResponseSpectrum
 from apecseismicpy.nscp2015.period import calculateStructuralPeriod
 from apecseismicpy.nscp2015.baseshear import calculate_base_shear
+from apecseismicpy.bsds import SeismicSiteFactor, SeismicDesignResponse
 
 app = FastAPI(title="APEC SeismicPy")
 templates = Jinja2Templates(directory="templates")
@@ -47,6 +48,15 @@ class BaseShearInput(BaseModel):
     response_modification: float
     period: float
     weight: float
+
+
+class BsdsInput(BaseModel):
+    pga: float
+    ss: float
+    s1: float
+    site_class: str        # I, II, III
+    damping_ratio: float = 0.02
+    max_period: float = 8.0
 
 
 # ── Routes ───────────────────────────────────────────────────────────────────
@@ -119,5 +129,49 @@ async def api_base_shear(data: BaseShearInput):
             result["max_z4"]    = round(bs.maxBaseShearZ4(), 3)
             result["governing"] = round(bs.governingShear(), 3)
         return {"success": True, "data": result}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/bsds-spectrum")
+async def api_bsds_spectrum(data: BsdsInput):
+    try:
+        sf = SeismicSiteFactor(data.site_class, data.pga, data.ss, data.s1)
+        fpga = sf.interpolate_site_factor()
+        fa = sf.get_site_factor_fa()
+        fv = sf.get_site_factor_fv()
+
+        sdr = SeismicDesignResponse(data.pga, fpga, data.ss, data.s1, fa, fv)
+
+        level2 = sdr.generate_level2_spectrum(max_period=data.max_period)
+        level1 = sdr.generate_level1_spectrum(
+            data.site_class,
+            damping_ratio=data.damping_ratio,
+            max_period=data.max_period,
+        )
+
+        return {
+            "success": True,
+            "data": {
+                "fpga": round(fpga, 4),
+                "fa": round(fa, 4),
+                "fv": round(fv, 4),
+                "A_s": round(level2["A_s"], 4),
+                "S_DS": round(level2["S_DS"], 4),
+                "S_D1": round(level2["S_D1"], 4),
+                "T_s": round(level2["T_s"], 4),
+                "T_0": round(level2["T_0"], 4),
+                "level2": {
+                    "periods": level2["periods"],
+                    "accelerations": level2["accelerations"],
+                },
+                "level1": {
+                    "periods": level1["periods"],
+                    "accelerations": level1["accelerations"],
+                    "cz": level1["cz"],
+                    "cD": level1["cD"],
+                },
+            },
+        }
     except Exception as e:
         return {"success": False, "error": str(e)}

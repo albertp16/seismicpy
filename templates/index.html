@@ -47,6 +47,7 @@
     <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-site">Site Coefficients</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-spectrum">Response Spectrum</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-shear">Base Shear</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-bsds">BSDS</button></li>
   </ul>
 
   <div class="tab-content">
@@ -227,6 +228,85 @@
             <div class="card-header">Results</div>
             <div class="card-body" id="bs-results">
               <p class="text-muted text-center mt-4">Enter parameters and click <strong>Calculate</strong>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TAB 4 — BSDS Design Response Spectrum
+    ════════════════════════════════════════════════════════════════════ -->
+    <div class="tab-pane fade" id="tab-bsds">
+      <div class="row g-4">
+        <!-- Left: Inputs -->
+        <div class="col-md-3">
+          <div class="card">
+            <div class="card-header">DPWH-BSDS — Design Response Spectrum</div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label>PGA</label>
+                <input type="number" class="form-control" id="bsds-pga" value="0.5" step="0.01" min="0" />
+              </div>
+              <div class="mb-3">
+                <label>S<sub>s</sub> (Short Period)</label>
+                <input type="number" class="form-control" id="bsds-ss" value="1.1" step="0.01" min="0" />
+              </div>
+              <div class="mb-3">
+                <label>S<sub>1</sub> (Long Period)</label>
+                <input type="number" class="form-control" id="bsds-s1" value="0.4" step="0.01" min="0" />
+              </div>
+              <div class="mb-3">
+                <label>Site Class (Ground Type)</label>
+                <select class="form-select" id="bsds-site">
+                  <option value="I">Ground Type I</option>
+                  <option value="II" selected>Ground Type II</option>
+                  <option value="III">Ground Type III</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label>Damping Ratio (Level 1)</label>
+                <input type="number" class="form-control" id="bsds-damping" value="0.02" step="0.01" min="0" />
+              </div>
+              <div class="mb-3">
+                <label>Max Period (s)</label>
+                <input type="number" class="form-control" id="bsds-maxT" value="8" step="0.5" min="1" />
+              </div>
+              <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" id="bsds-show23" checked />
+                <label class="form-check-label" for="bsds-show23">Include 2/3 Minimum</label>
+              </div>
+              <button class="btn btn-calc btn-primary text-white w-100" onclick="calcBsds()">Generate Spectrum</button>
+              <div id="bsds-error" class="alert alert-danger mt-3 d-none"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Middle: Charts stacked -->
+        <div class="col-md-6">
+          <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>BSDS Level II — Design Response Spectrum</span>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('bsds-chart-l2','BSDS_Level2.png')">&#8615; PNG</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadBsdsData('l2')">&#8615; Data</button>
+            </div>
+            <div class="card-body"><canvas id="bsds-chart-l2" height="280"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>BSDS Level I — EGM Response Spectrum</span>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('bsds-chart-l1','BSDS_Level1.png')">&#8615; PNG</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadBsdsData('l1')">&#8615; Data</button>
+            </div>
+            <div class="card-body"><canvas id="bsds-chart-l1" height="280"></canvas></div>
+          </div>
+        </div>
+        <!-- Right: Parameters -->
+        <div class="col-md-3">
+          <div class="card h-100">
+            <div class="card-header">Results</div>
+            <div class="card-body" id="bsds-params">
+              <p class="text-muted text-center mt-4">Enter parameters and click <strong>Generate Spectrum</strong>.</p>
             </div>
           </div>
         </div>
@@ -460,6 +540,131 @@ async function calcBaseShear() {
   }
   html += `</div>`;
   el.innerHTML = html;
+}
+
+// ── BSDS Spectrum ─────────────────────────────────────────────────────────────
+
+const bsdsCharts = { l2: null, l1: null };
+let bsdsLastData = null;
+
+function destroyBsds() {
+  Object.keys(bsdsCharts).forEach(k => { if (bsdsCharts[k]) { bsdsCharts[k].destroy(); bsdsCharts[k] = null; } });
+}
+
+async function calcBsds() {
+  clearError("bsds-error");
+  const body = {
+    pga:      parseFloat(document.getElementById("bsds-pga").value),
+    ss:       parseFloat(document.getElementById("bsds-ss").value),
+    s1:       parseFloat(document.getElementById("bsds-s1").value),
+    site_class: document.getElementById("bsds-site").value,
+    damping_ratio: parseFloat(document.getElementById("bsds-damping").value),
+    max_period:    parseFloat(document.getElementById("bsds-maxT").value),
+  };
+  const r = await postJSON("/api/bsds-spectrum", body);
+  if (!r.success) { showError("bsds-error", r.error); return; }
+  const d = r.data;
+  bsdsLastData = d;
+  const show23 = document.getElementById("bsds-show23").checked;
+  const maxT = body.max_period;
+
+  destroyBsds();
+
+  // ── Level II Chart ──
+  const l2Datasets = [{
+    label: "BSDS Level 2",
+    data: d.level2.periods.map((t, i) => ({ x: t, y: d.level2.accelerations[i] })),
+    borderColor: "#0f2d6b", borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
+  }];
+  if (show23) {
+    l2Datasets.push({
+      label: "BSDS Level 2 Minimum (2/3)",
+      data: d.level2.periods.map((t, i) => ({ x: t, y: d.level2.accelerations[i] * 2 / 3 })),
+      borderColor: "#e63946", borderWidth: 2, borderDash: [6, 3], pointRadius: 0, tension: 0, fill: false,
+    });
+  }
+  bsdsCharts.l2 = new Chart(document.getElementById("bsds-chart-l2"), {
+    type: "line",
+    data: { datasets: l2Datasets },
+    options: {
+      ...baseChartOpts("Period, T (s)", "Spectral Acceleration, Sa (g)", maxT),
+      plugins: {
+        ...baseChartOpts("", "", maxT).plugins,
+        annotation: {
+          annotations: {
+            t0: makeAnnotation(d.T_0, "#999", [4, 4], "T₀"),
+            ts: makeAnnotation(d.T_s, "#999", [4, 4], "Tₛ"),
+          },
+        },
+      },
+    },
+  });
+
+  // ── Level I Chart ──
+  const l1Datasets = [{
+    label: "BSDS Level 1",
+    data: d.level1.periods.map((t, i) => ({ x: t, y: d.level1.accelerations[i] })),
+    borderColor: "#d95f02", borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
+  }];
+  if (show23) {
+    l1Datasets.push({
+      label: "BSDS Level 1 Minimum (2/3)",
+      data: d.level1.periods.map((t, i) => ({ x: t, y: d.level1.accelerations[i] * 2 / 3 })),
+      borderColor: "#e63946", borderWidth: 2, borderDash: [6, 3], pointRadius: 0, tension: 0, fill: false,
+    });
+  }
+  bsdsCharts.l1 = new Chart(document.getElementById("bsds-chart-l1"), {
+    type: "line",
+    data: { datasets: l1Datasets },
+    options: baseChartOpts("Period, T (s)", "Spectral Acceleration, Sa (g)", maxT),
+  });
+
+  // ── Parameters ──
+  document.getElementById("bsds-params").innerHTML = `
+    ${resultCard("F<sub>pga</sub>", fmt(d.fpga, 4))}
+    ${resultCard("F<sub>a</sub>", fmt(d.fa, 4))}
+    ${resultCard("F<sub>v</sub>", fmt(d.fv, 4))}
+    ${resultCard("A<sub>s</sub>", fmt(d.A_s, 4), "g")}
+    ${resultCard("S<sub>DS</sub>", fmt(d.S_DS, 4), "g")}
+    ${resultCard("S<sub>D1</sub>", fmt(d.S_D1, 4), "g")}
+    ${resultCard("T<sub>s</sub>", fmt(d.T_s, 4), "s")}
+    ${resultCard("T<sub>0</sub>", fmt(d.T_0, 4), "s")}
+    <div class="mt-2 text-muted small">
+      Level 1: c<sub>z</sub> = <strong>${d.level1.cz}</strong> &nbsp;|&nbsp;
+      c<sub>D</sub> = <strong>${d.level1.cD}</strong>
+    </div>`;
+}
+
+// ── Download BSDS data as text ───────────────────────────────────────────────
+
+function downloadBsdsData(level) {
+  if (!bsdsLastData) { alert("Generate the spectrum first."); return; }
+  const src = level === "l2" ? bsdsLastData.level2 : bsdsLastData.level1;
+  const show23 = document.getElementById("bsds-show23").checked;
+  const label = level === "l2" ? "BSDS Level II" : "BSDS Level I";
+
+  let lines = [];
+  if (show23) {
+    lines.push("Period(s)\tAcceleration(g)\t2/3 Acceleration(g)");
+    for (let i = 0; i < src.periods.length; i++) {
+      lines.push(`${src.periods[i].toFixed(4)}\t${src.accelerations[i].toFixed(6)}\t${(src.accelerations[i] * 2 / 3).toFixed(6)}`);
+    }
+  } else {
+    lines.push("Period(s)\tAcceleration(g)");
+    for (let i = 0; i < src.periods.length; i++) {
+      lines.push(`${src.periods[i].toFixed(4)}\t${src.accelerations[i].toFixed(6)}`);
+    }
+  }
+
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${label.replace(/ /g, "_")}_data.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ── Download chart as high-resolution PNG ────────────────────────────────────
