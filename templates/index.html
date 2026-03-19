@@ -151,6 +151,8 @@
     <a class="sidebar-link" data-target="tab-storyshear" onclick="switchModule(this)">Story Shear</a>
     <a class="sidebar-link" data-target="tab-otm" onclick="switchModule(this)">Overturning Moment</a>
     <a class="sidebar-link" data-target="tab-displacement" onclick="switchModule(this)">Story Displacement</a>
+    <a class="sidebar-link" data-target="tab-drift" onclick="switchModule(this)">Story Drift</a>
+    <a class="sidebar-link" data-target="tab-acceleration" onclick="switchModule(this)">Story Acceleration</a>
   </div>
 </nav>
 
@@ -777,6 +779,10 @@
               <input class="form-check-input" type="checkbox" id="disp-show-envelope" onchange="plotDisplacement()" />
               <label class="form-check-label" for="disp-show-envelope">Show Envelope (Max)</label>
             </div>
+            <div class="mb-3">
+              <label>Limit Line (vertical dash)</label>
+              <input type="number" class="form-control" id="disp-limit-val" placeholder="e.g. 0.005" step="any" onchange="plotDisplacement()" />
+            </div>
             <hr />
             <p class="mb-2" style="font-size:.82rem;font-weight:600;color:#555;">Highlight Load Case</p>
             <div id="disp-highlight-list"></div>
@@ -792,6 +798,404 @@
             <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('disp-chart','StoryDisplacement.png')">&#8615; PNG</button>
           </div>
           <div class="card-body"><canvas id="disp-chart" height="400"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MODULE 12: Story Drift ═══════════ -->
+  <div class="module-pane" id="tab-drift">
+    <div class="module-title">Story Drift Plot</div>
+
+    <!-- ── Story Definition Table ── -->
+    <div class="row g-3 mb-3">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Story Definition</span>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-light" onclick="addDriftStoryRow()"><i class="bi bi-plus"></i> Add Row</button>
+              <button class="btn btn-sm btn-outline-light" onclick="removeDriftStoryRow()"><i class="bi bi-dash"></i> Remove Row</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <table class="spread-table" id="drift-story-table" style="max-width:300px;">
+              <thead><tr><th>Story</th><th>Level (m)</th></tr></thead>
+              <tbody>
+                <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td></tr>
+                <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td></tr>
+                <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 7 Drift Tables ── -->
+    <div class="row g-3 mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">Drift Data (paste Max Drift &amp; Avg Drift from spreadsheet)</div>
+          <div class="card-body" style="overflow-x:auto;">
+            <div class="d-flex gap-3" style="min-width:max-content;">
+              <div style="min-width:220px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="drift-name-1" value="TH1" style="width:100px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="drift-chk-1" checked onchange="plotDrift()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="drift-table-1">
+                  <thead><tr><th>Max Drift</th><th>Avg Drift</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">0.0010</td><td contenteditable="true">0.0002</td></tr>
+                    <tr><td contenteditable="true">0.0005</td><td contenteditable="true">0.0001</td></tr>
+                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:220px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="drift-name-2" value="TH2" style="width:100px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="drift-chk-2" checked onchange="plotDrift()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="drift-table-2">
+                  <thead><tr><th>Max Drift</th><th>Avg Drift</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">0.0008</td><td contenteditable="true">0.0002</td></tr>
+                    <tr><td contenteditable="true">0.0004</td><td contenteditable="true">0.0001</td></tr>
+                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:220px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="drift-name-3" value="TH3" style="width:100px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="drift-chk-3" checked onchange="plotDrift()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="drift-table-3">
+                  <thead><tr><th>Max Drift</th><th>Avg Drift</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">0.0009</td><td contenteditable="true">0.0002</td></tr>
+                    <tr><td contenteditable="true">0.0004</td><td contenteditable="true">0.0001</td></tr>
+                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:220px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="drift-name-4" value="TH4" style="width:100px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="drift-chk-4" checked onchange="plotDrift()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="drift-table-4">
+                  <thead><tr><th>Max Drift</th><th>Avg Drift</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">0.0006</td><td contenteditable="true">0.0001</td></tr>
+                    <tr><td contenteditable="true">0.0003</td><td contenteditable="true">0.0001</td></tr>
+                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:220px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="drift-name-5" value="TH5" style="width:100px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="drift-chk-5" checked onchange="plotDrift()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="drift-table-5">
+                  <thead><tr><th>Max Drift</th><th>Avg Drift</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">0.0011</td><td contenteditable="true">0.0003</td></tr>
+                    <tr><td contenteditable="true">0.0005</td><td contenteditable="true">0.0001</td></tr>
+                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:220px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="drift-name-6" value="TH6" style="width:100px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="drift-chk-6" checked onchange="plotDrift()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="drift-table-6">
+                  <thead><tr><th>Max Drift</th><th>Avg Drift</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">0.0007</td><td contenteditable="true">0.0002</td></tr>
+                    <tr><td contenteditable="true">0.0004</td><td contenteditable="true">0.0001</td></tr>
+                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:220px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="drift-name-7" value="TH7" style="width:100px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="drift-chk-7" checked onchange="plotDrift()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="drift-table-7">
+                  <thead><tr><th>Max Drift</th><th>Avg Drift</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">0.0013</td><td contenteditable="true">0.0003</td></tr>
+                    <tr><td contenteditable="true">0.0006</td><td contenteditable="true">0.0001</td></tr>
+                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Plot options + Chart ── -->
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">Plot Options</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label>Data Column</label>
+              <select class="form-select" id="drift-col" onchange="plotDrift()">
+                <option value="max" selected>Maximum Drift</option>
+                <option value="avg">Average Drift</option>
+              </select>
+            </div>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="drift-show-mean" onchange="plotDrift()" />
+              <label class="form-check-label" for="drift-show-mean">Show Mean</label>
+            </div>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="drift-show-envelope" onchange="plotDrift()" />
+              <label class="form-check-label" for="drift-show-envelope">Show Envelope (Max)</label>
+            </div>
+            <div class="mb-3">
+              <label>Limit Line (vertical dash)</label>
+              <input type="number" class="form-control" id="drift-limit-val" placeholder="e.g. 0.01" step="any" onchange="plotDrift()" />
+            </div>
+            <hr />
+            <p class="mb-2" style="font-size:.82rem;font-weight:600;color:#555;">Highlight Load Case</p>
+            <div id="drift-highlight-list"></div>
+            <hr />
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="plotDrift()">Generate Plot</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Story Drift Plot</span>
+            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('drift-chart','StoryDrift.png')">&#8615; PNG</button>
+          </div>
+          <div class="card-body"><canvas id="drift-chart" height="400"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MODULE 13: Story Acceleration ═══════════ -->
+  <div class="module-pane" id="tab-acceleration">
+    <div class="module-title">Story Acceleration Plot</div>
+
+    <!-- ── Story Definition Table ── -->
+    <div class="row g-3 mb-3">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Story Definition</span>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-light" onclick="addAccelStoryRow()"><i class="bi bi-plus"></i> Add Row</button>
+              <button class="btn btn-sm btn-outline-light" onclick="removeAccelStoryRow()"><i class="bi bi-dash"></i> Remove Row</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <table class="spread-table" id="accel-story-table" style="max-width:300px;">
+              <thead><tr><th>Story</th><th>Level (m)</th></tr></thead>
+              <tbody>
+                <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td></tr>
+                <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td></tr>
+                <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 7 Acceleration Tables ── -->
+    <div class="row g-3 mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">Acceleration Data (paste Max Accel &amp; Avg Accel from spreadsheet)</div>
+          <div class="card-body" style="overflow-x:auto;">
+            <div class="d-flex gap-3" style="min-width:max-content;">
+              <div style="min-width:220px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="accel-name-1" value="TH1" style="width:100px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="accel-chk-1" checked onchange="plotAcceleration()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="accel-table-1">
+                  <thead><tr><th>Max Accel</th><th>Avg Accel</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">0.50</td><td contenteditable="true">0.10</td></tr>
+                    <tr><td contenteditable="true">0.30</td><td contenteditable="true">0.06</td></tr>
+                    <tr><td contenteditable="true">0.00</td><td contenteditable="true">0.00</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:220px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="accel-name-2" value="TH2" style="width:100px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="accel-chk-2" checked onchange="plotAcceleration()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="accel-table-2">
+                  <thead><tr><th>Max Accel</th><th>Avg Accel</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">0.45</td><td contenteditable="true">0.09</td></tr>
+                    <tr><td contenteditable="true">0.25</td><td contenteditable="true">0.05</td></tr>
+                    <tr><td contenteditable="true">0.00</td><td contenteditable="true">0.00</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:220px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="accel-name-3" value="TH3" style="width:100px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="accel-chk-3" checked onchange="plotAcceleration()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="accel-table-3">
+                  <thead><tr><th>Max Accel</th><th>Avg Accel</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">0.48</td><td contenteditable="true">0.10</td></tr>
+                    <tr><td contenteditable="true">0.28</td><td contenteditable="true">0.06</td></tr>
+                    <tr><td contenteditable="true">0.00</td><td contenteditable="true">0.00</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:220px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="accel-name-4" value="TH4" style="width:100px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="accel-chk-4" checked onchange="plotAcceleration()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="accel-table-4">
+                  <thead><tr><th>Max Accel</th><th>Avg Accel</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">0.40</td><td contenteditable="true">0.08</td></tr>
+                    <tr><td contenteditable="true">0.22</td><td contenteditable="true">0.04</td></tr>
+                    <tr><td contenteditable="true">0.00</td><td contenteditable="true">0.00</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:220px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="accel-name-5" value="TH5" style="width:100px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="accel-chk-5" checked onchange="plotAcceleration()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="accel-table-5">
+                  <thead><tr><th>Max Accel</th><th>Avg Accel</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">0.52</td><td contenteditable="true">0.11</td></tr>
+                    <tr><td contenteditable="true">0.32</td><td contenteditable="true">0.07</td></tr>
+                    <tr><td contenteditable="true">0.00</td><td contenteditable="true">0.00</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:220px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="accel-name-6" value="TH6" style="width:100px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="accel-chk-6" checked onchange="plotAcceleration()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="accel-table-6">
+                  <thead><tr><th>Max Accel</th><th>Avg Accel</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">0.42</td><td contenteditable="true">0.09</td></tr>
+                    <tr><td contenteditable="true">0.24</td><td contenteditable="true">0.05</td></tr>
+                    <tr><td contenteditable="true">0.00</td><td contenteditable="true">0.00</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:220px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="accel-name-7" value="TH7" style="width:100px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="accel-chk-7" checked onchange="plotAcceleration()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="accel-table-7">
+                  <thead><tr><th>Max Accel</th><th>Avg Accel</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">0.55</td><td contenteditable="true">0.12</td></tr>
+                    <tr><td contenteditable="true">0.35</td><td contenteditable="true">0.07</td></tr>
+                    <tr><td contenteditable="true">0.00</td><td contenteditable="true">0.00</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Plot options + Chart ── -->
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">Plot Options</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label>Data Column</label>
+              <select class="form-select" id="accel-col" onchange="plotAcceleration()">
+                <option value="max" selected>Maximum Acceleration</option>
+                <option value="avg">Average Acceleration</option>
+              </select>
+            </div>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="accel-show-mean" onchange="plotAcceleration()" />
+              <label class="form-check-label" for="accel-show-mean">Show Mean</label>
+            </div>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="accel-show-envelope" onchange="plotAcceleration()" />
+              <label class="form-check-label" for="accel-show-envelope">Show Envelope (Max)</label>
+            </div>
+            <div class="mb-3">
+              <label>Limit Line (vertical dash)</label>
+              <input type="number" class="form-control" id="accel-limit-val" placeholder="e.g. 0.5" step="any" onchange="plotAcceleration()" />
+            </div>
+            <hr />
+            <p class="mb-2" style="font-size:.82rem;font-weight:600;color:#555;">Highlight Load Case</p>
+            <div id="accel-highlight-list"></div>
+            <hr />
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="plotAcceleration()">Generate Plot</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Story Acceleration Plot</span>
+            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('accel-chart','StoryAcceleration.png')">&#8615; PNG</button>
+          </div>
+          <div class="card-body"><canvas id="accel-chart" height="400"></canvas></div>
         </div>
       </div>
     </div>
@@ -1467,24 +1871,22 @@ function plotOTM() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  MODULE 11: Story Displacement Plot (client-side)
+//  GENERIC STORY PLOT ENGINE (shared by Displacement, Drift, Acceleration)
 // ══════════════════════════════════════════════════════════════════════════════
 
-let dispChart = null;
-const DISP_COLORS = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2"];
-const DISP_COUNT = 7;
+const PLOT_COUNT = 7;
 
-function addDispStoryRow() {
-  addDiagramRow("disp-story-table");
-  for (let i = 1; i <= DISP_COUNT; i++) addDiagramRow("disp-table-" + i);
+function genericAddRow(storyTableId, dataPrefix) {
+  addDiagramRow(storyTableId);
+  for (let i = 1; i <= PLOT_COUNT; i++) addDiagramRow(dataPrefix + "-table-" + i);
 }
-function removeDispStoryRow() {
-  removeDiagramRow("disp-story-table");
-  for (let i = 1; i <= DISP_COUNT; i++) removeDiagramRow("disp-table-" + i);
+function genericRemoveRow(storyTableId, dataPrefix) {
+  removeDiagramRow(storyTableId);
+  for (let i = 1; i <= PLOT_COUNT; i++) removeDiagramRow(dataPrefix + "-table-" + i);
 }
 
-function readDispStoryLevels() {
-  const rows = document.querySelectorAll("#disp-story-table tbody tr");
+function readStoryLevels(storyTableId) {
+  const rows = document.querySelectorAll("#" + storyTableId + " tbody tr");
   const levels = [];
   rows.forEach(row => {
     const cells = row.querySelectorAll("td[contenteditable]");
@@ -1497,8 +1899,8 @@ function readDispStoryLevels() {
   return levels;
 }
 
-function readDispTable(idx, storyLevels) {
-  const rows = document.querySelectorAll("#disp-table-" + idx + " tbody tr");
+function readDataTable(prefix, idx, storyLevels) {
+  const rows = document.querySelectorAll("#" + prefix + "-table-" + idx + " tbody tr");
   const data = [];
   let r = 0;
   rows.forEach(row => {
@@ -1513,49 +1915,53 @@ function readDispTable(idx, storyLevels) {
   return data;
 }
 
-function getDispHighlightIdx() {
-  const checked = document.querySelector('.disp-hl-radio:checked');
+function getHighlightIdx(prefix) {
+  const checked = document.querySelector('.' + prefix + '-hl-radio:checked');
   return checked ? parseInt(checked.value) : 0;
 }
 
-function buildDispHighlightList(preserveIdx) {
-  const container = document.getElementById("disp-highlight-list");
+function buildHighlightList(prefix, plotFnName, preserveIdx) {
+  const container = document.getElementById(prefix + "-highlight-list");
   if (!container) return;
-  const sel = preserveIdx !== undefined ? preserveIdx : getDispHighlightIdx();
+  const sel = preserveIdx !== undefined ? preserveIdx : getHighlightIdx(prefix);
   let html = "";
-  for (let i = 1; i <= DISP_COUNT; i++) {
-    const name = document.getElementById("disp-name-" + i).value || ("LC" + i);
+  for (let i = 1; i <= PLOT_COUNT; i++) {
+    const name = document.getElementById(prefix + "-name-" + i).value || ("LC" + i);
     const chk = sel === i ? " checked" : "";
     html += '<div class="form-check mb-1">' +
-      '<input class="form-check-input disp-hl-radio" type="radio" name="disp-highlight" id="disp-hl-' + i + '" value="' + i + '"' + chk + ' onchange="plotDisplacement()">' +
-      '<label class="form-check-label" for="disp-hl-' + i + '" style="font-size:.85rem;">' + name + '</label></div>';
+      '<input class="form-check-input ' + prefix + '-hl-radio" type="radio" name="' + prefix + '-highlight" id="' + prefix + '-hl-' + i + '" value="' + i + '"' + chk + ' onchange="' + plotFnName + '()">' +
+      '<label class="form-check-label" for="' + prefix + '-hl-' + i + '" style="font-size:.85rem;">' + name + '</label></div>';
   }
   const chk0 = sel === 0 ? " checked" : "";
   html += '<div class="form-check mb-1">' +
-    '<input class="form-check-input disp-hl-radio" type="radio" name="disp-highlight" id="disp-hl-0" value="0"' + chk0 + ' onchange="plotDisplacement()">' +
-    '<label class="form-check-label" for="disp-hl-0" style="font-size:.85rem;">None (all grey)</label></div>';
+    '<input class="form-check-input ' + prefix + '-hl-radio" type="radio" name="' + prefix + '-highlight" id="' + prefix + '-hl-0" value="0"' + chk0 + ' onchange="' + plotFnName + '()">' +
+    '<label class="form-check-label" for="' + prefix + '-hl-0" style="font-size:.85rem;">None (all grey)</label></div>';
   container.innerHTML = html;
 }
 
-function plotDisplacement() {
-  const highlightIdx = getDispHighlightIdx();
-  buildDispHighlightList(highlightIdx);
-  if (dispChart) { dispChart.destroy(); dispChart = null; }
+function genericPlot(cfg) {
+  // cfg: { prefix, storyTable, colSelect, meanChk, envChk, limitInput, canvasId, chartRef, title, xLabelMax, xLabelAvg, plotFnName }
+  const prefix = cfg.prefix;
+  const highlightIdx = getHighlightIdx(prefix);
+  buildHighlightList(prefix, cfg.plotFnName, highlightIdx);
 
-  const colKey = document.getElementById("disp-col").value; // "max" or "avg"
-  const showMean = document.getElementById("disp-show-mean").checked;
-  const showEnvelope = document.getElementById("disp-show-envelope").checked;
-  const storyLevels = readDispStoryLevels();
+  if (cfg.chartRef.inst) { cfg.chartRef.inst.destroy(); cfg.chartRef.inst = null; }
+
+  const colKey = document.getElementById(cfg.colSelect).value;
+  const showMean = document.getElementById(cfg.meanChk).checked;
+  const showEnvelope = document.getElementById(cfg.envChk).checked;
+  const limitVal = parseFloat(document.getElementById(cfg.limitInput).value);
+  const storyLevels = readStoryLevels(cfg.storyTable);
   if (storyLevels.length === 0) return;
 
   const datasets = [];
   const allSeries = [];
 
-  for (let i = 1; i <= DISP_COUNT; i++) {
-    const chk = document.getElementById("disp-chk-" + i);
+  for (let i = 1; i <= PLOT_COUNT; i++) {
+    const chk = document.getElementById(prefix + "-chk-" + i);
     if (!chk || !chk.checked) continue;
-    const name = document.getElementById("disp-name-" + i).value || ("TH" + i);
-    const tableData = readDispTable(i, storyLevels);
+    const name = document.getElementById(prefix + "-name-" + i).value || ("TH" + i);
+    const tableData = readDataTable(prefix, i, storyLevels);
     if (tableData.length === 0) continue;
 
     tableData.sort((a, b) => a.level - b.level);
@@ -1563,11 +1969,10 @@ function plotDisplacement() {
     allSeries.push({ idx: i, name, pts, tableData });
 
     const isHighlighted = highlightIdx > 0 && highlightIdx === i;
-    const isNone = highlightIdx === 0;
     datasets.push({
       label: name,
       data: pts,
-      borderColor: isHighlighted ? "#d62728" : (isNone ? "#ccc" : "#ccc"),
+      borderColor: isHighlighted ? "#d62728" : "#ccc",
       borderWidth: isHighlighted ? 2.5 : 1.2,
       pointRadius: isHighlighted ? 4 : 2,
       pointBackgroundColor: isHighlighted ? "#d62728" : "#ccc",
@@ -1578,9 +1983,7 @@ function plotDisplacement() {
 
   if (allSeries.length === 0) return;
 
-  // Compute mean and envelope across all visible series at each level
   if (showMean || showEnvelope) {
-    // Collect all unique levels
     const levelSet = new Set();
     allSeries.forEach(s => s.tableData.forEach(d => levelSet.add(d.level)));
     const levels = Array.from(levelSet).sort((a, b) => a - b);
@@ -1620,31 +2023,93 @@ function plotDisplacement() {
     }
   }
 
-  // Compute axis bounds
-  let maxDisp = 0, maxLevel = 0;
+  let maxX = 0, maxLevel = 0;
   datasets.forEach(ds => ds.data.forEach(p => {
-    if (p.x > maxDisp) maxDisp = p.x;
+    if (p.x > maxX) maxX = p.x;
     if (p.y > maxLevel) maxLevel = p.y;
   }));
-  maxDisp = maxDisp * 1.15 || 0.01;
+  if (!isNaN(limitVal) && limitVal > maxX) maxX = limitVal;
+  maxX = maxX * 1.15 || 0.01;
   maxLevel = maxLevel * 1.1 || 1;
 
-  const colLabel = colKey === "max" ? "Maximum Displacement (mm)" : "Average Displacement (mm)";
+  const colLabel = colKey === "max" ? cfg.xLabelMax : cfg.xLabelAvg;
 
-  dispChart = new Chart(document.getElementById("disp-chart"), {
+  // Build annotations for limit line
+  const annotations = {};
+  if (!isNaN(limitVal) && limitVal > 0) {
+    annotations.limitLine = {
+      type: "line",
+      xMin: limitVal, xMax: limitVal,
+      borderColor: "#1a237e",
+      borderWidth: 2,
+      borderDash: [8, 4],
+      label: {
+        display: true,
+        content: "Limit = " + limitVal,
+        position: "start",
+        color: "#1a237e",
+        font: { size: 11, weight: "bold" },
+      },
+    };
+  }
+
+  cfg.chartRef.inst = new Chart(document.getElementById(cfg.canvasId), {
     type: "scatter",
     data: { datasets },
     options: {
       responsive: true, animation: false,
       scales: {
-        x: { type: "linear", min: 0, max: maxDisp, title: { display: true, text: colLabel } },
+        x: { type: "linear", min: 0, max: maxX, title: { display: true, text: colLabel } },
         y: { type: "linear", min: 0, max: maxLevel, title: { display: true, text: "Building Height (m)" } },
       },
       plugins: {
         legend: { position: "top" },
-        title: { display: true, text: "Story Displacement Plot", font: { size: 15, weight: "bold" } },
+        title: { display: true, text: cfg.title, font: { size: 15, weight: "bold" } },
+        annotation: { annotations },
       },
     },
+  });
+}
+
+// ── Displacement ────────────────────────────────────────────────────────────
+const dispChartRef = { inst: null };
+function addDispStoryRow() { genericAddRow("disp-story-table", "disp"); }
+function removeDispStoryRow() { genericRemoveRow("disp-story-table", "disp"); }
+function plotDisplacement() {
+  genericPlot({
+    prefix: "disp", storyTable: "disp-story-table",
+    colSelect: "disp-col", meanChk: "disp-show-mean", envChk: "disp-show-envelope",
+    limitInput: "disp-limit-val", canvasId: "disp-chart", chartRef: dispChartRef,
+    title: "Story Displacement Plot", plotFnName: "plotDisplacement",
+    xLabelMax: "Maximum Displacement (mm)", xLabelAvg: "Average Displacement (mm)",
+  });
+}
+
+// ── Drift ───────────────────────────────────────────────────────────────────
+const driftChartRef = { inst: null };
+function addDriftStoryRow() { genericAddRow("drift-story-table", "drift"); }
+function removeDriftStoryRow() { genericRemoveRow("drift-story-table", "drift"); }
+function plotDrift() {
+  genericPlot({
+    prefix: "drift", storyTable: "drift-story-table",
+    colSelect: "drift-col", meanChk: "drift-show-mean", envChk: "drift-show-envelope",
+    limitInput: "drift-limit-val", canvasId: "drift-chart", chartRef: driftChartRef,
+    title: "Story Drift Plot", plotFnName: "plotDrift",
+    xLabelMax: "Maximum Drift", xLabelAvg: "Average Drift",
+  });
+}
+
+// ── Acceleration ────────────────────────────────────────────────────────────
+const accelChartRef = { inst: null };
+function addAccelStoryRow() { genericAddRow("accel-story-table", "accel"); }
+function removeAccelStoryRow() { genericRemoveRow("accel-story-table", "accel"); }
+function plotAcceleration() {
+  genericPlot({
+    prefix: "accel", storyTable: "accel-story-table",
+    colSelect: "accel-col", meanChk: "accel-show-mean", envChk: "accel-show-envelope",
+    limitInput: "accel-limit-val", canvasId: "accel-chart", chartRef: accelChartRef,
+    title: "Story Acceleration Plot", plotFnName: "plotAcceleration",
+    xLabelMax: "Maximum Acceleration (g)", xLabelAvg: "Average Acceleration (g)",
   });
 }
 
