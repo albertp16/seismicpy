@@ -606,128 +606,147 @@
   <div class="module-pane" id="tab-displacement">
     <div class="module-title">Story Displacement Plot</div>
 
-    <!-- ── 7 Tables in scrollable row ── -->
-    <div class="row g-3 mb-4">
+    <!-- ── Story Definition Table ── -->
+    <div class="row g-3 mb-3">
       <div class="col-12">
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Input Tables (paste from spreadsheet)</span>
+            <span>Story Definition</span>
             <div class="d-flex gap-2">
-              <button class="btn btn-sm btn-outline-light" onclick="addDispRow()"><i class="bi bi-plus"></i> Add Row</button>
-              <button class="btn btn-sm btn-outline-light" onclick="removeDispRow()"><i class="bi bi-dash"></i> Remove Row</button>
+              <button class="btn btn-sm btn-outline-light" onclick="addDispStoryRow()"><i class="bi bi-plus"></i> Add Row</button>
+              <button class="btn btn-sm btn-outline-light" onclick="removeDispStoryRow()"><i class="bi bi-dash"></i> Remove Row</button>
             </div>
           </div>
+          <div class="card-body">
+            <table class="spread-table" id="disp-story-table" style="max-width:300px;">
+              <thead><tr><th>Story</th><th>Level (m)</th></tr></thead>
+              <tbody>
+                <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td></tr>
+                <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td></tr>
+                <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 7 Displacement Tables in scrollable row ── -->
+    <div class="row g-3 mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">Displacement Data (paste Max Disp &amp; Avg Disp from spreadsheet)</div>
           <div class="card-body" style="overflow-x:auto;">
             <div class="d-flex gap-3" style="min-width:max-content;">
-              <div v-for="i in 7" style="min-width:260px;">
+              <div style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="disp-name-1" value="EQX" style="width:120px;" />
+                  <input type="text" class="form-control form-control-sm" id="disp-name-1" value="TH1" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
                     <input type="checkbox" class="form-check-input me-1" id="disp-chk-1" checked onchange="plotDisplacement()" /> Show
                   </label>
                 </div>
                 <table class="spread-table" id="disp-table-1">
-                  <thead><tr><th>Story</th><th>Level (m)</th><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
+                  <thead><tr><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
                   <tbody>
-                    <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td><td contenteditable="true">0.0016</td><td contenteditable="true">0.0003</td></tr>
-                    <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
-                    <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">0.0016</td><td contenteditable="true">0.0003</td></tr>
+                    <tr><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:260px;">
+              <div style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="disp-name-2" value="EQY" style="width:120px;" />
+                  <input type="text" class="form-control form-control-sm" id="disp-name-2" value="TH2" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
                     <input type="checkbox" class="form-check-input me-1" id="disp-chk-2" checked onchange="plotDisplacement()" /> Show
                   </label>
                 </div>
                 <table class="spread-table" id="disp-table-2">
-                  <thead><tr><th>Story</th><th>Level (m)</th><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
+                  <thead><tr><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
                   <tbody>
-                    <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td><td contenteditable="true">0.0010</td><td contenteditable="true">0.0002</td></tr>
-                    <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
-                    <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">0.0010</td><td contenteditable="true">0.0002</td></tr>
+                    <tr><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:260px;">
+              <div style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="disp-name-3" value="SPECX" style="width:120px;" />
+                  <input type="text" class="form-control form-control-sm" id="disp-name-3" value="TH3" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
                     <input type="checkbox" class="form-check-input me-1" id="disp-chk-3" checked onchange="plotDisplacement()" /> Show
                   </label>
                 </div>
                 <table class="spread-table" id="disp-table-3">
-                  <thead><tr><th>Story</th><th>Level (m)</th><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
+                  <thead><tr><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
                   <tbody>
-                    <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td><td contenteditable="true">0.0012</td><td contenteditable="true">0.0002</td></tr>
-                    <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
-                    <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">0.0012</td><td contenteditable="true">0.0002</td></tr>
+                    <tr><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:260px;">
+              <div style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="disp-name-4" value="SPECY" style="width:120px;" />
+                  <input type="text" class="form-control form-control-sm" id="disp-name-4" value="TH4" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
                     <input type="checkbox" class="form-check-input me-1" id="disp-chk-4" checked onchange="plotDisplacement()" /> Show
                   </label>
                 </div>
                 <table class="spread-table" id="disp-table-4">
-                  <thead><tr><th>Story</th><th>Level (m)</th><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
+                  <thead><tr><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
                   <tbody>
-                    <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td><td contenteditable="true">0.0008</td><td contenteditable="true">0.0001</td></tr>
-                    <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
-                    <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">0.0008</td><td contenteditable="true">0.0001</td></tr>
+                    <tr><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:260px;">
+              <div style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="disp-name-5" value="THX" style="width:120px;" />
+                  <input type="text" class="form-control form-control-sm" id="disp-name-5" value="TH5" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
                     <input type="checkbox" class="form-check-input me-1" id="disp-chk-5" checked onchange="plotDisplacement()" /> Show
                   </label>
                 </div>
                 <table class="spread-table" id="disp-table-5">
-                  <thead><tr><th>Story</th><th>Level (m)</th><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
+                  <thead><tr><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
                   <tbody>
-                    <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td><td contenteditable="true">0.0014</td><td contenteditable="true">0.0003</td></tr>
-                    <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
-                    <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">0.0014</td><td contenteditable="true">0.0003</td></tr>
+                    <tr><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:260px;">
+              <div style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="disp-name-6" value="THY" style="width:120px;" />
+                  <input type="text" class="form-control form-control-sm" id="disp-name-6" value="TH6" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
                     <input type="checkbox" class="form-check-input me-1" id="disp-chk-6" checked onchange="plotDisplacement()" /> Show
                   </label>
                 </div>
                 <table class="spread-table" id="disp-table-6">
-                  <thead><tr><th>Story</th><th>Level (m)</th><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
+                  <thead><tr><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
                   <tbody>
-                    <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td><td contenteditable="true">0.0011</td><td contenteditable="true">0.0002</td></tr>
-                    <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
-                    <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">0.0011</td><td contenteditable="true">0.0002</td></tr>
+                    <tr><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:260px;">
+              <div style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="disp-name-7" value="DESIGN" style="width:120px;" />
+                  <input type="text" class="form-control form-control-sm" id="disp-name-7" value="TH7" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
                     <input type="checkbox" class="form-check-input me-1" id="disp-chk-7" checked onchange="plotDisplacement()" /> Show
                   </label>
                 </div>
                 <table class="spread-table" id="disp-table-7">
-                  <thead><tr><th>Story</th><th>Level (m)</th><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
+                  <thead><tr><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
                   <tbody>
-                    <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td><td contenteditable="true">0.0020</td><td contenteditable="true">0.0004</td></tr>
-                    <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td><td contenteditable="true">0.0002</td><td contenteditable="true">0.0000</td></tr>
-                    <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">0.0020</td><td contenteditable="true">0.0004</td></tr>
+                    <tr><td contenteditable="true">0.0002</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -1455,24 +1474,40 @@ let dispChart = null;
 const DISP_COLORS = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2"];
 const DISP_COUNT = 7;
 
-function addDispRow() {
+function addDispStoryRow() {
+  addDiagramRow("disp-story-table");
   for (let i = 1; i <= DISP_COUNT; i++) addDiagramRow("disp-table-" + i);
 }
-function removeDispRow() {
+function removeDispStoryRow() {
+  removeDiagramRow("disp-story-table");
   for (let i = 1; i <= DISP_COUNT; i++) removeDiagramRow("disp-table-" + i);
 }
 
-function readDispTable(idx) {
-  const rows = document.querySelectorAll("#disp-table-" + idx + " tbody tr");
-  const data = [];
+function readDispStoryLevels() {
+  const rows = document.querySelectorAll("#disp-story-table tbody tr");
+  const levels = [];
   rows.forEach(row => {
     const cells = row.querySelectorAll("td[contenteditable]");
-    if (cells.length >= 4) {
+    if (cells.length >= 2) {
       const story = cells[0].textContent.trim();
       const level = parseFloat(cells[1].textContent.trim());
-      const maxD = parseFloat(cells[2].textContent.trim());
-      const avgD = parseFloat(cells[3].textContent.trim());
-      if (!isNaN(level)) data.push({ story, level, max: maxD || 0, avg: avgD || 0 });
+      if (!isNaN(level)) levels.push({ story, level });
+    }
+  });
+  return levels;
+}
+
+function readDispTable(idx, storyLevels) {
+  const rows = document.querySelectorAll("#disp-table-" + idx + " tbody tr");
+  const data = [];
+  let r = 0;
+  rows.forEach(row => {
+    const cells = row.querySelectorAll("td[contenteditable]");
+    if (cells.length >= 2 && r < storyLevels.length) {
+      const maxD = parseFloat(cells[0].textContent.trim());
+      const avgD = parseFloat(cells[1].textContent.trim());
+      data.push({ story: storyLevels[r].story, level: storyLevels[r].level, max: maxD || 0, avg: avgD || 0 });
+      r++;
     }
   });
   return data;
@@ -1498,7 +1533,7 @@ function buildDispHighlightList(preserveIdx) {
   const chk0 = sel === 0 ? " checked" : "";
   html += '<div class="form-check mb-1">' +
     '<input class="form-check-input disp-hl-radio" type="radio" name="disp-highlight" id="disp-hl-0" value="0"' + chk0 + ' onchange="plotDisplacement()">' +
-    '<label class="form-check-label" for="disp-hl-0" style="font-size:.85rem;">None (show all colors)</label></div>';
+    '<label class="form-check-label" for="disp-hl-0" style="font-size:.85rem;">None (all grey)</label></div>';
   container.innerHTML = html;
 }
 
@@ -1510,6 +1545,8 @@ function plotDisplacement() {
   const colKey = document.getElementById("disp-col").value; // "max" or "avg"
   const showMean = document.getElementById("disp-show-mean").checked;
   const showEnvelope = document.getElementById("disp-show-envelope").checked;
+  const storyLevels = readDispStoryLevels();
+  if (storyLevels.length === 0) return;
 
   const datasets = [];
   const allSeries = [];
@@ -1517,22 +1554,23 @@ function plotDisplacement() {
   for (let i = 1; i <= DISP_COUNT; i++) {
     const chk = document.getElementById("disp-chk-" + i);
     if (!chk || !chk.checked) continue;
-    const name = document.getElementById("disp-name-" + i).value || ("LC" + i);
-    const tableData = readDispTable(i);
+    const name = document.getElementById("disp-name-" + i).value || ("TH" + i);
+    const tableData = readDispTable(i, storyLevels);
     if (tableData.length === 0) continue;
 
     tableData.sort((a, b) => a.level - b.level);
     const pts = tableData.map(d => ({ x: d[colKey], y: d.level }));
     allSeries.push({ idx: i, name, pts, tableData });
 
-    const isHighlighted = highlightIdx === 0 || highlightIdx === i;
+    const isHighlighted = highlightIdx > 0 && highlightIdx === i;
+    const isNone = highlightIdx === 0;
     datasets.push({
       label: name,
       data: pts,
-      borderColor: isHighlighted ? (highlightIdx === 0 ? DISP_COLORS[(i - 1) % DISP_COLORS.length] : "#d62728") : "#ccc",
+      borderColor: isHighlighted ? "#d62728" : (isNone ? "#ccc" : "#ccc"),
       borderWidth: isHighlighted ? 2.5 : 1.2,
       pointRadius: isHighlighted ? 4 : 2,
-      pointBackgroundColor: isHighlighted ? (highlightIdx === 0 ? DISP_COLORS[(i - 1) % DISP_COLORS.length] : "#d62728") : "#ccc",
+      pointBackgroundColor: isHighlighted ? "#d62728" : "#ccc",
       fill: false, tension: 0, showLine: true,
       order: isHighlighted ? 0 : 1,
     });
