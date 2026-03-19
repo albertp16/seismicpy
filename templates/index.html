@@ -150,6 +150,7 @@
   <div class="sidebar-items">
     <a class="sidebar-link" data-target="tab-storyshear" onclick="switchModule(this)">Story Shear</a>
     <a class="sidebar-link" data-target="tab-otm" onclick="switchModule(this)">Overturning Moment</a>
+    <a class="sidebar-link" data-target="tab-displacement" onclick="switchModule(this)">Story Displacement</a>
   </div>
 </nav>
 
@@ -596,6 +597,182 @@
             <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('otm-chart','OverturningMoment.png')">&#8615; PNG</button>
           </div>
           <div class="card-body"><canvas id="otm-chart" height="360"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MODULE 11: Story Displacement ═══════════ -->
+  <div class="module-pane" id="tab-displacement">
+    <div class="module-title">Story Displacement Plot</div>
+
+    <!-- ── 7 Tables in scrollable row ── -->
+    <div class="row g-3 mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Input Tables (paste from spreadsheet)</span>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-light" onclick="addDispRow()"><i class="bi bi-plus"></i> Add Row</button>
+              <button class="btn btn-sm btn-outline-light" onclick="removeDispRow()"><i class="bi bi-dash"></i> Remove Row</button>
+            </div>
+          </div>
+          <div class="card-body" style="overflow-x:auto;">
+            <div class="d-flex gap-3" style="min-width:max-content;">
+              <div v-for="i in 7" style="min-width:260px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="disp-name-1" value="EQX" style="width:120px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="disp-chk-1" checked onchange="plotDisplacement()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="disp-table-1">
+                  <thead><tr><th>Story</th><th>Level (m)</th><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td><td contenteditable="true">0.0016</td><td contenteditable="true">0.0003</td></tr>
+                    <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:260px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="disp-name-2" value="EQY" style="width:120px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="disp-chk-2" checked onchange="plotDisplacement()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="disp-table-2">
+                  <thead><tr><th>Story</th><th>Level (m)</th><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td><td contenteditable="true">0.0010</td><td contenteditable="true">0.0002</td></tr>
+                    <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:260px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="disp-name-3" value="SPECX" style="width:120px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="disp-chk-3" checked onchange="plotDisplacement()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="disp-table-3">
+                  <thead><tr><th>Story</th><th>Level (m)</th><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td><td contenteditable="true">0.0012</td><td contenteditable="true">0.0002</td></tr>
+                    <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:260px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="disp-name-4" value="SPECY" style="width:120px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="disp-chk-4" checked onchange="plotDisplacement()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="disp-table-4">
+                  <thead><tr><th>Story</th><th>Level (m)</th><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td><td contenteditable="true">0.0008</td><td contenteditable="true">0.0001</td></tr>
+                    <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:260px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="disp-name-5" value="THX" style="width:120px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="disp-chk-5" checked onchange="plotDisplacement()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="disp-table-5">
+                  <thead><tr><th>Story</th><th>Level (m)</th><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td><td contenteditable="true">0.0014</td><td contenteditable="true">0.0003</td></tr>
+                    <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:260px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="disp-name-6" value="THY" style="width:120px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="disp-chk-6" checked onchange="plotDisplacement()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="disp-table-6">
+                  <thead><tr><th>Story</th><th>Level (m)</th><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td><td contenteditable="true">0.0011</td><td contenteditable="true">0.0002</td></tr>
+                    <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="min-width:260px;">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="text" class="form-control form-control-sm" id="disp-name-7" value="DESIGN" style="width:120px;" />
+                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
+                    <input type="checkbox" class="form-check-input me-1" id="disp-chk-7" checked onchange="plotDisplacement()" /> Show
+                  </label>
+                </div>
+                <table class="spread-table" id="disp-table-7">
+                  <thead><tr><th>Story</th><th>Level (m)</th><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td><td contenteditable="true">0.0020</td><td contenteditable="true">0.0004</td></tr>
+                    <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td><td contenteditable="true">0.0002</td><td contenteditable="true">0.0000</td></tr>
+                    <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Plot options + Chart ── -->
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">Plot Options</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label>Data Column</label>
+              <select class="form-select" id="disp-col" onchange="plotDisplacement()">
+                <option value="max" selected>Maximum Displacement</option>
+                <option value="avg">Average Displacement</option>
+              </select>
+            </div>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="disp-show-mean" onchange="plotDisplacement()" />
+              <label class="form-check-label" for="disp-show-mean">Show Mean</label>
+            </div>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="disp-show-envelope" onchange="plotDisplacement()" />
+              <label class="form-check-label" for="disp-show-envelope">Show Envelope (Max)</label>
+            </div>
+            <hr />
+            <p class="mb-2" style="font-size:.82rem;font-weight:600;color:#555;">Highlight Load Case</p>
+            <div id="disp-highlight-list"></div>
+            <hr />
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="plotDisplacement()">Generate Plot</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Story Displacement Plot</span>
+            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('disp-chart','StoryDisplacement.png')">&#8615; PNG</button>
+          </div>
+          <div class="card-body"><canvas id="disp-chart" height="400"></canvas></div>
         </div>
       </div>
     </div>
@@ -1264,6 +1441,173 @@ function plotOTM() {
   const data = readSpreadTable("otm-table");
   if (data.length < 2) { alert("Enter at least 2 rows."); return; }
   otmChart = plotStepDiagram("otm-chart", data, "Overturning Moment (kN-m)", "Seismic Overturning Moment Diagram", otmChart);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  Download chart as high-resolution PNG
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 11: Story Displacement Plot (client-side)
+// ══════════════════════════════════════════════════════════════════════════════
+
+let dispChart = null;
+const DISP_COLORS = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2"];
+const DISP_COUNT = 7;
+
+function addDispRow() {
+  for (let i = 1; i <= DISP_COUNT; i++) addDiagramRow("disp-table-" + i);
+}
+function removeDispRow() {
+  for (let i = 1; i <= DISP_COUNT; i++) removeDiagramRow("disp-table-" + i);
+}
+
+function readDispTable(idx) {
+  const rows = document.querySelectorAll("#disp-table-" + idx + " tbody tr");
+  const data = [];
+  rows.forEach(row => {
+    const cells = row.querySelectorAll("td[contenteditable]");
+    if (cells.length >= 4) {
+      const story = cells[0].textContent.trim();
+      const level = parseFloat(cells[1].textContent.trim());
+      const maxD = parseFloat(cells[2].textContent.trim());
+      const avgD = parseFloat(cells[3].textContent.trim());
+      if (!isNaN(level)) data.push({ story, level, max: maxD || 0, avg: avgD || 0 });
+    }
+  });
+  return data;
+}
+
+function getDispHighlightIdx() {
+  const checked = document.querySelector('.disp-hl-radio:checked');
+  return checked ? parseInt(checked.value) : 0;
+}
+
+function buildDispHighlightList(preserveIdx) {
+  const container = document.getElementById("disp-highlight-list");
+  if (!container) return;
+  const sel = preserveIdx !== undefined ? preserveIdx : getDispHighlightIdx();
+  let html = "";
+  for (let i = 1; i <= DISP_COUNT; i++) {
+    const name = document.getElementById("disp-name-" + i).value || ("LC" + i);
+    const chk = sel === i ? " checked" : "";
+    html += '<div class="form-check mb-1">' +
+      '<input class="form-check-input disp-hl-radio" type="radio" name="disp-highlight" id="disp-hl-' + i + '" value="' + i + '"' + chk + ' onchange="plotDisplacement()">' +
+      '<label class="form-check-label" for="disp-hl-' + i + '" style="font-size:.85rem;">' + name + '</label></div>';
+  }
+  const chk0 = sel === 0 ? " checked" : "";
+  html += '<div class="form-check mb-1">' +
+    '<input class="form-check-input disp-hl-radio" type="radio" name="disp-highlight" id="disp-hl-0" value="0"' + chk0 + ' onchange="plotDisplacement()">' +
+    '<label class="form-check-label" for="disp-hl-0" style="font-size:.85rem;">None (show all colors)</label></div>';
+  container.innerHTML = html;
+}
+
+function plotDisplacement() {
+  const highlightIdx = getDispHighlightIdx();
+  buildDispHighlightList(highlightIdx);
+  if (dispChart) { dispChart.destroy(); dispChart = null; }
+
+  const colKey = document.getElementById("disp-col").value; // "max" or "avg"
+  const showMean = document.getElementById("disp-show-mean").checked;
+  const showEnvelope = document.getElementById("disp-show-envelope").checked;
+
+  const datasets = [];
+  const allSeries = [];
+
+  for (let i = 1; i <= DISP_COUNT; i++) {
+    const chk = document.getElementById("disp-chk-" + i);
+    if (!chk || !chk.checked) continue;
+    const name = document.getElementById("disp-name-" + i).value || ("LC" + i);
+    const tableData = readDispTable(i);
+    if (tableData.length === 0) continue;
+
+    tableData.sort((a, b) => a.level - b.level);
+    const pts = tableData.map(d => ({ x: d[colKey], y: d.level }));
+    allSeries.push({ idx: i, name, pts, tableData });
+
+    const isHighlighted = highlightIdx === 0 || highlightIdx === i;
+    datasets.push({
+      label: name,
+      data: pts,
+      borderColor: isHighlighted ? (highlightIdx === 0 ? DISP_COLORS[(i - 1) % DISP_COLORS.length] : "#d62728") : "#ccc",
+      borderWidth: isHighlighted ? 2.5 : 1.2,
+      pointRadius: isHighlighted ? 4 : 2,
+      pointBackgroundColor: isHighlighted ? (highlightIdx === 0 ? DISP_COLORS[(i - 1) % DISP_COLORS.length] : "#d62728") : "#ccc",
+      fill: false, tension: 0, showLine: true,
+      order: isHighlighted ? 0 : 1,
+    });
+  }
+
+  if (allSeries.length === 0) return;
+
+  // Compute mean and envelope across all visible series at each level
+  if (showMean || showEnvelope) {
+    // Collect all unique levels
+    const levelSet = new Set();
+    allSeries.forEach(s => s.tableData.forEach(d => levelSet.add(d.level)));
+    const levels = Array.from(levelSet).sort((a, b) => a - b);
+
+    if (showMean) {
+      const meanPts = levels.map(lv => {
+        let sum = 0, count = 0;
+        allSeries.forEach(s => {
+          const match = s.tableData.find(d => d.level === lv);
+          if (match) { sum += match[colKey]; count++; }
+        });
+        return { x: count > 0 ? sum / count : 0, y: lv };
+      });
+      datasets.push({
+        label: "Mean",
+        data: meanPts,
+        borderColor: "#000", borderWidth: 2.5, borderDash: [8, 4],
+        pointRadius: 0, fill: false, tension: 0, showLine: true, order: -1,
+      });
+    }
+
+    if (showEnvelope) {
+      const envPts = levels.map(lv => {
+        let maxVal = 0;
+        allSeries.forEach(s => {
+          const match = s.tableData.find(d => d.level === lv);
+          if (match) maxVal = Math.max(maxVal, match[colKey]);
+        });
+        return { x: maxVal, y: lv };
+      });
+      datasets.push({
+        label: "Envelope",
+        data: envPts,
+        borderColor: "#d62728", borderWidth: 3, borderDash: [4, 2],
+        pointRadius: 0, fill: false, tension: 0, showLine: true, order: -2,
+      });
+    }
+  }
+
+  // Compute axis bounds
+  let maxDisp = 0, maxLevel = 0;
+  datasets.forEach(ds => ds.data.forEach(p => {
+    if (p.x > maxDisp) maxDisp = p.x;
+    if (p.y > maxLevel) maxLevel = p.y;
+  }));
+  maxDisp = maxDisp * 1.15 || 0.01;
+  maxLevel = maxLevel * 1.1 || 1;
+
+  const colLabel = colKey === "max" ? "Maximum Displacement (mm)" : "Average Displacement (mm)";
+
+  dispChart = new Chart(document.getElementById("disp-chart"), {
+    type: "scatter",
+    data: { datasets },
+    options: {
+      responsive: true, animation: false,
+      scales: {
+        x: { type: "linear", min: 0, max: maxDisp, title: { display: true, text: colLabel } },
+        y: { type: "linear", min: 0, max: maxLevel, title: { display: true, text: "Building Height (m)" } },
+      },
+      plugins: {
+        legend: { position: "top" },
+        title: { display: true, text: "Story Displacement Plot", font: { size: 15, weight: "bold" } },
+      },
+    },
+  });
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
