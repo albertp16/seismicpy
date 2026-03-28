@@ -8,7 +8,7 @@ if os.path.exists("README.md"):
 
 setup(
     name='apecseismicpy',
-    version='0.2',
+    version='0.5.0',
     description='This APEC internal use only',
     long_description=long_description,
     author='Albert Pamonag',
