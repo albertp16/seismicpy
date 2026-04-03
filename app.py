@@ -8,7 +8,7 @@ from pydantic import BaseModel
 sys.path.insert(0, ".")
 
 from apecseismicpy.nscp2015.site_coefficients import site_coefficients
-from apecseismicpy.nscp2015.response_spectrum import ResponseSpectrum
+from apecseismicpy.nscp2015.response_spectrum import ResponseSpectrum, atc40_reduction
 from apecseismicpy.nscp2015.period import calculateStructuralPeriod, calculatePeriodWithLimit
 from apecseismicpy.nscp2015.baseshear import calculate_base_shear
 from apecseismicpy.nscp2015.pga import calculate_pga
@@ -87,6 +87,16 @@ class PeriodLimitInput(BaseModel):
     zone: int = 4
 
 
+class AdrsInput(BaseModel):
+    ca: float
+    cv: float
+    structure_type: str = ""  # A, B, C or empty = no reduction
+    dy: float = 0.0
+    ay: float = 0.0
+    dpi: float = 0.0
+    api_val: float = 0.0
+
+
 # ── Routes ───────────────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
@@ -126,6 +136,73 @@ async def api_response_spectrum(data: SpectrumInput):
             "T_02":  0.2 * T / rs.Ts,
             "T_15":  1.5 * T / rs.Ts,
         }
+        return {"success": True, "data": payload}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/adrs")
+async def api_adrs(data: AdrsInput):
+    try:
+        rs = ResponseSpectrum(data.ca, data.cv)
+        Sd, Sa, T_actual = rs.generate_adrs(x_max=5.0)
+
+        # Radial period lines
+        g = 9.81
+        Sd_max = max(Sd)
+        Sa_max_chart = max(Sa) * 1.1
+        radial_periods = [rs.Ts]
+        for t in [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]:
+            if t not in radial_periods:
+                radial_periods.append(t)
+        radial_periods.sort()
+
+        radial_lines = []
+        for t in radial_periods:
+            if t <= 0:
+                continue
+            slope = 4 * math.pi ** 2 / (g * t ** 2)
+            sd_end = min(Sd_max, Sa_max_chart / slope)
+            sa_end = slope * sd_end
+            radial_lines.append({
+                "T": round(t, 3),
+                "points": [{"x": 0, "y": 0}, {"x": round(sd_end, 6), "y": round(sa_end, 6)}],
+            })
+
+        payload = {
+            "Sd": Sd,
+            "Sa": Sa,
+            "Ts": rs.Ts,
+            "T0": rs.T0,
+            "sa_max": rs.sa_max,
+            "radial_lines": radial_lines,
+        }
+
+        # ATC-40 reduction
+        if data.structure_type and data.dpi > 0 and data.api_val > 0:
+            red = atc40_reduction(data.dy, data.ay, data.dpi, data.api_val,
+                                  data.structure_type)
+            Sd_r, Sa_r, _ = rs.generate_reduced_adrs(red["SRA"], red["SRV"])
+
+            # Interpolate dpn and apn at the performance point
+            dpn = None
+            apn = None
+            for i in range(1, len(Sd_r)):
+                if Sd_r[i] >= data.dpi:
+                    frac = (data.dpi - Sd_r[i - 1]) / (Sd_r[i] - Sd_r[i - 1]) \
+                        if Sd_r[i] != Sd_r[i - 1] else 0
+                    apn = Sa_r[i - 1] + frac * (Sa_r[i] - Sa_r[i - 1])
+                    dpn = data.dpi
+                    break
+
+            payload["reduction"] = {
+                **red,
+                "Sd_r": Sd_r,
+                "Sa_r": Sa_r,
+                "dpn": round(dpn, 4) if dpn is not None else None,
+                "apn": round(apn, 4) if apn is not None else None,
+            }
+
         return {"success": True, "data": payload}
     except Exception as e:
         return {"success": False, "error": str(e)}

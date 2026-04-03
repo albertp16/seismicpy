@@ -128,6 +128,7 @@
   <div class="sidebar-items">
     <a class="sidebar-link active" data-target="tab-site" onclick="switchModule(this)">Site Coefficients</a>
     <a class="sidebar-link" data-target="tab-spectrum" onclick="switchModule(this)">Response Spectrum</a>
+    <a class="sidebar-link" data-target="tab-adrs" onclick="switchModule(this)">ADRS</a>
     <a class="sidebar-link" data-target="tab-shear" onclick="switchModule(this)">Base Shear</a>
     <a class="sidebar-link" data-target="tab-period" onclick="switchModule(this)">Structural Period</a>
     <a class="sidebar-link" data-target="tab-redundancy" onclick="switchModule(this)">Redundancy</a>
@@ -243,7 +244,7 @@
       </div>
     </div>
     <div class="row g-4">
-      <div class="col-md-6">
+      <div class="col-md-12">
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span>&#9313; Time-History Reference (1.4&#215; + period markers)</span>
@@ -252,13 +253,52 @@
           <div class="card-body"><canvas id="chart2" height="260"></canvas></div>
         </div>
       </div>
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span>&#9314; ADRS — Acceleration-Displacement Response Spectrum</span>
-            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart3','spectrum_ADRS.png')">&#8615; PNG</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ MODULE 2b: ADRS ═══════════ -->
+  <div class="module-pane" id="tab-adrs">
+    <div class="module-title">ADRS — Acceleration-Displacement Response Spectrum</div>
+    <div class="row g-4 mb-4">
+      <div class="col-md-4">
+        <div class="card h-100">
+          <div class="card-header">Input Parameters</div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-6 mb-2"><label>C<sub>a</sub></label><input type="number" class="form-control" id="adrs-ca" value="0.44" step="0.01" /></div>
+              <div class="col-6 mb-2"><label>C<sub>v</sub></label><input type="number" class="form-control" id="adrs-cv" value="0.64" step="0.01" /></div>
+            </div>
+            <hr class="my-2"/>
+            <p class="mb-2" style="font-size:.82rem;font-weight:600;color:#555;">ATC-40 Spectrum Reduction</p>
+            <div class="mb-2"><label>Structure Type</label>
+              <select class="form-select" id="adrs-stype">
+                <option value="">None (5% damped only)</option>
+                <option value="A">Type A — Good behavior</option>
+                <option value="B">Type B — Average behavior</option>
+                <option value="C">Type C — Poor behavior</option>
+              </select>
+            </div>
+            <div id="adrs-reduction-inputs">
+              <div class="row g-2">
+                <div class="col-6 mb-2"><label>d<sub>y</sub> (m)</label><input type="number" class="form-control" id="adrs-dy" value="0.027" step="0.001" /></div>
+                <div class="col-6 mb-2"><label>a<sub>y</sub> (g)</label><input type="number" class="form-control" id="adrs-ay" value="0.200" step="0.001" /></div>
+                <div class="col-6 mb-2"><label>d<sub>pi</sub> (m)</label><input type="number" class="form-control" id="adrs-dpi" value="0.0901" step="0.001" /></div>
+                <div class="col-6 mb-2"><label>a<sub>pi</sub> (g)</label><input type="number" class="form-control" id="adrs-api" value="0.233" step="0.001" /></div>
+              </div>
+            </div>
+            <button class="btn btn-calc btn-primary text-white w-100 mt-2" onclick="calcADRS()">Generate ADRS</button>
+            <div id="adrs-error" class="alert alert-danger mt-3 d-none"></div>
+            <div id="adrs-results" class="mt-3"></div>
           </div>
-          <div class="card-body"><canvas id="chart3" height="260"></canvas></div>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>ADRS Plot</span>
+            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('adrs-chart','ADRS.png')">&#8615; PNG</button>
+          </div>
+          <div class="card-body"><canvas id="adrs-chart" height="340"></canvas></div>
         </div>
       </div>
     </div>
@@ -1292,13 +1332,19 @@ async function calcSiteCoef() {
       Distance: <strong>${body.distance} km</strong> &nbsp;|&nbsp;
       Zone: <strong>${body.zone}</strong>
     </div>`;
+
+  // Propagate Ca/Cv to Response Spectrum and ADRS inputs
+  document.getElementById("rs-ca").value = fmt(d.ca, 3);
+  document.getElementById("rs-cv").value = fmt(d.cv, 3);
+  document.getElementById("adrs-ca").value = fmt(d.ca, 3);
+  document.getElementById("adrs-cv").value = fmt(d.cv, 3);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  MODULE 2: Response Spectrum
 // ══════════════════════════════════════════════════════════════════════════════
 
-const specCharts = { c1: null, c2: null, c3: null };
+const specCharts = { c1: null, c2: null };
 
 function destroyAll() {
   Object.keys(specCharts).forEach(k => { if (specCharts[k]) { specCharts[k].destroy(); specCharts[k] = null; } });
@@ -1398,24 +1444,130 @@ async function calcSpectrum() {
     },
   });
 
-  specCharts.c3 = new Chart(document.getElementById("chart3"), {
-    type: "line",
-    data: {
-      datasets: [{
-        label: "ADRS",
-        data: d.Sd.map((sd, i) => ({ x: sd, y: d.Sa[i] })),
-        borderColor: "#1a7abf", borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
-      }],
-    },
-    options: baseChartOpts("Spectral Displacement  Sd  (m)", "Sa  (g)", Math.max(...d.Sd) * 1.05),
-  });
-
   document.getElementById("rs-params").innerHTML = `
     <hr class="my-3"/>
     <div class="row g-2">
       ${resultCard("T<sub>s</sub>", fmt(d.Ts, 4), "s")}
       ${resultCard("S<sub>a,max</sub>", fmt(d.sa_max, 4), "g")}
     </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 2b: ADRS
+// ══════════════════════════════════════════════════════════════════════════════
+
+let adrsChart = null;
+
+const RADIAL_COLORS = [
+  "#c0392b", "#27ae60", "#8e44ad", "#2980b9",
+  "#d35400", "#16a085", "#7f8c8d", "#e67e22", "#2c3e50",
+];
+const RADIAL_DASHES = [
+  [8, 4], [6, 3], [10, 5], [4, 4],
+  [8, 3], [6, 4], [10, 3], [5, 5], [7, 3],
+];
+
+async function calcADRS() {
+  clearError("adrs-error");
+  const stype = document.getElementById("adrs-stype").value;
+  const body = {
+    ca:  parseFloat(document.getElementById("adrs-ca").value),
+    cv:  parseFloat(document.getElementById("adrs-cv").value),
+    structure_type: stype,
+    dy:  parseFloat(document.getElementById("adrs-dy").value) || 0,
+    ay:  parseFloat(document.getElementById("adrs-ay").value) || 0,
+    dpi: parseFloat(document.getElementById("adrs-dpi").value) || 0,
+    api_val: parseFloat(document.getElementById("adrs-api").value) || 0,
+  };
+
+  const r = await postJSON("/api/adrs", body);
+  if (!r.success) { showError("adrs-error", r.error); return; }
+  const d = r.data;
+
+  if (adrsChart) { adrsChart.destroy(); adrsChart = null; }
+
+  // Build datasets
+  const datasets = [];
+
+  // 5% damped ADRS curve
+  datasets.push({
+    label: "ADRS (5% damped)",
+    data: d.Sd.map((sd, i) => ({ x: sd, y: d.Sa[i] })),
+    borderColor: "#1a56db", borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
+    order: 1,
+  });
+
+  // Reduced ADRS if available
+  if (d.reduction) {
+    datasets.push({
+      label: `Reduced ADRS (\u03B2eff=${d.reduction.beta_eff}%)`,
+      data: d.reduction.Sd_r.map((sd, i) => ({ x: sd, y: d.reduction.Sa_r[i] })),
+      borderColor: "#27ae60", borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
+      order: 2,
+    });
+  }
+
+  // Radial period lines
+  const SdMax = Math.max(...d.Sd) * 1.05;
+  const SaMax = Math.max(...d.Sa) * 1.1;
+  d.radial_lines.forEach((rl, idx) => {
+    const isTs = Math.abs(rl.T - d.Ts) < 0.001;
+    datasets.push({
+      label: `T = ${rl.T}s` + (isTs ? " (Ts)" : ""),
+      data: rl.points,
+      borderColor: RADIAL_COLORS[idx % RADIAL_COLORS.length],
+      borderWidth: isTs ? 1.8 : 1.2,
+      borderDash: RADIAL_DASHES[idx % RADIAL_DASHES.length],
+      pointRadius: 0, tension: 0, fill: false,
+      order: 10 + idx,
+    });
+  });
+
+  adrsChart = new Chart(document.getElementById("adrs-chart"), {
+    type: "line",
+    data: { datasets },
+    options: {
+      responsive: true, animation: false,
+      scales: {
+        x: { type: "linear", min: 0, max: SdMax, title: { display: true, text: "Spectral Displacement  Sd  (m)" },
+             grid: { color: "rgba(0,0,0,.08)" } },
+        y: { min: 0, max: SaMax, title: { display: true, text: "Spectral Acceleration  Sa  (g)" },
+             grid: { color: "rgba(0,0,0,.08)" } },
+      },
+      plugins: {
+        legend: { position: "bottom", labels: { usePointStyle: true, pointStyle: "line", font: { size: 11 } } },
+        tooltip: { mode: "nearest", intersect: false },
+      },
+    },
+  });
+
+  // Results panel
+  let html = `<hr class="my-3"/>
+    <div class="row g-2">
+      ${resultCard("T<sub>s</sub>", fmt(d.Ts, 4), "s")}
+      ${resultCard("S<sub>a,max</sub>", fmt(d.sa_max, 4), "g")}
+    </div>`;
+
+  if (d.reduction) {
+    const rd = d.reduction;
+    html += `<hr class="my-2"/>
+      <p class="mb-1" style="font-size:.82rem;font-weight:600;color:#555;">ATC-40 Reduction</p>
+      <div class="row g-2">
+        ${resultCard("\u03B2<sub>0</sub>", fmt(rd.beta_0, 2), "%")}
+        ${resultCard("\u03BA", fmt(rd.kappa, 3), "")}
+        ${resultCard("\u03B2<sub>eff</sub>", fmt(rd.beta_eff, 2), "%")}
+        ${resultCard("SR<sub>A</sub>", fmt(rd.SRA, 3), "")}
+        ${resultCard("SR<sub>V</sub>", fmt(rd.SRV, 3), "")}
+      </div>`;
+    if (rd.dpn != null && rd.apn != null) {
+      html += `<div class="row g-2 mt-1">
+        ${resultCard("d<sub>pn</sub>", fmt(rd.dpn, 4), "m")}
+        ${resultCard("a<sub>pn</sub>", fmt(rd.apn, 4), "g")}
+      </div>`;
+    }
+  }
+
+  document.getElementById("adrs-results").innerHTML = html;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
