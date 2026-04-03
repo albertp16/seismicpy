@@ -292,12 +292,13 @@
               <strong>Type C:</strong> Poor buildings with pinched or degrading hysteresis (e.g. unreinforced masonry).
             </p>
             <div id="adrs-reduction-inputs">
+              <button class="btn btn-sm btn-outline-primary w-100 mb-2" onclick="autoFillFromPushover()"><i class="bi bi-lightning"></i> Auto-fill from Pushover Curve</button>
               <p class="text-muted mb-1" style="font-size:.75rem;"><strong>Bilinear yield point</strong> — from the idealized pushover capacity curve.</p>
               <div class="row g-2">
                 <div class="col-6 mb-2"><label>d<sub>y</sub> (m)</label><input type="number" class="form-control" id="adrs-dy" value="0.027" step="0.001" /></div>
                 <div class="col-6 mb-2"><label>a<sub>y</sub> (g)</label><input type="number" class="form-control" id="adrs-ay" value="0.200" step="0.001" /></div>
               </div>
-              <p class="text-muted mb-1" style="font-size:.75rem;"><strong>Trial performance point</strong> — initial estimate where demand meets capacity. Use T<sub>i</sub> and interpolate from the 5% ADRS.</p>
+              <p class="text-muted mb-1" style="font-size:.75rem;"><strong>Trial performance point</strong> — initial estimate where demand meets capacity. Uses T<sub>i</sub> from initial stiffness to interpolate on the 5% ADRS.</p>
               <div class="row g-2">
                 <div class="col-6 mb-2"><label>d<sub>pi</sub> (m)</label><input type="number" class="form-control" id="adrs-dpi" value="0.0901" step="0.001" /></div>
                 <div class="col-6 mb-2"><label>a<sub>pi</sub> (g)</label><input type="number" class="form-control" id="adrs-api" value="0.233" step="0.001" /></div>
@@ -1618,6 +1619,82 @@ function readPushoverTable() {
   });
   data.sort((a, b) => a.x - b.x);
   return data;
+}
+
+function autoFillFromPushover() {
+  const pts = readPushoverTable();
+  if (pts.length < 3) { alert("Need at least 3 pushover data points."); return; }
+
+  const g = 9.81;
+  const ca = parseFloat(document.getElementById("adrs-ca").value);
+  const cv = parseFloat(document.getElementById("adrs-cv").value);
+  if (!(ca > 0) || !(cv > 0)) { alert("Enter valid Ca and Cv first."); return; }
+
+  // --- Bilinear idealization (equal-energy method) ---
+  // 1) Initial stiffness from first non-zero point
+  let k0 = 0;
+  for (let i = 1; i < pts.length; i++) {
+    if (pts[i].x > 0 && pts[i].y > 0) {
+      k0 = pts[i].y / pts[i].x;
+      break;
+    }
+  }
+  if (k0 <= 0) { alert("Cannot determine initial stiffness from pushover data."); return; }
+
+  // 2) Ultimate capacity: max Sa in the curve
+  const saUlt = Math.max(...pts.map(p => p.y));
+
+  // 3) Post-yield plateau: average Sa of last 30% of points
+  const n30 = Math.max(1, Math.floor(pts.length * 0.3));
+  const tailPts = pts.slice(-n30);
+  const ayEst = tailPts.reduce((s, p) => s + p.y, 0) / tailPts.length;
+
+  // 4) Yield point: intersection of initial stiffness with plateau
+  const dyEst = ayEst / k0;
+
+  // 5) Equal-energy correction: adjust ay so area under bilinear = area under curve
+  // Area under pushover curve (trapezoidal)
+  let areaCurve = 0;
+  const sdMax = pts[pts.length - 1].x;
+  for (let i = 1; i < pts.length; i++) {
+    areaCurve += 0.5 * (pts[i].y + pts[i - 1].y) * (pts[i].x - pts[i - 1].x);
+  }
+  // Area under bilinear = 0.5*dy*ay + ay*(sdMax - dy) = ay*(sdMax - 0.5*dy)
+  // Solve for ay: ay = areaCurve / (sdMax - 0.5*dyEst)
+  // But dy also depends on ay (dy = ay/k0), so iterate
+  let ay = ayEst, dy = dyEst;
+  for (let iter = 0; iter < 10; iter++) {
+    const denom = sdMax - 0.5 * dy;
+    if (denom <= 0) break;
+    ay = areaCurve / denom;
+    dy = ay / k0;
+    if (dy >= sdMax) { dy = sdMax * 0.5; ay = k0 * dy; break; }
+  }
+
+  // --- Trial performance point (Ti on 5% ADRS) ---
+  // Ti from initial stiffness: k0 = Sa/Sd = 4*pi²/(g*Ti²) → Ti = 2*pi / sqrt(k0*g)
+  const Ti = 2 * Math.PI / Math.sqrt(k0 * g);
+
+  // Interpolate Sa on the 5% ADRS at Ti
+  const saMax = 2.5 * ca;
+  const Ts = cv / saMax;
+  const T0 = 0.2 * Ts;
+  let saAtTi;
+  if (Ti <= T0) {
+    saAtTi = ca + (saMax - ca) * (Ti / T0);
+  } else if (Ti <= Ts) {
+    saAtTi = saMax;
+  } else {
+    saAtTi = saMax * Ts / Ti;
+  }
+  const dpi = saAtTi * g * Ti * Ti / (4 * Math.PI * Math.PI);
+  const api = saAtTi;
+
+  // Fill inputs
+  document.getElementById("adrs-dy").value = dy.toFixed(4);
+  document.getElementById("adrs-ay").value = ay.toFixed(4);
+  document.getElementById("adrs-dpi").value = dpi.toFixed(4);
+  document.getElementById("adrs-api").value = api.toFixed(4);
 }
 
 async function calcADRS() {
