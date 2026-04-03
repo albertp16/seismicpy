@@ -281,7 +281,7 @@
             <div class="mb-2"><label>Structure Type</label>
               <select class="form-select" id="adrs-stype">
                 <option value="">None (5% damped only)</option>
-                <option value="A">Type A — Good behavior</option>
+                <option value="A" selected>Type A — Good behavior</option>
                 <option value="B">Type B — Average behavior</option>
                 <option value="C">Type C — Poor behavior</option>
               </select>
@@ -1540,6 +1540,70 @@ function removePushoverRow() {
   const tbody = document.querySelector("#pushover-table tbody");
   if (tbody.rows.length > 2) tbody.removeChild(tbody.lastElementChild);
 }
+
+// Excel-like copy-paste for pushover table
+document.getElementById("pushover-table").addEventListener("paste", function(e) {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData("text");
+  if (!text.trim()) return;
+
+  const rows = text.trim().split(/\r?\n/).map(r => r.split(/\t/));
+  if (rows.length === 0) return;
+
+  const tbody = this.querySelector("tbody");
+  const target = e.target.closest("td[contenteditable]");
+  let startRow = 0, startCol = 0;
+
+  if (target) {
+    const tr = target.parentElement;
+    startRow = Array.from(tbody.rows).indexOf(tr);
+    startCol = Array.from(tr.cells).indexOf(target);
+  }
+
+  // If pasting more than one row and starting from first cell, replace entire table
+  if (rows.length > 1 && rows[0].length >= 2 && startRow <= 0 && startCol <= 0) {
+    tbody.innerHTML = "";
+    rows.forEach(cols => {
+      if (cols.length < 1) return;
+      const tr = document.createElement("tr");
+      for (let c = 0; c < 2; c++) {
+        const td = document.createElement("td");
+        td.contentEditable = "true";
+        td.textContent = (cols[c] || "0").trim();
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    });
+    return;
+  }
+
+  // Otherwise paste into existing cells starting at cursor
+  rows.forEach((cols, ri) => {
+    const rowIdx = startRow + ri;
+    while (rowIdx >= tbody.rows.length) addPushoverRow();
+    const tr = tbody.rows[rowIdx];
+    cols.forEach((val, ci) => {
+      const colIdx = startCol + ci;
+      if (colIdx < tr.cells.length) {
+        tr.cells[colIdx].textContent = val.trim();
+      }
+    });
+  });
+});
+
+// Copy selection from pushover table
+document.getElementById("pushover-table").addEventListener("copy", function(e) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const tbody = this.querySelector("tbody");
+  const lines = [];
+  for (const row of tbody.rows) {
+    const cells = row.querySelectorAll("td[contenteditable]");
+    lines.push(Array.from(cells).map(c => c.textContent.trim()).join("\t"));
+  }
+  e.preventDefault();
+  e.clipboardData.setData("text/plain", lines.join("\n"));
+});
 
 function readPushoverTable() {
   const rows = document.querySelectorAll("#pushover-table tbody tr");
