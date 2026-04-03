@@ -305,6 +305,7 @@
               </div>
             </div>
             <button class="btn btn-calc btn-primary text-white w-100 mt-2" onclick="calcADRS()">Generate ADRS</button>
+            <button class="btn btn-outline-secondary w-100 mt-2" onclick="showADRSReport()" id="adrs-report-btn" disabled><i class="bi bi-file-earmark-text"></i> View Calculation Report</button>
             <div id="adrs-error" class="alert alert-danger mt-3 d-none"></div>
             <div id="adrs-results" class="mt-3"></div>
           </div>
@@ -1301,6 +1302,25 @@
 
 </div><!-- /main-content -->
 
+<!-- ADRS Calculation Report Modal -->
+<div class="modal fade" id="adrsReportModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background:var(--accent);color:#fff;">
+        <h6 class="modal-title mb-0"><i class="bi bi-file-earmark-text"></i> ATC-40 Capacity Spectrum — Calculation Report</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="adrs-report-body" style="font-size:.88rem;">
+        <p class="text-muted">Generate ADRS first.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-sm btn-outline-secondary" onclick="copyReportToClipboard()"><i class="bi bi-clipboard"></i> Copy to Clipboard</button>
+        <button type="button" class="btn btn-sm btn-primary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 
@@ -1515,6 +1535,8 @@ async function calcSpectrum() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 let adrsChart = null;
+let lastADRSData = null;
+let lastADRSInput = null;
 
 const RADIAL_COLORS = [
   "#c0392b", "#27ae60", "#8e44ad", "#2980b9",
@@ -1713,6 +1735,9 @@ async function calcADRS() {
   const r = await postJSON("/api/adrs", body);
   if (!r.success) { showError("adrs-error", r.error); return; }
   const d = r.data;
+  lastADRSData = d;
+  lastADRSInput = body;
+  document.getElementById("adrs-report-btn").disabled = false;
 
   if (adrsChart) { adrsChart.destroy(); adrsChart = null; }
 
@@ -1857,6 +1882,146 @@ async function calcADRS() {
   }
 
   document.getElementById("adrs-results").innerHTML = html;
+}
+
+function showADRSReport() {
+  if (!lastADRSData) return;
+  const d = lastADRSData;
+  const b = lastADRSInput;
+  const g = 9.81;
+
+  const Ts = d.Ts;
+  const T0 = d.T0;
+  const saMax = d.sa_max;
+
+  // Compute Ti from inputs
+  const dpiIn = b.dpi || 0;
+  const apiIn = b.api_val || 0;
+  const Ti = (dpiIn > 0 && apiIn > 0) ? 2 * Math.PI * Math.sqrt(dpiIn / (apiIn * g)) : 0;
+
+  let html = `
+    <h6 class="fw-bold">1. ADRS Construction</h6>
+    <table class="table table-sm table-bordered" style="max-width:400px;font-size:.85rem;">
+      <tbody>
+        <tr><td>C<sub>a</sub></td><td class="text-end fw-bold">${fmt(b.ca, 4)}</td></tr>
+        <tr><td>C<sub>v</sub></td><td class="text-end fw-bold">${fmt(b.cv, 4)}</td></tr>
+        <tr><td>S<sub>a,max</sub> = 2.5 &times; C<sub>a</sub></td><td class="text-end fw-bold">${fmt(saMax, 4)} g</td></tr>
+        <tr><td>T<sub>s</sub> = C<sub>v</sub> / S<sub>a,max</sub></td><td class="text-end fw-bold">${fmt(Ts, 4)} s</td></tr>
+        <tr><td>T<sub>0</sub> = 0.2 &times; T<sub>s</sub></td><td class="text-end fw-bold">${fmt(T0, 4)} s</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:.82rem;">S<sub>d</sub> = S<sub>a</sub> &middot; g &middot; T&sup2; / (4&pi;&sup2;) &mdash; converts the response spectrum from S<sub>a</sub> vs T to S<sub>a</sub> vs S<sub>d</sub> (ADRS format).</p>
+    <hr/>`;
+
+  // Reduced spectrum table
+  if (d.reduction && b.structure_type) {
+    const rd = d.reduction;
+    const stype = b.structure_type;
+
+    // Build reduced ADRS table (sample every ~0.2s increments)
+    const periods = [];
+    const step = Ts;
+    for (let t = 0; t <= 4.25 + 0.01; t += step < 0.3 ? step : 0.2) {
+      periods.push(parseFloat(t.toFixed(3)));
+    }
+    // Ensure key periods are included
+    [0, T0, Ts].forEach(tp => { if (!periods.includes(parseFloat(tp.toFixed(3)))) periods.push(parseFloat(tp.toFixed(3))); });
+    periods.sort((a, b2) => a - b2);
+    // Deduplicate
+    const uniqPeriods = [...new Set(periods.map(p => p.toFixed(3)))].map(Number);
+
+    // Generate the reduced spectrum values at these periods
+    const Ts_r = (rd.SRV / rd.SRA) * Ts;
+    const saMax_r = rd.SRA * saMax;
+    const ca_r = rd.SRA * b.ca;
+
+    let tableRows = "";
+    uniqPeriods.forEach(t => {
+      let sa_r;
+      if (t <= 0.2 * Ts_r) {
+        sa_r = ca_r + (saMax_r - ca_r) * (t / (0.2 * Ts_r));
+      } else if (t <= Ts_r) {
+        sa_r = saMax_r;
+      } else {
+        sa_r = t > 0 ? saMax_r * Ts_r / t : 0;
+      }
+      const sd_r = sa_r * g * t * t / (4 * Math.PI * Math.PI);
+      tableRows += `<tr><td class="text-end">${fmt(t, 3)}</td><td class="text-end">${fmt(sa_r, 3)}</td><td class="text-end">${fmt(sd_r, 3)}</td></tr>`;
+    });
+
+    html += `
+    <h6 class="fw-bold">2. ATC-40 Method A &mdash; Performance Point (Trial)</h6>
+    <p style="font-size:.82rem;"><strong>Structure Type:</strong> ${stype}</p>
+    <table class="table table-sm table-bordered" style="max-width:500px;font-size:.85rem;">
+      <tbody>
+        <tr><td>T<sub>i</sub> = 2&pi; &radic;(d<sub>pi</sub> / (a<sub>pi</sub> &middot; g))</td><td class="text-end fw-bold">${fmt(Ti, 3)} s</td></tr>
+        <tr><td>d<sub>pi</sub> (from interpolation)</td><td class="text-end fw-bold">${fmt(dpiIn, 4)} m</td></tr>
+        <tr><td>a<sub>pi</sub> (from interpolation)</td><td class="text-end fw-bold">${fmt(apiIn, 4)} g</td></tr>
+      </tbody>
+    </table>
+    <table class="table table-sm table-bordered" style="max-width:500px;font-size:.85rem;">
+      <tbody>
+        <tr><td>Trial d<sub>y</sub></td><td class="text-end fw-bold">${fmt(b.dy, 4)} m</td></tr>
+        <tr><td>Corr a<sub>y</sub></td><td class="text-end fw-bold">${fmt(b.ay, 4)} g</td></tr>
+      </tbody>
+    </table>
+    <hr class="my-2"/>
+    <h6 class="fw-bold">3. Effective Damping &amp; Spectral Reduction</h6>
+    <table class="table table-sm table-bordered" style="max-width:500px;font-size:.85rem;">
+      <tbody>
+        <tr><td>&beta;<sub>0</sub> = 63.7 &times; (a<sub>y</sub>&middot;d<sub>pi</sub> &minus; d<sub>y</sub>&middot;a<sub>pi</sub>) / (a<sub>pi</sub>&middot;d<sub>pi</sub>)</td><td class="text-end fw-bold">${fmt(rd.beta_0, 2)}</td></tr>
+        <tr><td>&kappa; (Type ${stype})</td><td class="text-end fw-bold">${fmt(rd.kappa, 3)}</td></tr>
+        <tr><td>&beta;<sub>eff</sub> = &kappa; &times; &beta;<sub>0</sub> + 5</td><td class="text-end fw-bold">${fmt(rd.beta_eff, 2)} %</td></tr>
+      </tbody>
+    </table>
+    <table class="table table-sm table-bordered" style="max-width:500px;font-size:.85rem;">
+      <tbody>
+        <tr><td>SR<sub>A</sub> = (3.21 &minus; 0.68 &middot; ln(&beta;<sub>eff</sub>)) / 2.12</td><td class="text-end fw-bold">${fmt(rd.SRA, 3)}</td><td>${rd.SRA <= 0.33 ? '<span class="text-danger">min 0.33</span>' : ''}</td></tr>
+        <tr><td>SR<sub>V</sub> = (2.31 &minus; 0.41 &middot; ln(&beta;<sub>eff</sub>)) / 1.65</td><td class="text-end fw-bold">${fmt(rd.SRV, 3)}</td><td>${rd.SRV <= 0.50 ? '<span class="text-danger">min 0.50</span>' : ''}</td></tr>
+        <tr><td>T<sub>s</sub>' = (SR<sub>V</sub>/SR<sub>A</sub>) &times; T<sub>s</sub></td><td class="text-end fw-bold">${fmt(Ts_r, 4)} s</td><td></td></tr>
+      </tbody>
+    </table>
+    <hr class="my-2"/>
+    <h6 class="fw-bold">4. Reduced ADRS Table</h6>
+    <table class="table table-sm table-bordered" style="max-width:400px;font-size:.82rem;">
+      <thead class="table-light"><tr><th class="text-center">Period T (s)</th><th class="text-center">S<sub>a</sub> (g)</th><th class="text-center">S<sub>d</sub> (m)</th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>`;
+
+    if (rd.dpn != null && rd.apn != null) {
+      const tol = 0.05;
+      const dpOK = Math.abs(rd.dpn - dpiIn) <= tol * dpiIn;
+      const apOK = Math.abs(rd.apn - apiIn) <= tol * apiIn;
+      html += `
+      <hr class="my-2"/>
+      <h6 class="fw-bold">5. Convergence Check</h6>
+      <table class="table table-sm table-bordered" style="max-width:500px;font-size:.85rem;">
+        <tbody>
+          <tr><td>d<sub>pn</sub></td><td class="text-end fw-bold">${fmt(rd.dpn, 4)} m</td><td class="fw-bold ${dpOK ? 'text-success' : 'text-danger'}">${dpOK ? 'OK' : 'NG!'}</td></tr>
+          <tr><td>a<sub>pn</sub></td><td class="text-end fw-bold">${fmt(rd.apn, 4)} g</td><td class="fw-bold ${apOK ? 'text-success' : 'text-danger'}">${apOK ? 'OK' : 'NG!'}</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:.82rem;">${dpOK && apOK
+        ? '<strong class="text-success">Performance point converged.</strong> d<sub>pn</sub> and a<sub>pn</sub> are within 5% of the trial values.'
+        : '<strong class="text-danger">Not converged.</strong> Use d<sub>pn</sub> and a<sub>pn</sub> as the new trial point and repeat.'}</p>`;
+    }
+  } else {
+    html += `<p class="text-muted">Select a Structure Type and provide trial parameters to see ATC-40 reduction details.</p>`;
+  }
+
+  document.getElementById("adrs-report-body").innerHTML = html;
+  new bootstrap.Modal(document.getElementById("adrsReportModal")).show();
+}
+
+function copyReportToClipboard() {
+  const body = document.getElementById("adrs-report-body");
+  const text = body.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('#adrsReportModal .modal-footer .btn-outline-secondary');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+    setTimeout(() => btn.innerHTML = orig, 1500);
+  });
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
