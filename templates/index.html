@@ -319,6 +319,46 @@
         </div>
       </div>
     </div>
+    <div class="row g-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Pushover Capacity Curve (ADRS Format)</span>
+            <div class="form-check form-switch mb-0 ms-auto me-2">
+              <input class="form-check-input" type="checkbox" id="adrs-show-pushover" checked />
+              <label class="form-check-label text-white" for="adrs-show-pushover" style="font-size:.82rem;">Show on plot</label>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="text-muted mb-2" style="font-size:.78rem;">Enter pushover curve data converted to spectral coordinates. S<sub>d</sub> = spectral displacement (m), S<sub>a</sub> = spectral acceleration (g). Data should start from origin and represent the capacity curve in ADRS format.</p>
+            <table class="spread-table mb-3" id="pushover-table" style="max-width:320px;">
+              <thead><tr><th>S<sub>d</sub> (m)</th><th>S<sub>a</sub> (g)</th></tr></thead>
+              <tbody>
+                <tr><td contenteditable="true">0</td><td contenteditable="true">0</td></tr>
+                <tr><td contenteditable="true">0.005</td><td contenteditable="true">0.050</td></tr>
+                <tr><td contenteditable="true">0.010</td><td contenteditable="true">0.095</td></tr>
+                <tr><td contenteditable="true">0.015</td><td contenteditable="true">0.135</td></tr>
+                <tr><td contenteditable="true">0.020</td><td contenteditable="true">0.168</td></tr>
+                <tr><td contenteditable="true">0.027</td><td contenteditable="true">0.200</td></tr>
+                <tr><td contenteditable="true">0.040</td><td contenteditable="true">0.218</td></tr>
+                <tr><td contenteditable="true">0.060</td><td contenteditable="true">0.230</td></tr>
+                <tr><td contenteditable="true">0.080</td><td contenteditable="true">0.235</td></tr>
+                <tr><td contenteditable="true">0.100</td><td contenteditable="true">0.238</td></tr>
+                <tr><td contenteditable="true">0.130</td><td contenteditable="true">0.240</td></tr>
+                <tr><td contenteditable="true">0.170</td><td contenteditable="true">0.242</td></tr>
+                <tr><td contenteditable="true">0.220</td><td contenteditable="true">0.243</td></tr>
+                <tr><td contenteditable="true">0.280</td><td contenteditable="true">0.244</td></tr>
+                <tr><td contenteditable="true">0.350</td><td contenteditable="true">0.244</td></tr>
+              </tbody>
+            </table>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary" onclick="addPushoverRow()"><i class="bi bi-plus"></i> Add Row</button>
+              <button class="btn btn-sm btn-outline-danger" onclick="removePushoverRow()"><i class="bi bi-dash"></i> Remove Row</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ═══════════ MODULE 3: Base Shear ═══════════ -->
@@ -1484,6 +1524,38 @@ const RADIAL_DASHES = [
   [8, 3], [6, 4], [10, 3], [5, 5], [7, 3],
 ];
 
+function addPushoverRow() {
+  const tbody = document.querySelector("#pushover-table tbody");
+  const tr = document.createElement("tr");
+  for (let i = 0; i < 2; i++) {
+    const td = document.createElement("td");
+    td.contentEditable = "true";
+    td.textContent = "0";
+    tr.appendChild(td);
+  }
+  tbody.appendChild(tr);
+}
+
+function removePushoverRow() {
+  const tbody = document.querySelector("#pushover-table tbody");
+  if (tbody.rows.length > 2) tbody.removeChild(tbody.lastElementChild);
+}
+
+function readPushoverTable() {
+  const rows = document.querySelectorAll("#pushover-table tbody tr");
+  const data = [];
+  rows.forEach(row => {
+    const cells = row.querySelectorAll("td[contenteditable]");
+    if (cells.length >= 2) {
+      const sd = parseFloat(cells[0].textContent.trim());
+      const sa = parseFloat(cells[1].textContent.trim());
+      if (!isNaN(sd) && !isNaN(sa)) data.push({ x: sd, y: sa });
+    }
+  });
+  data.sort((a, b) => a.x - b.x);
+  return data;
+}
+
 async function calcADRS() {
   clearError("adrs-error");
   const stype = document.getElementById("adrs-stype").value;
@@ -1547,6 +1619,20 @@ async function calcADRS() {
       tension: 0, fill: false,
       order: 3,
     });
+  }
+
+  // Pushover capacity curve
+  const showPushover = document.getElementById("adrs-show-pushover").checked;
+  if (showPushover) {
+    const poData = readPushoverTable();
+    if (poData.length >= 2) {
+      datasets.push({
+        label: "Pushover Curve",
+        data: poData,
+        borderColor: "#c0392b", borderWidth: 2.5, pointRadius: 0, tension: 0.3, fill: false,
+        order: 0,
+      });
+    }
   }
 
   // Radial period lines (toggle)
