@@ -264,12 +264,20 @@
         <div class="card h-100">
           <div class="card-header">Input Parameters</div>
           <div class="card-body">
+            <p class="text-muted mb-2" style="font-size:.78rem;">Site coefficients from NSCP 2015. Auto-filled when computed in the Site Coefficients tab.</p>
             <div class="row g-2">
               <div class="col-6 mb-2"><label>C<sub>a</sub></label><input type="number" class="form-control" id="adrs-ca" value="0.44" step="0.01" /></div>
               <div class="col-6 mb-2"><label>C<sub>v</sub></label><input type="number" class="form-control" id="adrs-cv" value="0.64" step="0.01" /></div>
             </div>
             <hr class="my-2"/>
-            <p class="mb-2" style="font-size:.82rem;font-weight:600;color:#555;">ATC-40 Spectrum Reduction</p>
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="adrs-show-radial" checked />
+              <label class="form-check-label" for="adrs-show-radial" style="font-size:.85rem;font-weight:500;">Show radial period lines</label>
+            </div>
+            <p class="text-muted mb-2" style="font-size:.75rem;">Radial lines represent constant structural period T. Each line passes through the origin with slope 4&pi;&sup2;/(g&middot;T&sup2;). They help identify the effective period at any point on the ADRS curve.</p>
+            <hr class="my-2"/>
+            <p class="mb-1" style="font-size:.82rem;font-weight:600;color:#555;">ATC-40 Spectrum Reduction</p>
+            <p class="text-muted mb-2" style="font-size:.75rem;">Reduces the 5%-damped spectrum based on equivalent viscous damping from the structure's hysteretic energy dissipation (ATC-40 Chapter 8).</p>
             <div class="mb-2"><label>Structure Type</label>
               <select class="form-select" id="adrs-stype">
                 <option value="">None (5% damped only)</option>
@@ -278,10 +286,19 @@
                 <option value="C">Type C — Poor behavior</option>
               </select>
             </div>
+            <p class="text-muted mb-2" style="font-size:.75rem;">
+              <strong>Type A:</strong> New buildings with stable, full hysteresis loops (e.g. ductile SMRF).<br/>
+              <strong>Type B:</strong> Average existing buildings with moderate energy dissipation.<br/>
+              <strong>Type C:</strong> Poor buildings with pinched or degrading hysteresis (e.g. unreinforced masonry).
+            </p>
             <div id="adrs-reduction-inputs">
+              <p class="text-muted mb-1" style="font-size:.75rem;"><strong>Bilinear yield point</strong> — from the idealized pushover capacity curve.</p>
               <div class="row g-2">
                 <div class="col-6 mb-2"><label>d<sub>y</sub> (m)</label><input type="number" class="form-control" id="adrs-dy" value="0.027" step="0.001" /></div>
                 <div class="col-6 mb-2"><label>a<sub>y</sub> (g)</label><input type="number" class="form-control" id="adrs-ay" value="0.200" step="0.001" /></div>
+              </div>
+              <p class="text-muted mb-1" style="font-size:.75rem;"><strong>Trial performance point</strong> — initial estimate where demand meets capacity. Use T<sub>i</sub> and interpolate from the 5% ADRS.</p>
+              <div class="row g-2">
                 <div class="col-6 mb-2"><label>d<sub>pi</sub> (m)</label><input type="number" class="form-control" id="adrs-dpi" value="0.0901" step="0.001" /></div>
                 <div class="col-6 mb-2"><label>a<sub>pi</sub> (g)</label><input type="number" class="form-control" id="adrs-api" value="0.233" step="0.001" /></div>
               </div>
@@ -1507,21 +1524,49 @@ async function calcADRS() {
     });
   }
 
-  // Radial period lines
+  // Trial line: radial from origin through (dpi, api)
+  const dpiVal = parseFloat(document.getElementById("adrs-dpi").value) || 0;
+  const apiVal = parseFloat(document.getElementById("adrs-api").value) || 0;
+  if (stype && dpiVal > 0 && apiVal > 0) {
+    const trialSlope = apiVal / dpiVal;
+    const SdMaxAll = Math.max(...d.Sd);
+    const SaMaxAll = Math.max(...d.Sa) * 1.1;
+    const sdTrialEnd = Math.min(SdMaxAll, SaMaxAll / trialSlope) * 1.0;
+    const saTrialEnd = trialSlope * sdTrialEnd;
+    datasets.push({
+      label: "Trial 1 (Ti line)",
+      data: [
+        { x: 0, y: 0 },
+        { x: dpiVal, y: apiVal },
+        { x: sdTrialEnd, y: saTrialEnd },
+      ],
+      borderColor: "#8b0000", borderWidth: 2, borderDash: [6, 3],
+      pointRadius: [0, 5, 0],
+      pointBackgroundColor: "#8b0000",
+      pointStyle: "circle",
+      tension: 0, fill: false,
+      order: 3,
+    });
+  }
+
+  // Radial period lines (toggle)
+  const showRadial = document.getElementById("adrs-show-radial").checked;
   const SdMax = Math.max(...d.Sd) * 1.05;
   const SaMax = Math.max(...d.Sa) * 1.1;
-  d.radial_lines.forEach((rl, idx) => {
-    const isTs = Math.abs(rl.T - d.Ts) < 0.001;
-    datasets.push({
-      label: `T = ${rl.T}s` + (isTs ? " (Ts)" : ""),
-      data: rl.points,
-      borderColor: RADIAL_COLORS[idx % RADIAL_COLORS.length],
-      borderWidth: isTs ? 1.8 : 1.2,
-      borderDash: RADIAL_DASHES[idx % RADIAL_DASHES.length],
-      pointRadius: 0, tension: 0, fill: false,
-      order: 10 + idx,
+  if (showRadial) {
+    d.radial_lines.forEach((rl, idx) => {
+      const isTs = Math.abs(rl.T - d.Ts) < 0.001;
+      datasets.push({
+        label: `T = ${rl.T}s` + (isTs ? " (Ts)" : ""),
+        data: rl.points,
+        borderColor: RADIAL_COLORS[idx % RADIAL_COLORS.length],
+        borderWidth: isTs ? 1.8 : 1.2,
+        borderDash: RADIAL_DASHES[idx % RADIAL_DASHES.length],
+        pointRadius: 0, tension: 0, fill: false,
+        order: 10 + idx,
+      });
     });
-  });
+  }
 
   adrsChart = new Chart(document.getElementById("adrs-chart"), {
     type: "line",
@@ -1550,9 +1595,16 @@ async function calcADRS() {
 
   if (d.reduction) {
     const rd = d.reduction;
+    // Compute Ti from trial point
+    const g = 9.81;
+    const dpiIn = parseFloat(document.getElementById("adrs-dpi").value) || 0;
+    const apiIn = parseFloat(document.getElementById("adrs-api").value) || 0;
+    const Ti = (dpiIn > 0 && apiIn > 0) ? 2 * Math.PI * Math.sqrt(dpiIn / (apiIn * g)) : 0;
+
     html += `<hr class="my-2"/>
       <p class="mb-1" style="font-size:.82rem;font-weight:600;color:#555;">ATC-40 Reduction</p>
       <div class="row g-2">
+        ${resultCard("T<sub>i</sub>", fmt(Ti, 3), "s")}
         ${resultCard("\u03B2<sub>0</sub>", fmt(rd.beta_0, 2), "%")}
         ${resultCard("\u03BA", fmt(rd.kappa, 3), "")}
         ${resultCard("\u03B2<sub>eff</sub>", fmt(rd.beta_eff, 2), "%")}
@@ -1560,10 +1612,20 @@ async function calcADRS() {
         ${resultCard("SR<sub>V</sub>", fmt(rd.SRV, 3), "")}
       </div>`;
     if (rd.dpn != null && rd.apn != null) {
+      const tol = 0.05;
+      const dpiCheck = Math.abs(rd.dpn - dpiIn) <= tol * dpiIn;
+      const apiCheck = Math.abs(rd.apn - apiIn) <= tol * apiIn;
+      const dpnStatus = dpiCheck
+        ? '<span style="color:#27ae60;font-weight:700;">OK</span>'
+        : '<span style="color:#c0392b;font-weight:700;">NG!</span>';
+      const apnStatus = apiCheck
+        ? '<span style="color:#27ae60;font-weight:700;">OK</span>'
+        : '<span style="color:#c0392b;font-weight:700;">NG!</span>';
       html += `<div class="row g-2 mt-1">
-        ${resultCard("d<sub>pn</sub>", fmt(rd.dpn, 4), "m")}
-        ${resultCard("a<sub>pn</sub>", fmt(rd.apn, 4), "g")}
-      </div>`;
+        ${resultCard("d<sub>pn</sub>", fmt(rd.dpn, 4) + " " + dpnStatus, "m")}
+        ${resultCard("a<sub>pn</sub>", fmt(rd.apn, 4) + " " + apnStatus, "g")}
+      </div>
+      <p class="text-muted mt-1" style="font-size:.72rem;">OK = within 5% of trial point. NG = iterate with new trial (d<sub>pn</sub>, a<sub>pn</sub> become the next trial).</p>`;
     }
   }
 
