@@ -11,3 +11,9 @@ build/
 .vs/
 .ipynb_checkpoints/
 .git
+*.ipynb
+README.md
+Procfile
+runtime.txt
+railway.json
+railway.toml

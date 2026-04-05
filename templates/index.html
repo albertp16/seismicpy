@@ -103,6 +103,18 @@
     .module-pane { display: none; }
     .module-pane.active { display: block; }
     .module-title { font-size: 1.3rem; font-weight: 700; color: #0f2d6b; margin-bottom: 1.2rem; }
+
+    /* ── Auto-filled indicator (light green hatch) ─────────── */
+    .auto-filled {
+      background: repeating-linear-gradient(
+        45deg,
+        #e8f5e9,
+        #e8f5e9 4px,
+        #f1f8e9 4px,
+        #f1f8e9 8px
+      ) !important;
+      border-color: #81c784 !important;
+    }
   </style>
 </head>
 <body>
@@ -1391,6 +1403,18 @@ function fmt(v, d = 3) {
 //  MODULE 1: Site Coefficients
 // ══════════════════════════════════════════════════════════════════════════════
 
+// Auto-fill helper: set value + add green hatch indicator
+function autoFill(id, value) {
+  const el = document.getElementById(id);
+  el.value = value;
+  el.classList.add("auto-filled");
+  // Remove hatch when user manually edits the field
+  el.addEventListener("input", function handler() {
+    el.classList.remove("auto-filled");
+    el.removeEventListener("input", handler);
+  }, { once: true });
+}
+
 async function calcSiteCoef() {
   clearError("sc-error");
   const body = {
@@ -1417,11 +1441,24 @@ async function calcSiteCoef() {
       Zone: <strong>${body.zone}</strong>
     </div>`;
 
-  // Propagate Ca/Cv to Response Spectrum and ADRS inputs
-  document.getElementById("rs-ca").value = fmt(d.ca, 3);
-  document.getElementById("rs-cv").value = fmt(d.cv, 3);
-  document.getElementById("adrs-ca").value = fmt(d.ca, 3);
-  document.getElementById("adrs-cv").value = fmt(d.cv, 3);
+  // Auto-fill Response Spectrum inputs
+  autoFill("rs-ca", fmt(d.ca, 3));
+  autoFill("rs-cv", fmt(d.cv, 3));
+
+  // Auto-fill ADRS inputs
+  autoFill("adrs-ca", fmt(d.ca, 3));
+  autoFill("adrs-cv", fmt(d.cv, 3));
+
+  // Auto-fill Base Shear inputs
+  autoFill("bs-nv", fmt(d.nv, 3));
+  autoFill("bs-ca", fmt(d.ca, 3));
+  autoFill("bs-cv", fmt(d.cv, 3));
+  document.getElementById("bs-zone").value = body.zone;
+  document.getElementById("bs-zone").classList.add("auto-filled");
+  document.getElementById("bs-zone").addEventListener("change", function handler() {
+    this.classList.remove("auto-filled");
+    this.removeEventListener("change", handler);
+  }, { once: true });
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
