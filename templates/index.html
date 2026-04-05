@@ -237,7 +237,10 @@
         <div class="card h-100">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span>&#9312; Design Response Spectrum</span>
-            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart1','spectrum_NSCP2015.png')">&#8615; PNG</button>
+            <div>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadSpectrumCSV()">&#8615; CSV</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart1','spectrum_NSCP2015.png')">&#8615; PNG</button>
+            </div>
           </div>
           <div class="card-body"><canvas id="chart1" height="260"></canvas></div>
         </div>
@@ -315,7 +318,10 @@
         <div class="card h-100">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span>ADRS Plot</span>
-            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('adrs-chart','ADRS.png')">&#8615; PNG</button>
+            <div>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadADRSCSV()">&#8615; CSV</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('adrs-chart','ADRS.png')">&#8615; PNG</button>
+            </div>
           </div>
           <div class="card-body"><canvas id="adrs-chart" height="340"></canvas></div>
         </div>
@@ -1423,6 +1429,7 @@ async function calcSiteCoef() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 const specCharts = { c1: null, c2: null };
+let lastSpectrumData = null;
 
 function destroyAll() {
   Object.keys(specCharts).forEach(k => { if (specCharts[k]) { specCharts[k].destroy(); specCharts[k] = null; } });
@@ -1463,6 +1470,7 @@ async function calcSpectrum() {
   const r = await postJSON("/api/response-spectrum", body);
   if (!r.success) { showError("rs-error", r.error); return; }
   const d = r.data;
+  lastSpectrumData = d;
   const xMax = body.x_max;
 
   destroyAll();
@@ -2742,6 +2750,40 @@ function downloadCanvas(canvasId, filename) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+}
+
+function downloadCSV(headers, rows, filename) {
+  const csv = [headers.join(",")].concat(rows.map(r => r.join(","))).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+function downloadSpectrumCSV() {
+  if (!lastSpectrumData) { alert("Generate the spectrum first."); return; }
+  const d = lastSpectrumData;
+  const rows = d.x.map((xi, i) => [xi.toFixed(6), d.Sa[i].toFixed(6), d.Sd[i].toFixed(6)]);
+  downloadCSV(["T/Ts", "Sa (g)", "Sd (m)"], rows, "response_spectrum.csv");
+}
+
+function downloadADRSCSV() {
+  if (!lastADRSData) { alert("Generate the ADRS first."); return; }
+  const d = lastADRSData;
+  const hasReduction = !!d.reduction;
+  const headers = hasReduction ? ["Sd (m)", "Sa (g)", "Sd_reduced (m)", "Sa_reduced (g)"] : ["Sd (m)", "Sa (g)"];
+  const rows = d.Sd.map((sd, i) => {
+    const row = [sd.toFixed(6), d.Sa[i].toFixed(6)];
+    if (hasReduction) {
+      row.push(d.reduction.Sd_r[i].toFixed(6), d.reduction.Sa_r[i].toFixed(6));
+    }
+    return row;
+  });
+  downloadCSV(headers, rows, "ADRS.csv");
 }
 
 </script>
