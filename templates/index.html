@@ -167,6 +167,14 @@
     <a class="sidebar-link" data-target="tab-drift" onclick="switchModule(this)">Story Drift</a>
     <a class="sidebar-link" data-target="tab-acceleration" onclick="switchModule(this)">Story Acceleration</a>
   </div>
+
+  <!-- Ground Motion -->
+  <div class="sidebar-group-title" onclick="toggleGroup(this)">
+    Ground Motion <i class="bi bi-chevron-down"></i>
+  </div>
+  <div class="sidebar-items">
+    <a class="sidebar-link" data-target="tab-peer-gm" onclick="switchModule(this)">PEER GM Record</a>
+  </div>
 </nav>
 
 <!-- ════════════════════════════════════════════════════════════════════
@@ -677,7 +685,10 @@
         <div class="card h-100">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span>Story Shear Diagram</span>
-            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('ss-chart','StoryShear.png')">&#8615; PNG</button>
+            <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadStoryShearCSV()">&#8615; CSV</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('ss-chart','StoryShear.png')">&#8615; PNG</button>
+            </div>
           </div>
           <div class="card-body"><canvas id="ss-chart" height="360"></canvas></div>
         </div>
@@ -757,7 +768,7 @@
           <div class="card-header">Displacement Data (paste Max Disp &amp; Avg Disp from spreadsheet)</div>
           <div class="card-body" style="overflow-x:auto;">
             <div class="d-flex gap-3" style="min-width:max-content;">
-              <div style="min-width:220px;">
+              <div class="disp-input-col" style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
                   <input type="text" class="form-control form-control-sm" id="disp-name-1" value="TH1" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
@@ -773,7 +784,7 @@
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:220px;">
+              <div class="disp-input-col" style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
                   <input type="text" class="form-control form-control-sm" id="disp-name-2" value="TH2" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
@@ -789,7 +800,7 @@
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:220px;">
+              <div class="disp-input-col" style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
                   <input type="text" class="form-control form-control-sm" id="disp-name-3" value="TH3" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
@@ -805,7 +816,7 @@
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:220px;">
+              <div class="disp-input-col" style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
                   <input type="text" class="form-control form-control-sm" id="disp-name-4" value="TH4" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
@@ -821,7 +832,7 @@
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:220px;">
+              <div class="disp-input-col" style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
                   <input type="text" class="form-control form-control-sm" id="disp-name-5" value="TH5" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
@@ -837,7 +848,7 @@
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:220px;">
+              <div class="disp-input-col" style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
                   <input type="text" class="form-control form-control-sm" id="disp-name-6" value="TH6" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
@@ -853,7 +864,7 @@
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:220px;">
+              <div class="disp-input-col" style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
                   <input type="text" class="form-control form-control-sm" id="disp-name-7" value="TH7" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
@@ -882,6 +893,13 @@
           <div class="card-header">Plot Options</div>
           <div class="card-body">
             <div class="mb-3">
+              <label>Display Mode</label>
+              <select class="form-select" id="disp-mode" onchange="plotDisplacement()">
+                <option value="single" selected>Single (one load case)</option>
+                <option value="multiple">Multiple (overlay all)</option>
+              </select>
+            </div>
+            <div class="mb-3">
               <label>Data Column</label>
               <select class="form-select" id="disp-col" onchange="plotDisplacement()">
                 <option value="max" selected>Maximum Displacement</option>
@@ -901,7 +919,7 @@
               <input type="number" class="form-control" id="disp-limit-val" placeholder="e.g. 0.005" step="any" onchange="plotDisplacement()" />
             </div>
             <hr />
-            <p class="mb-2" style="font-size:.82rem;font-weight:600;color:#555;">Highlight Load Case</p>
+            <p class="mb-2" style="font-size:.82rem;font-weight:600;color:#555;">Select / Highlight Load Case</p>
             <div id="disp-highlight-list"></div>
             <hr />
             <button class="btn btn-calc btn-primary text-white w-100" onclick="plotDisplacement()">Generate Plot</button>
@@ -912,7 +930,10 @@
         <div class="card h-100">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span>Story Displacement Plot</span>
-            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('disp-chart','StoryDisplacement.png')">&#8615; PNG</button>
+            <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadDisplacementCSV()">&#8615; CSV</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('disp-chart','StoryDisplacement.png')">&#8615; PNG</button>
+            </div>
           </div>
           <div class="card-body"><canvas id="disp-chart" height="400"></canvas></div>
         </div>
@@ -1313,6 +1334,46 @@
             <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('accel-chart','StoryAcceleration.png')">&#8615; PNG</button>
           </div>
           <div class="card-body"><canvas id="accel-chart" height="400"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MODULE 14: PEER GM Record ═══════════ -->
+  <div class="module-pane" id="tab-peer-gm">
+    <div class="module-title">PEER Ground Motion Record &mdash; Acceleration Time-History</div>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Upload PEER GM Files</span>
+            <button class="btn btn-sm btn-outline-light py-0" onclick="clearPeerFiles()">Clear</button>
+          </div>
+          <div class="card-body">
+            <p class="text-muted mb-2" style="font-size:.78rem;">
+              Upload one or more PEER NGA strong motion records (.AT2, .VT2, .DT2, .txt).
+              Adding more files appends to the plot. Values expected in <strong>g</strong>.
+            </p>
+            <input type="file" class="form-control mb-3" id="peer-file" accept=".at2,.vt2,.dt2,.txt,.acc,.csv" multiple onchange="parsePeerFiles(event)" />
+            <div class="alert alert-danger d-none" id="peer-error"></div>
+            <div class="mb-1" style="font-size:.78rem;font-weight:600;color:#555;">Loaded Records</div>
+            <div id="peer-list" class="mb-2" style="font-size:.8rem;"></div>
+            <hr />
+            <div class="mb-2" style="font-size:.78rem;font-weight:600;color:#555;">Summary</div>
+            <div id="peer-summary" class="small text-muted">No records loaded.</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Acceleration Time-History</span>
+            <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadPeerCSV()">&#8615; CSV</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('peer-chart','PEER_GM.png')">&#8615; PNG</button>
+            </div>
+          </div>
+          <div class="card-body"><canvas id="peer-chart" height="360"></canvas></div>
         </div>
       </div>
     </div>
@@ -2591,7 +2652,8 @@ function buildHighlightList(prefix, plotFnName, preserveIdx) {
 }
 
 function genericPlot(cfg) {
-  // cfg: { prefix, storyTable, colSelect, meanChk, envChk, limitInput, canvasId, chartRef, title, xLabelMax, xLabelAvg, plotFnName }
+  // cfg: { prefix, storyTable, colSelect, meanChk, envChk, limitInput, canvasId, chartRef,
+  //        title, xLabelMax, xLabelAvg, plotFnName, modeSelect? }
   const prefix = cfg.prefix;
   const highlightIdx = getHighlightIdx(prefix);
   buildHighlightList(prefix, cfg.plotFnName, highlightIdx);
@@ -2602,8 +2664,22 @@ function genericPlot(cfg) {
   const showMean = document.getElementById(cfg.meanChk).checked;
   const showEnvelope = document.getElementById(cfg.envChk).checked;
   const limitVal = parseFloat(document.getElementById(cfg.limitInput).value);
+  const mode = cfg.modeSelect ? document.getElementById(cfg.modeSelect).value : "multiple";
   const storyLevels = readStoryLevels(cfg.storyTable);
   if (storyLevels.length === 0) return;
+
+  // In Single mode, pick the highlighted series; if none, fall back to first checked
+  let singleIdx = 0;
+  if (mode === "single") {
+    if (highlightIdx > 0) {
+      singleIdx = highlightIdx;
+    } else {
+      for (let i = 1; i <= PLOT_COUNT; i++) {
+        const chk = document.getElementById(prefix + "-chk-" + i);
+        if (chk && chk.checked) { singleIdx = i; break; }
+      }
+    }
+  }
 
   const datasets = [];
   const allSeries = [];
@@ -2611,6 +2687,7 @@ function genericPlot(cfg) {
   for (let i = 1; i <= PLOT_COUNT; i++) {
     const chk = document.getElementById(prefix + "-chk-" + i);
     if (!chk || !chk.checked) continue;
+    if (mode === "single" && i !== singleIdx) continue;
     const name = document.getElementById(prefix + "-name-" + i).value || ("TH" + i);
     const tableData = readDataTable(prefix, i, storyLevels);
     if (tableData.length === 0) continue;
@@ -2619,7 +2696,7 @@ function genericPlot(cfg) {
     const pts = tableData.map(d => ({ x: d[colKey], y: d.level }));
     allSeries.push({ idx: i, name, pts, tableData });
 
-    const isHighlighted = highlightIdx > 0 && highlightIdx === i;
+    const isHighlighted = mode === "single" || (highlightIdx > 0 && highlightIdx === i);
     datasets.push({
       label: name,
       data: pts,
@@ -2727,13 +2804,38 @@ const dispChartRef = { inst: null };
 function addDispStoryRow() { genericAddRow("disp-story-table", "disp"); }
 function removeDispStoryRow() { genericRemoveRow("disp-story-table", "disp"); }
 function plotDisplacement() {
+  updateDispInputVisibility();
   genericPlot({
     prefix: "disp", storyTable: "disp-story-table",
     colSelect: "disp-col", meanChk: "disp-show-mean", envChk: "disp-show-envelope",
     limitInput: "disp-limit-val", canvasId: "disp-chart", chartRef: dispChartRef,
     title: "Story Displacement Plot", plotFnName: "plotDisplacement",
     xLabelMax: "Maximum Displacement (mm)", xLabelAvg: "Average Displacement (mm)",
+    modeSelect: "disp-mode",
   });
+}
+
+// Show only the selected TH input column in Single mode; show all in Multiple
+function updateDispInputVisibility() {
+  const mode = document.getElementById("disp-mode").value;
+  const cols = document.querySelectorAll(".disp-input-col");
+
+  if (mode === "multiple") {
+    cols.forEach(c => { c.style.display = ""; });
+    return;
+  }
+
+  // Single: pick highlighted, else first checked, else 1
+  let sel = getHighlightIdx("disp");
+  if (sel === 0) {
+    for (let i = 1; i <= PLOT_COUNT; i++) {
+      const chk = document.getElementById("disp-chk-" + i);
+      if (chk && chk.checked) { sel = i; break; }
+    }
+  }
+  if (sel === 0) sel = 1;
+
+  cols.forEach((c, i) => { c.style.display = (i + 1 === sel) ? "" : "none"; });
 }
 
 // ── Drift ───────────────────────────────────────────────────────────────────
@@ -2822,6 +2924,300 @@ function downloadADRSCSV() {
   });
   downloadCSV(headers, rows, "ADRS.csv");
 }
+
+function downloadStoryShearCSV() {
+  const data = readSpreadTable("ss-table");
+  if (data.length < 1) { alert("Enter data in the table first."); return; }
+  data.sort((a, b) => a.h - b.h);
+  const rows = data.map(d => [d.h, d.x, d.y]);
+  downloadCSV(["Height (m)", "Shear X (kN)", "Shear Y (kN)"], rows, "StoryShear.csv");
+}
+
+function downloadDisplacementCSV() {
+  const storyLevels = readStoryLevels("disp-story-table");
+  if (storyLevels.length === 0) { alert("Enter story levels first."); return; }
+  const colKey = document.getElementById("disp-col").value;
+  const colLabel = colKey === "max" ? "Maximum Displacement" : "Average Displacement";
+  const mode = document.getElementById("disp-mode").value;
+
+  // Determine selected series (Single mode: one series only)
+  let onlyIdx = 0;
+  if (mode === "single") {
+    const hl = getHighlightIdx("disp");
+    if (hl > 0) {
+      onlyIdx = hl;
+    } else {
+      for (let i = 1; i <= PLOT_COUNT; i++) {
+        const chk = document.getElementById("disp-chk-" + i);
+        if (chk && chk.checked) { onlyIdx = i; break; }
+      }
+    }
+  }
+
+  const headers = ["Story", "Level (m)"];
+  const seriesData = [];
+  for (let i = 1; i <= PLOT_COUNT; i++) {
+    const chk = document.getElementById("disp-chk-" + i);
+    if (!chk || !chk.checked) continue;
+    if (mode === "single" && i !== onlyIdx) continue;
+    const name = document.getElementById("disp-name-" + i).value || ("TH" + i);
+    const td = readDataTable("disp", i, storyLevels);
+    if (td.length === 0) continue;
+    headers.push(name + " (" + colLabel + ")");
+    seriesData.push({ name, td });
+  }
+  if (seriesData.length === 0) { alert("No visible series to export."); return; }
+
+  const rows = storyLevels.map((sl, r) => {
+    const row = [sl.story, sl.level];
+    seriesData.forEach(s => {
+      const entry = s.td[r];
+      row.push(entry ? entry[colKey] : "");
+    });
+    return row;
+  });
+  const filename = mode === "single"
+    ? "StoryDisplacement_" + seriesData[0].name + ".csv"
+    : "StoryDisplacement.csv";
+  downloadCSV(headers, rows, filename);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 14: PEER GM Record — parse, plot, download
+// ══════════════════════════════════════════════════════════════════════════════
+
+let peerChart = null;
+let peerRecords = [];   // [{ id, filename, header, npts, dt, time, accel, color, visible }]
+const PEER_COLORS = [
+  "#0f2d6b", "#c0392b", "#27ae60", "#8e44ad", "#e67e22",
+  "#16a085", "#d35400", "#2980b9", "#7f8c8d", "#2c3e50",
+];
+
+function parsePeerFiles(event) {
+  const files = Array.from(event.target.files || []);
+  const errEl = document.getElementById("peer-error");
+  errEl.classList.add("d-none");
+  if (files.length === 0) return;
+
+  let remaining = files.length;
+  const errors = [];
+
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const parsed = parsePeerText(e.target.result, file.name);
+        parsed.id = Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+        parsed.color = PEER_COLORS[peerRecords.length % PEER_COLORS.length];
+        parsed.visible = true;
+        peerRecords.push(parsed);
+      } catch (err) {
+        errors.push(file.name + ": " + err.message);
+      }
+      if (--remaining === 0) finishPeerUpload(errors);
+    };
+    reader.onerror = function() {
+      errors.push(file.name + ": read failed");
+      if (--remaining === 0) finishPeerUpload(errors);
+    };
+    reader.readAsText(file);
+  });
+
+  event.target.value = "";
+}
+
+function finishPeerUpload(errors) {
+  if (errors.length) {
+    document.getElementById("peer-error").textContent = errors.join("\n");
+    document.getElementById("peer-error").classList.remove("d-none");
+  }
+  renderPeerList();
+  renderPeerSummary();
+  plotPeerAcceleration();
+}
+
+function clearPeerFiles() {
+  peerRecords = [];
+  if (peerChart) { peerChart.destroy(); peerChart = null; }
+  renderPeerList();
+  renderPeerSummary();
+  document.getElementById("peer-error").classList.add("d-none");
+}
+
+function togglePeerRecord(id) {
+  const rec = peerRecords.find(r => r.id === id);
+  if (rec) { rec.visible = !rec.visible; plotPeerAcceleration(); renderPeerList(); }
+}
+
+function removePeerRecord(id) {
+  peerRecords = peerRecords.filter(r => r.id !== id);
+  renderPeerList();
+  renderPeerSummary();
+  plotPeerAcceleration();
+}
+
+function renderPeerList() {
+  const el = document.getElementById("peer-list");
+  if (peerRecords.length === 0) {
+    el.innerHTML = '<span class="text-muted">No files loaded.</span>';
+    return;
+  }
+  el.innerHTML = peerRecords.map(r =>
+    '<div class="d-flex align-items-center mb-1" style="gap:6px;">' +
+      '<input type="checkbox" class="form-check-input" ' + (r.visible ? "checked" : "") +
+        ' onchange="togglePeerRecord(\'' + r.id + '\')" />' +
+      '<span style="display:inline-block;width:10px;height:10px;background:' + r.color + ';border-radius:2px;"></span>' +
+      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + r.filename + '">' + r.filename + '</span>' +
+      '<button class="btn btn-sm btn-link text-danger p-0" onclick="removePeerRecord(\'' + r.id + '\')" title="Remove">&times;</button>' +
+    '</div>'
+  ).join("");
+}
+
+function renderPeerSummary() {
+  const el = document.getElementById("peer-summary");
+  if (peerRecords.length === 0) { el.innerHTML = "No records loaded."; return; }
+  const rows = peerRecords.map(r => {
+    const pga = r.accel.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+    const dur = (r.npts - 1) * r.dt;
+    return '<tr><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + r.filename + '">' + r.filename +
+      '</td><td>' + pga.toFixed(4) + '</td><td>' + dur.toFixed(2) + '</td><td>' + r.npts + '</td><td>' + r.dt + '</td></tr>';
+  }).join("");
+  el.innerHTML =
+    '<table class="table table-sm mb-0" style="font-size:.75rem;">' +
+      '<thead><tr><th>File</th><th>PGA (g)</th><th>Dur (s)</th><th>NPTS</th><th>DT</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>';
+}
+
+function parsePeerText(text, filename) {
+  const lines = text.split(/\r?\n/);
+  let npts = null, dt = null;
+  let headerLines = [];
+  let dataStart = -1;
+
+  // Scan first ~10 lines for "NPTS" / "DT"
+  for (let i = 0; i < Math.min(lines.length, 10); i++) {
+    const line = lines[i];
+    headerLines.push(line);
+    const nptsMatch = line.match(/NPTS\s*=?\s*([\d]+)/i);
+    const dtMatch = line.match(/DT\s*=?\s*([\d.eE+-]+)/i);
+    if (nptsMatch) npts = parseInt(nptsMatch[1]);
+    if (dtMatch)   dt   = parseFloat(dtMatch[1]);
+    if (nptsMatch && dtMatch) {
+      dataStart = i + 1;
+      break;
+    }
+  }
+
+  // Fallback: data starts after first line of purely numeric values
+  if (dataStart < 0) {
+    for (let i = 0; i < lines.length; i++) {
+      const tokens = lines[i].trim().split(/[\s,]+/).filter(Boolean);
+      if (tokens.length > 0 && tokens.every(t => !isNaN(parseFloat(t)))) {
+        dataStart = i;
+        break;
+      }
+      headerLines.push(lines[i]);
+    }
+  }
+  if (dataStart < 0) throw new Error("No numeric data found.");
+
+  const accel = [];
+  for (let i = dataStart; i < lines.length; i++) {
+    const tokens = lines[i].trim().split(/[\s,]+/).filter(Boolean);
+    tokens.forEach(t => {
+      const v = parseFloat(t);
+      if (!isNaN(v)) accel.push(v);
+    });
+  }
+  if (accel.length === 0) throw new Error("No acceleration values parsed.");
+
+  if (!npts)  npts = accel.length;
+  if (!dt) throw new Error("DT (time step) not found in header.");
+
+  const data = accel.slice(0, npts);
+  const time = data.map((_, i) => i * dt);
+
+  return {
+    filename,
+    header: headerLines.filter(l => l.trim()).slice(0, 4).join(" | "),
+    npts: data.length,
+    dt,
+    time,
+    accel: data,
+  };
+}
+
+function plotPeerAcceleration() {
+  if (peerChart) { peerChart.destroy(); peerChart = null; }
+  const visible = peerRecords.filter(r => r.visible);
+  if (visible.length === 0) return;
+
+  const datasets = visible.map(r => ({
+    label: r.filename,
+    data: r.time.map((t, i) => ({ x: t, y: r.accel[i] })),
+    borderColor: r.color, borderWidth: 1, pointRadius: 0, fill: false, tension: 0,
+  }));
+
+  const tMax = Math.max(...visible.map(r => r.time[r.time.length - 1]));
+  const yAbs = Math.max(
+    ...visible.map(r => r.accel.reduce((m, v) => Math.max(m, Math.abs(v)), 0))
+  ) * 1.1 || 1;
+
+  peerChart = new Chart(document.getElementById("peer-chart"), {
+    type: "line",
+    data: { datasets },
+    options: {
+      responsive: true, animation: false, parsing: false,
+      scales: {
+        x: { type: "linear", min: 0, max: tMax, title: { display: true, text: "Time (s)" } },
+        y: { min: -yAbs, max: yAbs, title: { display: true, text: "Acceleration (g)" } },
+      },
+      plugins: {
+        legend: { position: "top" },
+        title: { display: true, text: "PEER Ground Motion — Acceleration Time-History",
+                 font: { size: 14, weight: "bold" } },
+        tooltip: { mode: "nearest", intersect: false },
+        decimation: { enabled: true, algorithm: "lttb", samples: 2000 },
+      },
+    },
+  });
+}
+
+function downloadPeerCSV() {
+  const visible = peerRecords.filter(r => r.visible);
+  if (visible.length === 0) { alert("Upload at least one PEER GM file first."); return; }
+
+  // If all records share DT and NPTS → wide form: Time, file1, file2, ...
+  const dt = visible[0].dt;
+  const npts = visible[0].npts;
+  const sameGrid = visible.every(r => r.dt === dt && r.npts === npts);
+
+  if (sameGrid) {
+    const headers = ["Time (s)"].concat(visible.map(r => r.filename + " (g)"));
+    const rows = [];
+    for (let i = 0; i < npts; i++) {
+      const row = [visible[0].time[i].toFixed(5)];
+      visible.forEach(r => row.push(r.accel[i].toExponential(6)));
+      rows.push(row);
+    }
+    downloadCSV(headers, rows, "PEER_GM.csv");
+  } else {
+    // Long form: File, Time, Accel
+    const rows = [];
+    visible.forEach(r => {
+      for (let i = 0; i < r.npts; i++) {
+        rows.push([r.filename, r.time[i].toFixed(5), r.accel[i].toExponential(6)]);
+      }
+    });
+    downloadCSV(["File", "Time (s)", "Acceleration (g)"], rows, "PEER_GM.csv");
+  }
+}
+
+// Collapse displacement inputs to single-column on first load (Single is default mode)
+document.addEventListener("DOMContentLoaded", function() {
+  if (typeof updateDispInputVisibility === "function") updateDispInputVisibility();
+});
 
 </script>
 </body>
