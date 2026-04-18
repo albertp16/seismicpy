@@ -198,7 +198,7 @@
               <label>Seismic Source Type</label>
               <select class="form-select" id="sc-source">
                 <option value="A">Type A — High slip rate, M &#8805; 7.0</option>
-                <option value="B" selected>Type B — Moderate slip rate</option>
+                <option value="B" selected>Type B — Moderate slip rate, 6.5 &#8804; M &lt; 7.0</option>
                 <option value="C">Type C — Low slip rate, M &lt; 6.5</option>
               </select>
             </div>
@@ -294,7 +294,7 @@
             </div>
             <hr class="my-2"/>
             <div class="form-check form-switch mb-2">
-              <input class="form-check-input" type="checkbox" id="adrs-show-radial" checked />
+              <input class="form-check-input" type="checkbox" id="adrs-show-radial" checked onchange="if (lastADRSData) renderADRSChart();" />
               <label class="form-check-label" for="adrs-show-radial" style="font-size:.85rem;font-weight:500;">Show radial period lines</label>
             </div>
             <p class="text-muted mb-2" style="font-size:.75rem;">Radial lines represent constant structural period T. Each line passes through the origin with slope 4&pi;&sup2;/(g&middot;T&sup2;). They help identify the effective period at any point on the ADRS curve.</p>
@@ -327,7 +327,13 @@
                 <div class="col-6 mb-2"><label>a<sub>pi</sub> (g)</label><input type="number" class="form-control" id="adrs-api" value="0.233" step="0.001" /></div>
               </div>
             </div>
-            <button class="btn btn-calc btn-primary text-white w-100 mt-2" onclick="calcADRS()">Generate ADRS</button>
+            <p class="mb-1 mt-2" style="font-size:.82rem;font-weight:600;color:#555;">Plot Layers</p>
+            <div class="d-grid gap-2">
+              <button class="btn btn-calc btn-primary text-white" onclick="plotAdrsSa()">1 &mdash; Plot S<sub>a</sub> + Radial Lines</button>
+              <button class="btn btn-outline-primary" onclick="plotAdrsPushover()">2 &mdash; Plot Pushover Curve</button>
+              <button class="btn btn-outline-primary" onclick="plotAdrsAdjustment()">3 &mdash; Plot ATC-40 Adjustment</button>
+              <button class="btn btn-sm btn-outline-secondary" onclick="clearAdrsChart()">Clear Chart</button>
+            </div>
             <button class="btn btn-outline-secondary w-100 mt-2" onclick="showADRSReport()" id="adrs-report-btn" disabled><i class="bi bi-file-earmark-text"></i> View Calculation Report</button>
             <div id="adrs-error" class="alert alert-danger mt-3 d-none"></div>
             <div id="adrs-results" class="mt-3"></div>
@@ -353,7 +359,7 @@
           <div class="card-header d-flex justify-content-between align-items-center">
             <span>Pushover Capacity Curve (ADRS Format)</span>
             <div class="form-check form-switch mb-0 ms-auto me-2">
-              <input class="form-check-input" type="checkbox" id="adrs-show-pushover" checked />
+              <input class="form-check-input" type="checkbox" id="adrs-show-pushover" checked onchange="if (lastADRSData) renderADRSChart();" />
               <label class="form-check-label text-white" for="adrs-show-pushover" style="font-size:.82rem;">Show on plot</label>
             </div>
           </div>
@@ -977,7 +983,7 @@
           <div class="card-header">Drift Data (paste Max Drift &amp; Avg Drift from spreadsheet)</div>
           <div class="card-body" style="overflow-x:auto;">
             <div class="d-flex gap-3" style="min-width:max-content;">
-              <div style="min-width:220px;">
+              <div class="drift-input-col" style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
                   <input type="text" class="form-control form-control-sm" id="drift-name-1" value="TH1" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
@@ -993,7 +999,7 @@
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:220px;">
+              <div class="drift-input-col" style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
                   <input type="text" class="form-control form-control-sm" id="drift-name-2" value="TH2" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
@@ -1009,7 +1015,7 @@
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:220px;">
+              <div class="drift-input-col" style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
                   <input type="text" class="form-control form-control-sm" id="drift-name-3" value="TH3" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
@@ -1025,7 +1031,7 @@
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:220px;">
+              <div class="drift-input-col" style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
                   <input type="text" class="form-control form-control-sm" id="drift-name-4" value="TH4" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
@@ -1041,7 +1047,7 @@
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:220px;">
+              <div class="drift-input-col" style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
                   <input type="text" class="form-control form-control-sm" id="drift-name-5" value="TH5" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
@@ -1057,7 +1063,7 @@
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:220px;">
+              <div class="drift-input-col" style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
                   <input type="text" class="form-control form-control-sm" id="drift-name-6" value="TH6" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
@@ -1073,7 +1079,7 @@
                   </tbody>
                 </table>
               </div>
-              <div style="min-width:220px;">
+              <div class="drift-input-col" style="min-width:220px;">
                 <div class="d-flex align-items-center mb-2">
                   <input type="text" class="form-control form-control-sm" id="drift-name-7" value="TH7" style="width:100px;" />
                   <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
@@ -1102,6 +1108,13 @@
           <div class="card-header">Plot Options</div>
           <div class="card-body">
             <div class="mb-3">
+              <label>Display Mode</label>
+              <select class="form-select" id="drift-mode" onchange="plotDrift()">
+                <option value="single" selected>Single (one load case)</option>
+                <option value="multiple">Multiple (overlay all)</option>
+              </select>
+            </div>
+            <div class="mb-3">
               <label>Data Column</label>
               <select class="form-select" id="drift-col" onchange="plotDrift()">
                 <option value="max" selected>Maximum Drift</option>
@@ -1121,7 +1134,7 @@
               <input type="number" class="form-control" id="drift-limit-val" placeholder="e.g. 0.01" step="any" onchange="plotDrift()" />
             </div>
             <hr />
-            <p class="mb-2" style="font-size:.82rem;font-weight:600;color:#555;">Highlight Load Case</p>
+            <p class="mb-2" style="font-size:.82rem;font-weight:600;color:#555;">Select / Highlight Load Case</p>
             <div id="drift-highlight-list"></div>
             <hr />
             <button class="btn btn-calc btn-primary text-white w-100" onclick="plotDrift()">Generate Plot</button>
@@ -1132,7 +1145,10 @@
         <div class="card h-100">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span>Story Drift Plot</span>
-            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('drift-chart','StoryDrift.png')">&#8615; PNG</button>
+            <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadDriftCSV()">&#8615; CSV</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('drift-chart','StoryDrift.png')">&#8615; PNG</button>
+            </div>
           </div>
           <div class="card-body"><canvas id="drift-chart" height="400"></canvas></div>
         </div>
@@ -1825,7 +1841,10 @@ function autoFillFromPushover() {
   document.getElementById("adrs-api").value = api.toFixed(4);
 }
 
-async function calcADRS() {
+// Which plot layers are currently active. Buttons toggle these on; Clear resets.
+const adrsLayers = { sa: false, pushover: false, adjustment: false };
+
+async function ensureADRSData() {
   clearError("adrs-error");
   const stype = document.getElementById("adrs-stype").value;
   const body = {
@@ -1837,65 +1856,90 @@ async function calcADRS() {
     dpi: parseFloat(document.getElementById("adrs-dpi").value) || 0,
     api_val: parseFloat(document.getElementById("adrs-api").value) || 0,
   };
-
   const r = await postJSON("/api/adrs", body);
-  if (!r.success) { showError("adrs-error", r.error); return; }
-  const d = r.data;
-  lastADRSData = d;
+  if (!r.success) { showError("adrs-error", r.error); return null; }
+  lastADRSData = r.data;
   lastADRSInput = body;
   document.getElementById("adrs-report-btn").disabled = false;
+  return r.data;
+}
 
+async function plotAdrsSa() {
+  const d = await ensureADRSData();
+  if (!d) return;
+  adrsLayers.sa = true;
+  renderADRSChart();
+}
+
+async function plotAdrsPushover() {
+  // Pushover can be overlaid standalone, but we still want axes from server spectrum
+  const d = await ensureADRSData();
+  if (!d) return;
+  adrsLayers.pushover = true;
+  renderADRSChart();
+}
+
+async function plotAdrsAdjustment() {
+  const stype = document.getElementById("adrs-stype").value;
+  const dpi = parseFloat(document.getElementById("adrs-dpi").value) || 0;
+  const api = parseFloat(document.getElementById("adrs-api").value) || 0;
+  if (!stype || dpi <= 0 || api <= 0) {
+    showError("adrs-error", "ATC-40 Adjustment requires Structure Type, d_pi, and a_pi.");
+    return;
+  }
+  const d = await ensureADRSData();
+  if (!d) return;
+  adrsLayers.sa = true;          // need the spectrum to make the adjustment visible
+  adrsLayers.adjustment = true;
+  renderADRSChart();
+}
+
+function clearAdrsChart() {
+  adrsLayers.sa = false;
+  adrsLayers.pushover = false;
+  adrsLayers.adjustment = false;
+  if (adrsChart) { adrsChart.destroy(); adrsChart = null; }
+  document.getElementById("adrs-results").innerHTML = "";
+}
+
+function renderADRSChart() {
+  const d = lastADRSData;
+  if (!d) return;
   if (adrsChart) { adrsChart.destroy(); adrsChart = null; }
 
-  // Build datasets
-  const datasets = [];
-
-  // 5% damped ADRS curve
-  datasets.push({
-    label: "ADRS (5% damped)",
-    data: d.Sd.map((sd, i) => ({ x: sd, y: d.Sa[i] })),
-    borderColor: "#1a56db", borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
-    order: 1,
-  });
-
-  // Reduced ADRS if available
-  if (d.reduction) {
-    datasets.push({
-      label: `Reduced ADRS (\u03B2eff=${d.reduction.beta_eff}%)`,
-      data: d.reduction.Sd_r.map((sd, i) => ({ x: sd, y: d.reduction.Sa_r[i] })),
-      borderColor: "#27ae60", borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
-      order: 2,
-    });
-  }
-
-  // Trial line: radial from origin through (dpi, api)
+  const stype = document.getElementById("adrs-stype").value;
   const dpiVal = parseFloat(document.getElementById("adrs-dpi").value) || 0;
   const apiVal = parseFloat(document.getElementById("adrs-api").value) || 0;
-  if (stype && dpiVal > 0 && apiVal > 0) {
-    const trialSlope = apiVal / dpiVal;
-    const SdMaxAll = Math.max(...d.Sd);
-    const SaMaxAll = Math.max(...d.Sa) * 1.1;
-    const sdTrialEnd = Math.min(SdMaxAll, SaMaxAll / trialSlope) * 1.0;
-    const saTrialEnd = trialSlope * sdTrialEnd;
+  const datasets = [];
+
+  // Layer 1 — Sa spectrum + radial lines
+  if (adrsLayers.sa) {
     datasets.push({
-      label: "Trial 1 (Ti line)",
-      data: [
-        { x: 0, y: 0 },
-        { x: dpiVal, y: apiVal },
-        { x: sdTrialEnd, y: saTrialEnd },
-      ],
-      borderColor: "#8b0000", borderWidth: 2, borderDash: [6, 3],
-      pointRadius: [0, 5, 0],
-      pointBackgroundColor: "#8b0000",
-      pointStyle: "circle",
-      tension: 0, fill: false,
-      order: 3,
+      label: "ADRS (5% damped)",
+      data: d.Sd.map((sd, i) => ({ x: sd, y: d.Sa[i] })),
+      borderColor: "#1a56db", borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
+      order: 1,
     });
+
+    const showRadial = document.getElementById("adrs-show-radial").checked;
+    if (showRadial) {
+      d.radial_lines.forEach((rl, idx) => {
+        const isTs = Math.abs(rl.T - d.Ts) < 0.001;
+        datasets.push({
+          label: `T = ${rl.T}s` + (isTs ? " (Ts)" : ""),
+          data: rl.points,
+          borderColor: RADIAL_COLORS[idx % RADIAL_COLORS.length],
+          borderWidth: isTs ? 1.8 : 1.2,
+          borderDash: RADIAL_DASHES[idx % RADIAL_DASHES.length],
+          pointRadius: 0, tension: 0, fill: false,
+          order: 10 + idx,
+        });
+      });
+    }
   }
 
-  // Pushover capacity curve
-  const showPushover = document.getElementById("adrs-show-pushover").checked;
-  if (showPushover) {
+  // Layer 2 — Pushover capacity curve
+  if (adrsLayers.pushover && document.getElementById("adrs-show-pushover").checked) {
     const poData = readPushoverTable();
     if (poData.length >= 2) {
       datasets.push({
@@ -1907,24 +1951,41 @@ async function calcADRS() {
     }
   }
 
-  // Radial period lines (toggle)
-  const showRadial = document.getElementById("adrs-show-radial").checked;
+  // Layer 3 — ATC-40 Adjustment (reduced ADRS + bilinear yield + trial line)
+  if (adrsLayers.adjustment) {
+    if (d.reduction) {
+      datasets.push({
+        label: `Reduced ADRS (\u03B2eff=${d.reduction.beta_eff}%)`,
+        data: d.reduction.Sd_r.map((sd, i) => ({ x: sd, y: d.reduction.Sa_r[i] })),
+        borderColor: "#27ae60", borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
+        order: 2,
+      });
+    }
+    if (stype && dpiVal > 0 && apiVal > 0) {
+      const trialSlope = apiVal / dpiVal;
+      const SdMaxAll = Math.max(...d.Sd);
+      const SaMaxAll = Math.max(...d.Sa) * 1.1;
+      const sdTrialEnd = Math.min(SdMaxAll, SaMaxAll / trialSlope);
+      const saTrialEnd = trialSlope * sdTrialEnd;
+      datasets.push({
+        label: "Trial 1 (Ti line)",
+        data: [
+          { x: 0, y: 0 },
+          { x: dpiVal, y: apiVal },
+          { x: sdTrialEnd, y: saTrialEnd },
+        ],
+        borderColor: "#8b0000", borderWidth: 2, borderDash: [6, 3],
+        pointRadius: [0, 5, 0],
+        pointBackgroundColor: "#8b0000",
+        pointStyle: "circle",
+        tension: 0, fill: false,
+        order: 3,
+      });
+    }
+  }
+
   const SdMax = Math.max(...d.Sd) * 1.05;
   const SaMax = Math.max(...d.Sa) * 1.1;
-  if (showRadial) {
-    d.radial_lines.forEach((rl, idx) => {
-      const isTs = Math.abs(rl.T - d.Ts) < 0.001;
-      datasets.push({
-        label: `T = ${rl.T}s` + (isTs ? " (Ts)" : ""),
-        data: rl.points,
-        borderColor: RADIAL_COLORS[idx % RADIAL_COLORS.length],
-        borderWidth: isTs ? 1.8 : 1.2,
-        borderDash: RADIAL_DASHES[idx % RADIAL_DASHES.length],
-        pointRadius: 0, tension: 0, fill: false,
-        order: 10 + idx,
-      });
-    });
-  }
 
   adrsChart = new Chart(document.getElementById("adrs-chart"), {
     type: "line",
@@ -1944,6 +2005,13 @@ async function calcADRS() {
     },
   });
 
+  renderADRSResults();
+}
+
+function renderADRSResults() {
+  const d = lastADRSData;
+  if (!d) return;
+  const b = lastADRSInput || {};
   // Results panel
   let html = `<hr class="my-3"/>
     <div class="row g-2">
@@ -2816,9 +2884,9 @@ function plotDisplacement() {
 }
 
 // Show only the selected TH input column in Single mode; show all in Multiple
-function updateDispInputVisibility() {
-  const mode = document.getElementById("disp-mode").value;
-  const cols = document.querySelectorAll(".disp-input-col");
+function updateInputColVisibility(prefix, modeId, colClass) {
+  const mode = document.getElementById(modeId).value;
+  const cols = document.querySelectorAll("." + colClass);
 
   if (mode === "multiple") {
     cols.forEach(c => { c.style.display = ""; });
@@ -2826,10 +2894,10 @@ function updateDispInputVisibility() {
   }
 
   // Single: pick highlighted, else first checked, else 1
-  let sel = getHighlightIdx("disp");
+  let sel = getHighlightIdx(prefix);
   if (sel === 0) {
     for (let i = 1; i <= PLOT_COUNT; i++) {
-      const chk = document.getElementById("disp-chk-" + i);
+      const chk = document.getElementById(prefix + "-chk-" + i);
       if (chk && chk.checked) { sel = i; break; }
     }
   }
@@ -2838,17 +2906,22 @@ function updateDispInputVisibility() {
   cols.forEach((c, i) => { c.style.display = (i + 1 === sel) ? "" : "none"; });
 }
 
+function updateDispInputVisibility()  { updateInputColVisibility("disp",  "disp-mode",  "disp-input-col"); }
+function updateDriftInputVisibility() { updateInputColVisibility("drift", "drift-mode", "drift-input-col"); }
+
 // ── Drift ───────────────────────────────────────────────────────────────────
 const driftChartRef = { inst: null };
 function addDriftStoryRow() { genericAddRow("drift-story-table", "drift"); }
 function removeDriftStoryRow() { genericRemoveRow("drift-story-table", "drift"); }
 function plotDrift() {
+  updateDriftInputVisibility();
   genericPlot({
     prefix: "drift", storyTable: "drift-story-table",
     colSelect: "drift-col", meanChk: "drift-show-mean", envChk: "drift-show-envelope",
     limitInput: "drift-limit-val", canvasId: "drift-chart", chartRef: driftChartRef,
     title: "Story Drift Plot", plotFnName: "plotDrift",
     xLabelMax: "Maximum Drift", xLabelAvg: "Average Drift",
+    modeSelect: "drift-mode",
   });
 }
 
@@ -2933,22 +3006,22 @@ function downloadStoryShearCSV() {
   downloadCSV(["Height (m)", "Shear X (kN)", "Shear Y (kN)"], rows, "StoryShear.csv");
 }
 
-function downloadDisplacementCSV() {
-  const storyLevels = readStoryLevels("disp-story-table");
+function downloadStoryPlotCSV(cfg) {
+  // cfg: { prefix, storyTable, colSelect, modeSelect, labelMax, labelAvg, baseFilename }
+  const storyLevels = readStoryLevels(cfg.storyTable);
   if (storyLevels.length === 0) { alert("Enter story levels first."); return; }
-  const colKey = document.getElementById("disp-col").value;
-  const colLabel = colKey === "max" ? "Maximum Displacement" : "Average Displacement";
-  const mode = document.getElementById("disp-mode").value;
+  const colKey = document.getElementById(cfg.colSelect).value;
+  const colLabel = colKey === "max" ? cfg.labelMax : cfg.labelAvg;
+  const mode = document.getElementById(cfg.modeSelect).value;
 
-  // Determine selected series (Single mode: one series only)
   let onlyIdx = 0;
   if (mode === "single") {
-    const hl = getHighlightIdx("disp");
+    const hl = getHighlightIdx(cfg.prefix);
     if (hl > 0) {
       onlyIdx = hl;
     } else {
       for (let i = 1; i <= PLOT_COUNT; i++) {
-        const chk = document.getElementById("disp-chk-" + i);
+        const chk = document.getElementById(cfg.prefix + "-chk-" + i);
         if (chk && chk.checked) { onlyIdx = i; break; }
       }
     }
@@ -2957,11 +3030,11 @@ function downloadDisplacementCSV() {
   const headers = ["Story", "Level (m)"];
   const seriesData = [];
   for (let i = 1; i <= PLOT_COUNT; i++) {
-    const chk = document.getElementById("disp-chk-" + i);
+    const chk = document.getElementById(cfg.prefix + "-chk-" + i);
     if (!chk || !chk.checked) continue;
     if (mode === "single" && i !== onlyIdx) continue;
-    const name = document.getElementById("disp-name-" + i).value || ("TH" + i);
-    const td = readDataTable("disp", i, storyLevels);
+    const name = document.getElementById(cfg.prefix + "-name-" + i).value || ("TH" + i);
+    const td = readDataTable(cfg.prefix, i, storyLevels);
     if (td.length === 0) continue;
     headers.push(name + " (" + colLabel + ")");
     seriesData.push({ name, td });
@@ -2977,9 +3050,27 @@ function downloadDisplacementCSV() {
     return row;
   });
   const filename = mode === "single"
-    ? "StoryDisplacement_" + seriesData[0].name + ".csv"
-    : "StoryDisplacement.csv";
+    ? cfg.baseFilename.replace(".csv", "_" + seriesData[0].name + ".csv")
+    : cfg.baseFilename;
   downloadCSV(headers, rows, filename);
+}
+
+function downloadDisplacementCSV() {
+  downloadStoryPlotCSV({
+    prefix: "disp", storyTable: "disp-story-table",
+    colSelect: "disp-col", modeSelect: "disp-mode",
+    labelMax: "Maximum Displacement", labelAvg: "Average Displacement",
+    baseFilename: "StoryDisplacement.csv",
+  });
+}
+
+function downloadDriftCSV() {
+  downloadStoryPlotCSV({
+    prefix: "drift", storyTable: "drift-story-table",
+    colSelect: "drift-col", modeSelect: "drift-mode",
+    labelMax: "Maximum Drift", labelAvg: "Average Drift",
+    baseFilename: "StoryDrift.csv",
+  });
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -3214,9 +3305,10 @@ function downloadPeerCSV() {
   }
 }
 
-// Collapse displacement inputs to single-column on first load (Single is default mode)
+// Collapse displacement + drift inputs to single-column on first load (Single is default mode)
 document.addEventListener("DOMContentLoaded", function() {
-  if (typeof updateDispInputVisibility === "function") updateDispInputVisibility();
+  if (typeof updateDispInputVisibility  === "function") updateDispInputVisibility();
+  if (typeof updateDriftInputVisibility === "function") updateDriftInputVisibility();
 });
 
 </script>
