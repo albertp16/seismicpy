@@ -1390,7 +1390,10 @@
         <div class="card h-100">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span>Preview &mdash; Acceleration Time-History</span>
-            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('sgs-chart','PEER_to_SGS_preview.png')">&#8615; PNG</button>
+            <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadSgsCSV()">&#8615; CSV</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('sgs-chart','PEER_to_SGS_preview.png')">&#8615; PNG</button>
+            </div>
           </div>
           <div class="card-body"><canvas id="sgs-chart" height="360"></canvas></div>
         </div>
@@ -3517,6 +3520,35 @@ function downloadAllSgs() {
   sgsRecords.forEach((rec, i) => {
     setTimeout(() => triggerDownload(sgsFilenameFor(rec), buildSgsText(rec)), i * 250);
   });
+}
+
+function downloadSgsCSV() {
+  const visible = sgsRecords.filter(r => r.visible);
+  if (visible.length === 0) { alert("Upload at least one PEER file first."); return; }
+
+  // SGS time origin is t = (i+1)*dt
+  const dt = visible[0].dt;
+  const npts = visible[0].npts;
+  const sameGrid = visible.every(r => r.dt === dt && r.npts === npts);
+
+  if (sameGrid) {
+    const headers = ["Time (s)"].concat(visible.map(r => r.filename + " (g)"));
+    const rows = [];
+    for (let i = 0; i < npts; i++) {
+      const row = [((i + 1) * dt).toFixed(5)];
+      visible.forEach(r => row.push(r.accel[i].toFixed(8)));
+      rows.push(row);
+    }
+    downloadCSV(headers, rows, "PEER_to_SGS.csv");
+  } else {
+    const rows = [];
+    visible.forEach(r => {
+      for (let i = 0; i < r.npts; i++) {
+        rows.push([r.filename, ((i + 1) * r.dt).toFixed(5), r.accel[i].toFixed(8)]);
+      }
+    });
+    downloadCSV(["File", "Time (s)", "Acceleration (g)"], rows, "PEER_to_SGS.csv");
+  }
 }
 
 function plotSgsPreview() {
