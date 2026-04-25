@@ -174,6 +174,7 @@
   </div>
   <div class="sidebar-items">
     <a class="sidebar-link" data-target="tab-peer-gm" onclick="switchModule(this)">PEER GM Record</a>
+    <a class="sidebar-link" data-target="tab-peer-sgs" onclick="switchModule(this)">PEER &rarr; SGS Converter</a>
   </div>
 </nav>
 
@@ -1350,6 +1351,48 @@
             <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('accel-chart','StoryAcceleration.png')">&#8615; PNG</button>
           </div>
           <div class="card-body"><canvas id="accel-chart" height="400"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MODULE 15: PEER → SGS Converter ═══════════ -->
+  <div class="module-pane" id="tab-peer-sgs">
+    <div class="module-title">PEER &rarr; SGS Converter</div>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Upload PEER Files</span>
+            <button class="btn btn-sm btn-outline-light py-0" onclick="clearSgsFiles()">Clear</button>
+          </div>
+          <div class="card-body">
+            <p class="text-muted mb-2" style="font-size:.78rem;">
+              Upload one or more PEER NGA records (.AT2). Each file is converted to SGS
+              format (numerical, decimal &mdash; no scientific notation). Time starts at <code>t = DT</code>.
+            </p>
+            <input type="file" class="form-control mb-3" id="sgs-file" accept=".at2,.AT2,.txt" multiple onchange="parseSgsFiles(event)" />
+            <div class="alert alert-danger d-none" id="sgs-error"></div>
+            <div class="mb-1" style="font-size:.78rem;font-weight:600;color:#555;">Loaded Records</div>
+            <div id="sgs-list" class="mb-2" style="font-size:.8rem;"></div>
+            <hr />
+            <div class="d-flex gap-2 mb-2">
+              <button class="btn btn-sm btn-primary flex-grow-1" onclick="downloadAllSgs()">
+                <i class="bi bi-download"></i> Download All .sgs
+              </button>
+            </div>
+            <div class="mb-2" style="font-size:.78rem;font-weight:600;color:#555;">Summary</div>
+            <div id="sgs-summary" class="small text-muted">No records loaded.</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Preview &mdash; Acceleration Time-History</span>
+            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('sgs-chart','PEER_to_SGS_preview.png')">&#8615; PNG</button>
+          </div>
+          <div class="card-body"><canvas id="sgs-chart" height="360"></canvas></div>
         </div>
       </div>
     </div>
@@ -3303,6 +3346,213 @@ function downloadPeerCSV() {
     });
     downloadCSV(["File", "Time (s)", "Acceleration (g)"], rows, "PEER_GM.csv");
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 15: PEER → SGS Converter
+// ══════════════════════════════════════════════════════════════════════════════
+
+let sgsChart = null;
+let sgsRecords = [];   // [{ id, filename, header, npts, dt, time, accel, color, visible }]
+
+function parseSgsFiles(event) {
+  const files = Array.from(event.target.files || []);
+  const errEl = document.getElementById("sgs-error");
+  errEl.classList.add("d-none");
+  if (files.length === 0) return;
+
+  let remaining = files.length;
+  const errors = [];
+
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const parsed = parsePeerText(e.target.result, file.name);
+        parsed.id = Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+        parsed.color = PEER_COLORS[sgsRecords.length % PEER_COLORS.length];
+        parsed.visible = true;
+        sgsRecords.push(parsed);
+      } catch (err) {
+        errors.push(file.name + ": " + err.message);
+      }
+      if (--remaining === 0) finishSgsUpload(errors);
+    };
+    reader.onerror = function() {
+      errors.push(file.name + ": read failed");
+      if (--remaining === 0) finishSgsUpload(errors);
+    };
+    reader.readAsText(file);
+  });
+
+  event.target.value = "";
+}
+
+function finishSgsUpload(errors) {
+  if (errors.length) {
+    document.getElementById("sgs-error").textContent = errors.join("\n");
+    document.getElementById("sgs-error").classList.remove("d-none");
+  }
+  renderSgsList();
+  renderSgsSummary();
+  plotSgsPreview();
+}
+
+function clearSgsFiles() {
+  sgsRecords = [];
+  if (sgsChart) { sgsChart.destroy(); sgsChart = null; }
+  renderSgsList();
+  renderSgsSummary();
+  document.getElementById("sgs-error").classList.add("d-none");
+}
+
+function toggleSgsRecord(id) {
+  const rec = sgsRecords.find(r => r.id === id);
+  if (rec) { rec.visible = !rec.visible; plotSgsPreview(); renderSgsList(); }
+}
+
+function removeSgsRecord(id) {
+  sgsRecords = sgsRecords.filter(r => r.id !== id);
+  renderSgsList();
+  renderSgsSummary();
+  plotSgsPreview();
+}
+
+function renderSgsList() {
+  const el = document.getElementById("sgs-list");
+  if (sgsRecords.length === 0) {
+    el.innerHTML = '<span class="text-muted">No files loaded.</span>';
+    return;
+  }
+  el.innerHTML = sgsRecords.map(r =>
+    '<div class="d-flex align-items-center mb-1" style="gap:6px;">' +
+      '<input type="checkbox" class="form-check-input" ' + (r.visible ? "checked" : "") +
+        ' onchange="toggleSgsRecord(\'' + r.id + '\')" />' +
+      '<span style="display:inline-block;width:10px;height:10px;background:' + r.color + ';border-radius:2px;"></span>' +
+      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + r.filename + '">' + r.filename + '</span>' +
+      '<button class="btn btn-sm btn-outline-primary py-0 px-1" style="font-size:.7rem;" onclick="downloadSgsRecord(\'' + r.id + '\')" title="Download .sgs">.sgs</button>' +
+      '<button class="btn btn-sm btn-link text-danger p-0" onclick="removeSgsRecord(\'' + r.id + '\')" title="Remove">&times;</button>' +
+    '</div>'
+  ).join("");
+}
+
+function renderSgsSummary() {
+  const el = document.getElementById("sgs-summary");
+  if (sgsRecords.length === 0) { el.innerHTML = "No records loaded."; return; }
+  const rows = sgsRecords.map(r => {
+    const pga = r.accel.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+    const dur = (r.npts - 1) * r.dt;
+    return '<tr><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + r.filename + '">' + r.filename +
+      '</td><td>' + pga.toFixed(4) + '</td><td>' + dur.toFixed(2) + '</td><td>' + r.npts + '</td><td>' + r.dt + '</td></tr>';
+  }).join("");
+  el.innerHTML =
+    '<table class="table table-sm mb-0" style="font-size:.75rem;">' +
+      '<thead><tr><th>File</th><th>PGA (g)</th><th>Dur (s)</th><th>NPTS</th><th>DT</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>';
+}
+
+function sgsTimePrecision(dt) {
+  // Pick enough decimals to represent multiples of dt cleanly. dt=0.005 → 5; dt=0.01 → 4; dt=0.001 → 5.
+  if (dt <= 0) return 6;
+  const mag = Math.max(0, Math.ceil(-Math.log10(dt)));
+  return Math.min(8, mag + 2);
+}
+
+function buildSgsText(rec) {
+  const tPrec = sgsTimePrecision(rec.dt);
+  const aPrec = 8;
+  const titleLine = (rec.header || rec.filename || "Earthquake Record").trim();
+
+  const lines = [];
+  lines.push("*SGSw");
+  lines.push("*TITLE, " + titleLine);
+  lines.push("*TITLE, ");
+  lines.push("*X-AXIS, Time (sec)");
+  lines.push("*Y-AXIS, Ground Accel. (g)");
+  lines.push("*UNIT&TYPE, GRAV, ACCEL");
+  lines.push("*FLAGS, 0, 0");
+  lines.push("*DATA");
+  lines.push("");
+
+  for (let i = 0; i < rec.npts; i++) {
+    const t = (i + 1) * rec.dt;
+    const a = rec.accel[i];
+    lines.push(t.toFixed(tPrec) + "\t,\t" + a.toFixed(aPrec));
+  }
+
+  lines.push("");
+  lines.push("");
+  lines.push("");
+  lines.push("*ENDDATA");
+  return lines.join("\r\n");
+}
+
+function sgsFilenameFor(rec) {
+  // Strip .at2/.AT2/.txt extension and append .sgs
+  const base = rec.filename.replace(/\.(at2|AT2|vt2|VT2|dt2|DT2|txt|TXT)$/, "");
+  return base + ".sgs";
+}
+
+function triggerDownload(filename, text) {
+  const blob = new Blob([text], { type: "text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+function downloadSgsRecord(id) {
+  const rec = sgsRecords.find(r => r.id === id);
+  if (!rec) return;
+  triggerDownload(sgsFilenameFor(rec), buildSgsText(rec));
+}
+
+function downloadAllSgs() {
+  if (sgsRecords.length === 0) { alert("Upload at least one PEER file first."); return; }
+  // Sequential downloads with a small delay so the browser doesn't drop them
+  sgsRecords.forEach((rec, i) => {
+    setTimeout(() => triggerDownload(sgsFilenameFor(rec), buildSgsText(rec)), i * 250);
+  });
+}
+
+function plotSgsPreview() {
+  if (sgsChart) { sgsChart.destroy(); sgsChart = null; }
+  const visible = sgsRecords.filter(r => r.visible);
+  if (visible.length === 0) return;
+
+  const datasets = visible.map(r => ({
+    label: r.filename,
+    data: r.time.map((t, i) => ({ x: t + r.dt, y: r.accel[i] })),
+    borderColor: r.color, borderWidth: 1, pointRadius: 0, fill: false, tension: 0,
+  }));
+
+  const tMax = Math.max(...visible.map(r => r.time[r.time.length - 1] + r.dt));
+  const yAbs = Math.max(
+    ...visible.map(r => r.accel.reduce((m, v) => Math.max(m, Math.abs(v)), 0))
+  ) * 1.1 || 1;
+
+  sgsChart = new Chart(document.getElementById("sgs-chart"), {
+    type: "line",
+    data: { datasets },
+    options: {
+      responsive: true, animation: false, parsing: false,
+      scales: {
+        x: { type: "linear", min: 0, max: tMax, title: { display: true, text: "Time (s)" } },
+        y: { min: -yAbs, max: yAbs, title: { display: true, text: "Acceleration (g)" } },
+      },
+      plugins: {
+        legend: { position: "top" },
+        title: { display: true, text: "PEER → SGS Preview — Acceleration Time-History",
+                 font: { size: 14, weight: "bold" } },
+        tooltip: { mode: "nearest", intersect: false },
+        decimation: { enabled: true, algorithm: "lttb", samples: 2000 },
+      },
+    },
+  });
 }
 
 // Collapse displacement + drift inputs to single-column on first load (Single is default mode)
