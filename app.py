@@ -62,6 +62,13 @@ class BsdsInput(BaseModel):
     max_period: float = 8.0
 
 
+class SiteSpecificSpectrumInput(BaseModel):
+    pga: float
+    ss: float
+    s1: float
+    max_period: float = 8.0
+
+
 class PgaInput(BaseModel):
     magnitude: float
     distance: float
@@ -312,6 +319,29 @@ async def api_bsds_spectrum(data: BsdsInput):
                     "cz": level1["cz"],
                     "cD": level1["cD"],
                 },
+            },
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/site-specific-spectrum")
+async def api_site_specific_spectrum(data: SiteSpecificSpectrumInput):
+    try:
+        # Site-specific hazard values are used directly: Fpga = Fa = Fv = 1.0
+        sdr = SeismicDesignResponse(data.pga, 1.0, data.ss, data.s1, 1.0, 1.0)
+        spectrum = sdr.generate_level2_spectrum(max_period=data.max_period)
+
+        return {
+            "success": True,
+            "data": {
+                "A_s": round(spectrum["A_s"], 4),
+                "S_DS": round(spectrum["S_DS"], 4),
+                "S_D1": round(spectrum["S_D1"], 4),
+                "T_s": round(spectrum["T_s"], 4),
+                "T_0": round(spectrum["T_0"], 4),
+                "periods": spectrum["periods"],
+                "accelerations": spectrum["accelerations"],
             },
         }
     except Exception as e:

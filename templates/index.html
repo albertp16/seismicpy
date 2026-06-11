@@ -154,6 +154,7 @@
   </div>
   <div class="sidebar-items">
     <a class="sidebar-link" data-target="tab-bsds" onclick="switchModule(this)">Design Spectrum</a>
+    <a class="sidebar-link" data-target="tab-sitespec" onclick="switchModule(this)">Site-Specific Spectrum</a>
   </div>
 
   <!-- Diagrams -->
@@ -657,6 +658,54 @@
         <div class="card h-100">
           <div class="card-header">Results</div>
           <div class="card-body" id="bsds-params">
+            <p class="text-muted text-center mt-4">Enter parameters and click <strong>Generate Spectrum</strong>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MODULE 8b: Site-Specific Design Spectrum ═══════════ -->
+  <div class="module-pane" id="tab-sitespec">
+    <div class="module-title">DPWH-BSDS — Site-Specific Design Response Spectrum</div>
+    <div class="row g-4">
+      <div class="col-md-3">
+        <div class="card">
+          <div class="card-header">Input Parameters</div>
+          <div class="card-body">
+            <div class="mb-3"><label>PGA</label><input type="number" class="form-control" id="ssp-pga" value="0.5" step="0.01" min="0" /></div>
+            <div class="mb-3"><label>S<sub>s</sub> (Short Period)</label><input type="number" class="form-control" id="ssp-ss" value="1.1" step="0.01" min="0" /></div>
+            <div class="mb-3"><label>S<sub>1</sub> (Long Period)</label><input type="number" class="form-control" id="ssp-s1" value="0.4" step="0.01" min="0" /></div>
+            <div class="mb-3"><label>Max Period (s)</label><input type="number" class="form-control" id="ssp-maxT" value="8" step="0.5" min="1" /></div>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="ssp-show23" checked />
+              <label class="form-check-label" for="ssp-show23">Include 2/3 Minimum</label>
+            </div>
+            <div class="alert alert-info small py-2">
+              Site coefficients are not interpolated: F<sub>pga</sub> = F<sub>a</sub> = F<sub>v</sub> = 1.0.
+              Enter spectral values from a site-specific ground-motion hazard study.
+            </div>
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="calcSiteSpec()">Generate Spectrum</button>
+            <div id="ssp-error" class="alert alert-danger mt-3 d-none"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Site-Specific Design Response Spectrum (F<sub>a</sub> = F<sub>v</sub> = 1.0)</span>
+            <span>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('ssp-chart','SiteSpecific_Spectrum.png')">&#8615; PNG</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadSiteSpecCSV()">&#8615; CSV</button>
+            </span>
+          </div>
+          <div class="card-body"><canvas id="ssp-chart" height="320"></canvas></div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card h-100">
+          <div class="card-header">Results</div>
+          <div class="card-body" id="ssp-params">
             <p class="text-muted text-center mt-4">Enter parameters and click <strong>Generate Spectrum</strong>.</p>
           </div>
         </div>
@@ -2517,6 +2566,84 @@ function downloadBsdsData(level) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 8b: Site-Specific Spectrum (Fpga = Fa = Fv = 1.0)
+// ══════════════════════════════════════════════════════════════════════════════
+
+let sspChart = null;
+let sspLastData = null;
+
+async function calcSiteSpec() {
+  clearError("ssp-error");
+  const body = {
+    pga:        parseFloat(document.getElementById("ssp-pga").value),
+    ss:         parseFloat(document.getElementById("ssp-ss").value),
+    s1:         parseFloat(document.getElementById("ssp-s1").value),
+    max_period: parseFloat(document.getElementById("ssp-maxT").value),
+  };
+  const r = await postJSON("/api/site-specific-spectrum", body);
+  if (!r.success) { showError("ssp-error", r.error); return; }
+  const d = r.data;
+  sspLastData = d;
+  const show23 = document.getElementById("ssp-show23").checked;
+  const maxT = body.max_period;
+
+  if (sspChart) { sspChart.destroy(); sspChart = null; }
+
+  const datasets = [{
+    label: "Site-Specific Design Spectrum",
+    data: d.periods.map((t, i) => ({ x: t, y: d.accelerations[i] })),
+    borderColor: "#0f2d6b", borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
+  }];
+  if (show23) {
+    datasets.push({
+      label: "Minimum (2/3)",
+      data: d.periods.map((t, i) => ({ x: t, y: d.accelerations[i] * 2 / 3 })),
+      borderColor: "#e63946", borderWidth: 2, borderDash: [6, 3], pointRadius: 0, tension: 0, fill: false,
+    });
+  }
+  sspChart = new Chart(document.getElementById("ssp-chart"), {
+    type: "line",
+    data: { datasets },
+    options: {
+      ...baseChartOpts("Period, T (s)", "Spectral Acceleration, Sa (g)", maxT),
+      plugins: {
+        ...baseChartOpts("", "", maxT).plugins,
+        annotation: {
+          annotations: {
+            t0: makeAnnotation(d.T_0, "#999", [4, 4], "T₀"),
+            ts: makeAnnotation(d.T_s, "#999", [4, 4], "Tₛ"),
+          },
+        },
+      },
+    },
+  });
+
+  document.getElementById("ssp-params").innerHTML = `
+    ${resultCard("F<sub>pga</sub> = F<sub>a</sub> = F<sub>v</sub>", "1.000")}
+    ${resultCard("A<sub>s</sub>", fmt(d.A_s, 4), "g")}
+    ${resultCard("S<sub>DS</sub>", fmt(d.S_DS, 4), "g")}
+    ${resultCard("S<sub>D1</sub>", fmt(d.S_D1, 4), "g")}
+    ${resultCard("T<sub>s</sub>", fmt(d.T_s, 4), "s")}
+    ${resultCard("T<sub>0</sub>", fmt(d.T_0, 4), "s")}
+    <div class="mt-2 text-muted small">
+      Site coefficients not interpolated &mdash; site-specific spectral values used directly.
+    </div>`;
+}
+
+function downloadSiteSpecCSV() {
+  if (!sspLastData) { alert("Generate the spectrum first."); return; }
+  const d = sspLastData;
+  const show23 = document.getElementById("ssp-show23").checked;
+  const headers = show23 ? ["Period (s)", "Sa (g)", "2/3 Sa (g)"] : ["Period (s)", "Sa (g)"];
+  const rows = d.periods.map((t, i) => {
+    const row = [t.toFixed(4), d.accelerations[i].toFixed(6)];
+    if (show23) row.push((d.accelerations[i] * 2 / 3).toFixed(6));
+    return row;
+  });
+  downloadCSV(headers, rows, "SiteSpecific_Spectrum.csv");
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

@@ -23,6 +23,7 @@ A Python library and web application for seismic engineering calculations under 
 
 ### DPWH BSDS Modules
 - **Design Spectrum** — Level I and Level II response spectra with site factor interpolation (Fpga, Fa, Fv), damping ratio adjustment, and 2/3-rule minimum overlay
+- **Site-Specific Spectrum** — Design response spectrum from site-specific PGA, Ss, S1 with no site factor interpolation (Fpga = Fa = Fv = 1.0) and 2/3-rule minimum overlay
 
 ### Diagram Modules
 - **Story Shear** and **Overturning Moment** — Spreadsheet input with interactive plots
@@ -166,6 +167,7 @@ Then open **http://127.0.0.1:8000**.
 | **PGA** | Peak ground acceleration via Fukushima-Tanaka |
 | **Scaling Base Shear** | SRSS dynamic scaling |
 | **BSDS Spectrum** | Level I and Level II spectra with site factors and PNG export |
+| **Site-Specific Spectrum** | BSDS-shape design spectrum with Fpga = Fa = Fv = 1.0 (site-specific hazard values used directly) |
 | **Story Shear** | Interactive story shear diagram from spreadsheet input |
 | **Overturning Moment** | Overturning moment diagram |
 | **Story Displacement** | Per-story displacement with TH1-TH7 load cases |

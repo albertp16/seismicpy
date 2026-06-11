@@ -4,6 +4,14 @@ All notable changes to APEC SeismicPy are documented here.
 
 ---
 
+## [Unreleased]
+
+### Added
+- Site-Specific Spectrum tab (DPWH BSDS group): design response spectrum built directly from site-specific PGA, Ss, and S1 with no site-factor interpolation (Fpga = Fa = Fv = 1.0), with 2/3 minimum overlay and PNG/CSV export
+- `/api/site-specific-spectrum` endpoint reusing `SeismicDesignResponse` with unit site factors
+
+---
+
 ## [0.5.0] - 2026-03-29
 
 ### Added
