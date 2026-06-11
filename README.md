@@ -14,7 +14,8 @@ A Python library and web application for seismic engineering calculations under 
 
 ### NSCP 2015 Modules
 - **Site Coefficients** — Na, Nv, Ca, Cv lookup with distance interpolation (Tables 208-4 to 208-8)
-- **Response Spectrum** — Design spectrum, 1.4x TH-reference envelope, and ADRS curves
+- **Response Spectrum** — Design spectrum and 1.4x time-history reference envelope
+- **ADRS** — Acceleration-displacement response spectrum with radial period lines, ATC-40 spectral reduction, pushover capacity curve overlay, trial performance point, and a full calculation report
 - **Base Shear** — Governing lateral force per Eq. 208-8 through 208-11
 - **Structural Period** — Empirical formula with zone-limited upper bound (Section 208.5.2.2)
 - **Redundancy Factor** — NSCP Section 208.5.6 redundancy calculation
@@ -29,6 +30,10 @@ A Python library and web application for seismic engineering calculations under 
 - **Story Shear** and **Overturning Moment** — Spreadsheet input with interactive plots
 - **Story Displacement** — Per-story tables with TH1-TH7 load case support
 - **Story Drift** and **Story Acceleration** — With user-defined limit lines
+
+### Ground Motion Modules
+- **PEER GM Record** — Upload one or more PEER NGA strong-motion records (.AT2, .VT2, .DT2) and plot the acceleration time-histories together, with CSV and PNG export
+- **PEER → SGS Converter** — Batch-convert PEER NGA records (.AT2) to SGS format (plain decimal, no scientific notation), with time-history preview and per-record .sgs downloads
 
 ### Smart Auto-Fill
 Site coefficient results (Ca, Cv, Nv, Zone) automatically populate the Response Spectrum and Base Shear input fields, visually indicated by a light green hatch on auto-filled fields.
@@ -160,7 +165,8 @@ Then open **http://127.0.0.1:8000**.
 | Module | Description |
 |--------|-------------|
 | **Site Coefficients** | Na, Nv, Ca, Cv for any zone, source type, and soil profile |
-| **Response Spectrum** | NSCP 2015 design spectrum + 1.4x TH reference + ADRS plot |
+| **Response Spectrum** | NSCP 2015 design spectrum + 1.4x TH reference |
+| **ADRS** | ATC-40 capacity spectrum: elastic/reduced ADRS, radial period lines, pushover curve overlay, calculation report |
 | **Base Shear** | Governing lateral force (Eq. 208-8 to 208-11) |
 | **Structural Period** | Empirical period with zone-limited upper bound |
 | **Redundancy** | Redundancy factor per Section 208.5.6 |
@@ -173,6 +179,8 @@ Then open **http://127.0.0.1:8000**.
 | **Story Displacement** | Per-story displacement with TH1-TH7 load cases |
 | **Story Drift** | Interstory drift with configurable limit line |
 | **Story Acceleration** | Floor acceleration with configurable limit line |
+| **PEER GM Record** | Multi-file PEER NGA time-history plot with CSV/PNG export |
+| **PEER → SGS Converter** | Batch PEER .AT2 → .sgs conversion with preview |
 
 ---
 
