@@ -1481,7 +1481,8 @@
             <span>Acceleration Time-History</span>
             <div class="d-flex gap-1">
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadPeerCSV()">&#8615; CSV</button>
-              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('peer-chart','PEER_GM.png')">&#8615; PNG</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('peer-chart','PEER_GM.png')" title="Combined PNG of all visible records">&#8615; PNG</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadAllPeerPngs()" title="One PNG per record">&#8615; PNG (each)</button>
             </div>
           </div>
           <div class="card-body"><canvas id="peer-chart" height="360"></canvas></div>
@@ -3332,9 +3333,82 @@ function renderPeerList() {
         ' onchange="togglePeerRecord(\'' + r.id + '\')" />' +
       '<span style="display:inline-block;width:10px;height:10px;background:' + r.color + ';border-radius:2px;"></span>' +
       '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + r.filename + '">' + r.filename + '</span>' +
+      '<button class="btn btn-sm btn-outline-primary py-0 px-1" style="font-size:.7rem;" onclick="downloadPeerRecordPng(\'' + r.id + '\')" title="Download single-record PNG">PNG</button>' +
       '<button class="btn btn-sm btn-link text-danger p-0" onclick="removePeerRecord(\'' + r.id + '\')" title="Remove">&times;</button>' +
     '</div>'
   ).join("");
+}
+
+function downloadPeerRecordPng(id) {
+  const rec = peerRecords.find(r => r.id === id);
+  if (!rec) return;
+
+  const W = 1200, H = 500;
+  const tempCanvas = document.createElement("canvas");
+  tempCanvas.width = W;
+  tempCanvas.height = H;
+  tempCanvas.style.position = "absolute";
+  tempCanvas.style.left = "-10000px";
+  tempCanvas.style.top = "-10000px";
+  document.body.appendChild(tempCanvas);
+
+  const tMax = rec.time[rec.time.length - 1];
+  const yAbs = (rec.accel.reduce((m, v) => Math.max(m, Math.abs(v)), 0) || 1) * 1.1;
+
+  const tempChart = new Chart(tempCanvas, {
+    type: "line",
+    data: {
+      datasets: [{
+        label: rec.filename,
+        data: rec.time.map((t, i) => ({ x: t, y: rec.accel[i] })),
+        borderColor: rec.color, borderWidth: 1, pointRadius: 0, fill: false, tension: 0,
+      }],
+    },
+    options: {
+      responsive: false, animation: false, parsing: false,
+      scales: {
+        x: { type: "linear", min: 0, max: tMax, title: { display: true, text: "Time (s)" } },
+        y: { min: -yAbs, max: yAbs, title: { display: true, text: "Acceleration (g)" } },
+      },
+      plugins: {
+        legend: { display: false },
+        title: { display: true, text: rec.filename, font: { size: 14, weight: "bold" } },
+        decimation: { enabled: true, algorithm: "lttb", samples: 2000 },
+      },
+    },
+  });
+
+  // animation:false + responsive:false means the chart renders synchronously,
+  // so capture inline (matches downloadCanvas). Avoids requestAnimationFrame,
+  // which is paused while the tab is backgrounded and would silently never fire.
+  try {
+    const scale = 3;
+    const hiRes = document.createElement("canvas");
+    hiRes.width = W * scale;
+    hiRes.height = H * scale;
+    const ctx = hiRes.getContext("2d");
+    ctx.scale(scale, scale);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, W, H);
+    ctx.drawImage(tempCanvas, 0, 0, W, H);
+    const url = hiRes.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = rec.filename.replace(/\.[^.]+$/, "") + ".png";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } finally {
+    tempChart.destroy();
+    document.body.removeChild(tempCanvas);
+  }
+}
+
+function downloadAllPeerPngs() {
+  if (peerRecords.length === 0) { alert("Upload at least one PEER GM file first."); return; }
+  peerRecords.forEach((rec, i) => {
+    setTimeout(() => downloadPeerRecordPng(rec.id), i * 300);
+  });
 }
 
 function renderPeerSummary() {
