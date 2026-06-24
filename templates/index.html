@@ -162,8 +162,6 @@
     Diagrams <i class="bi bi-chevron-down"></i>
   </div>
   <div class="sidebar-items">
-    <a class="sidebar-link" data-target="tab-storyshear" onclick="switchModule(this)">Story Shear</a>
-    <a class="sidebar-link" data-target="tab-otm" onclick="switchModule(this)">Overturning Moment</a>
     <a class="sidebar-link" data-target="tab-displacement" onclick="switchModule(this)">Story Displacement</a>
     <a class="sidebar-link" data-target="tab-drift" onclick="switchModule(this)">Story Drift</a>
     <a class="sidebar-link" data-target="tab-acceleration" onclick="switchModule(this)">Story Acceleration</a>
@@ -708,81 +706,6 @@
           <div class="card-body" id="ssp-params">
             <p class="text-muted text-center mt-4">Enter parameters and click <strong>Generate Spectrum</strong>.</p>
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════ MODULE 9: Story Shear Diagram ═══════════ -->
-  <div class="module-pane" id="tab-storyshear">
-    <div class="module-title">Seismic Story Shear Diagram</div>
-    <div class="row g-4">
-      <div class="col-md-5">
-        <div class="card">
-          <div class="card-header">Input Data</div>
-          <div class="card-body">
-            <table class="spread-table mb-3" id="ss-table">
-              <thead><tr><th>Height (m)</th><th>Shear X (kN)</th><th>Shear Y (kN)</th></tr></thead>
-              <tbody>
-                <tr><td contenteditable="true">6.45</td><td contenteditable="true">0</td><td contenteditable="true">0</td></tr>
-                <tr><td contenteditable="true">3.35</td><td contenteditable="true">178.62</td><td contenteditable="true">173.59</td></tr>
-                <tr><td contenteditable="true">0</td><td contenteditable="true">362.17</td><td contenteditable="true">356.73</td></tr>
-              </tbody>
-            </table>
-            <div class="d-flex gap-2 mb-3">
-              <button class="btn btn-sm btn-outline-secondary" onclick="addDiagramRow('ss-table')"><i class="bi bi-plus"></i> Add Row</button>
-              <button class="btn btn-sm btn-outline-danger" onclick="removeDiagramRow('ss-table')"><i class="bi bi-dash"></i> Remove Row</button>
-            </div>
-            <button class="btn btn-calc btn-primary text-white w-100" onclick="plotStoryShear()">Generate Plot</button>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-7">
-        <div class="card h-100">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Story Shear Diagram</span>
-            <div class="d-flex gap-1">
-              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadStoryShearCSV()">&#8615; CSV</button>
-              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('ss-chart','StoryShear.png')">&#8615; PNG</button>
-            </div>
-          </div>
-          <div class="card-body"><canvas id="ss-chart" height="360"></canvas></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════ MODULE 10: Overturning Moment Diagram ═══════════ -->
-  <div class="module-pane" id="tab-otm">
-    <div class="module-title">Seismic Overturning Moment Diagram</div>
-    <div class="row g-4">
-      <div class="col-md-5">
-        <div class="card">
-          <div class="card-header">Input Data</div>
-          <div class="card-body">
-            <table class="spread-table mb-3" id="otm-table">
-              <thead><tr><th>Height (m)</th><th>Moment X (kN-m)</th><th>Moment Y (kN-m)</th></tr></thead>
-              <tbody>
-                <tr><td contenteditable="true">6.45</td><td contenteditable="true">0</td><td contenteditable="true">0</td></tr>
-                <tr><td contenteditable="true">3.35</td><td contenteditable="true">551.04</td><td contenteditable="true">535.85</td></tr>
-                <tr><td contenteditable="true">0</td><td contenteditable="true">1749.66</td><td contenteditable="true">1715.53</td></tr>
-              </tbody>
-            </table>
-            <div class="d-flex gap-2 mb-3">
-              <button class="btn btn-sm btn-outline-secondary" onclick="addDiagramRow('otm-table')"><i class="bi bi-plus"></i> Add Row</button>
-              <button class="btn btn-sm btn-outline-danger" onclick="removeDiagramRow('otm-table')"><i class="bi bi-dash"></i> Remove Row</button>
-            </div>
-            <button class="btn btn-calc btn-primary text-white w-100" onclick="plotOTM()">Generate Plot</button>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-7">
-        <div class="card h-100">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Overturning Moment Diagram</span>
-            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('otm-chart','OverturningMoment.png')">&#8615; PNG</button>
-          </div>
-          <div class="card-body"><canvas id="otm-chart" height="360"></canvas></div>
         </div>
       </div>
     </div>
@@ -2648,13 +2571,8 @@ function downloadSiteSpecCSV() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  MODULES 9 & 10: Story Shear + OTM Diagrams (client-side)
+//  Spreadsheet table helpers (shared by story-plot modules)
 // ══════════════════════════════════════════════════════════════════════════════
-
-let ssChart = null;
-let otmChart = null;
-
-// ── Spreadsheet table helpers ──────────────────────────────────────────────
 
 function addDiagramRow(tableId) {
   const tbody = document.querySelector(`#${tableId} tbody`);
@@ -2739,86 +2657,6 @@ document.addEventListener("paste", function(e) {
     }
   }
 });
-
-// ── Diagram plot function (horizontal step chart) ──────────────────────────
-
-function plotStepDiagram(canvasId, data, xLabel, title, chartRef) {
-  if (chartRef) chartRef.destroy();
-
-  // Sort by height ascending for proper step rendering
-  data.sort((a, b) => a.h - b.h);
-
-  // Build step data: for each point, draw horizontal then vertical line
-  function buildStepData(values) {
-    const pts = [];
-    for (let i = 0; i < data.length; i++) {
-      pts.push({ x: values[i], y: data[i].h });
-      if (i < data.length - 1) {
-        pts.push({ x: values[i], y: data[i + 1].h });
-      }
-    }
-    return pts;
-  }
-
-  const xValues = data.map(d => d.x);
-  const yValues = data.map(d => d.y);
-
-  const traceX = {
-    label: xLabel.includes("kN-m") ? "Moment X" : "Shear X",
-    data: buildStepData(xValues),
-    borderColor: "#1f77b4", borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0,
-    showLine: true,
-  };
-  const traceY = {
-    label: xLabel.includes("kN-m") ? "Moment Y" : "Shear Y",
-    data: buildStepData(yValues),
-    borderColor: "#2ca02c", borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0,
-    showLine: true,
-  };
-  // Add markers at actual data points
-  const markersX = {
-    label: "_markX", data: data.map(d => ({ x: d.x, y: d.h })),
-    borderColor: "transparent", backgroundColor: "#1f77b4", pointRadius: 5, showLine: false,
-  };
-  const markersY = {
-    label: "_markY", data: data.map(d => ({ x: d.y, y: d.h })),
-    borderColor: "transparent", backgroundColor: "#2ca02c", pointRadius: 5, showLine: false,
-  };
-
-  const maxVal = Math.max(...xValues, ...yValues) * 1.1 || 1;
-  const maxH = Math.max(...data.map(d => d.h)) * 1.1 || 1;
-
-  return new Chart(document.getElementById(canvasId), {
-    type: "scatter",
-    data: { datasets: [traceX, traceY, markersX, markersY] },
-    options: {
-      responsive: true, animation: false,
-      scales: {
-        x: { type: "linear", min: 0, max: maxVal, title: { display: true, text: xLabel } },
-        y: { type: "linear", min: 0, max: maxH, title: { display: true, text: "Building Height (m)" } },
-      },
-      plugins: {
-        legend: {
-          position: "top",
-          labels: { filter: item => !item.text.startsWith("_") },
-        },
-        title: { display: true, text: title, font: { size: 15, weight: "bold" } },
-      },
-    },
-  });
-}
-
-function plotStoryShear() {
-  const data = readSpreadTable("ss-table");
-  if (data.length < 2) { alert("Enter at least 2 rows."); return; }
-  ssChart = plotStepDiagram("ss-chart", data, "Storey Shear (kN)", "Seismic Story Shear Diagram", ssChart);
-}
-
-function plotOTM() {
-  const data = readSpreadTable("otm-table");
-  if (data.length < 2) { alert("Enter at least 2 rows."); return; }
-  otmChart = plotStepDiagram("otm-chart", data, "Overturning Moment (kN-m)", "Seismic Overturning Moment Diagram", otmChart);
-}
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  Download chart as high-resolution PNG
@@ -3170,14 +3008,6 @@ function downloadADRSCSV() {
     return row;
   });
   downloadCSV(headers, rows, "ADRS.csv");
-}
-
-function downloadStoryShearCSV() {
-  const data = readSpreadTable("ss-table");
-  if (data.length < 1) { alert("Enter data in the table first."); return; }
-  data.sort((a, b) => a.h - b.h);
-  const rows = data.map(d => [d.h, d.x, d.y]);
-  downloadCSV(["Height (m)", "Shear X (kN)", "Shear Y (kN)"], rows, "StoryShear.csv");
 }
 
 function downloadStoryPlotCSV(cfg) {
