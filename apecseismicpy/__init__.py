@@ -9,3 +9,5 @@ from .aci350.hydrodynamic.loads import effective_liquid_weights, calculate_heigh
 from .aci350.hydrodynamic.period import DynamicProperties
 from .bsds.site_factor import SeismicSiteFactor
 from .bsds.spectrum import SeismicDesignResponse
+from .nscp2024.site_coefficients import SiteCoefficients2024
+from .nscp2024.response_spectrum import DesignResponseSpectrum2024

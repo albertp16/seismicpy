@@ -15,6 +15,7 @@ from apecseismicpy.nscp2015.pga import calculate_pga
 from apecseismicpy.nscp2015.redundancy import calculate_redundancy
 from apecseismicpy.nscp2015.scaling import calculate_scaling
 from apecseismicpy.bsds import SeismicSiteFactor, SeismicDesignResponse
+from apecseismicpy.nscp2024 import SiteCoefficients2024, DesignResponseSpectrum2024
 
 app = FastAPI(title="APEC SeismicPy")
 templates = Jinja2Templates(directory="templates")
@@ -67,6 +68,16 @@ class SiteSpecificSpectrumInput(BaseModel):
     ss: float
     s1: float
     max_period: float = 8.0
+
+
+class Nscp2024SpectrumInput(BaseModel):
+    ss: float
+    s1: float
+    site_class: str = "D"     # A, B, C, D, E
+    tl: float = 4.0           # long-period transition period
+    max_period: float = 8.0
+    fa: float = 0.0           # optional override; 0 = compute from tables
+    fv: float = 0.0           # optional override; 0 = compute from tables
 
 
 class PgaInput(BaseModel):
@@ -342,6 +353,43 @@ async def api_site_specific_spectrum(data: SiteSpecificSpectrumInput):
                 "T_0": round(spectrum["T_0"], 4),
                 "periods": spectrum["periods"],
                 "accelerations": spectrum["accelerations"],
+            },
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/nscp2024-spectrum")
+async def api_nscp2024_spectrum(data: Nscp2024SpectrumInput):
+    try:
+        sc = SiteCoefficients2024(data.site_class, data.ss, data.s1)
+        fa = data.fa if data.fa > 0 else sc.fa()
+        fv = data.fv if data.fv > 0 else sc.fv()
+
+        rs = DesignResponseSpectrum2024(data.ss, data.s1, fa, fv, tl=data.tl)
+        design = rs.generate_spectrum(two_thirds=True, max_period=data.max_period)
+        mce = rs.generate_spectrum(two_thirds=False, max_period=data.max_period)
+
+        return {
+            "success": True,
+            "data": {
+                "fa": round(fa, 4),
+                "fv": round(fv, 4),
+                "sms": round(rs.sms, 4),
+                "sm1": round(rs.sm1, 4),
+                "sds": round(rs.sds, 4),
+                "sd1": round(rs.sd1, 4),
+                "t0": round(rs.t0, 4),
+                "ts": round(rs.ts, 4),
+                "tl": round(rs.tl, 4),
+                "design": {
+                    "periods": design["periods"],
+                    "accelerations": design["accelerations"],
+                },
+                "mce": {
+                    "periods": mce["periods"],
+                    "accelerations": mce["accelerations"],
+                },
             },
         }
     except Exception as e:
