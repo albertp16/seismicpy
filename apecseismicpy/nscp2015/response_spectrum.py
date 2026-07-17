@@ -19,6 +19,26 @@ class ResponseSpectrum:
         self.Ts = cv / self.sa_max
         self.T0 = 0.2 * self.Ts
 
+    def sa_at_period(self, T: float):
+        """
+        Spectral acceleration (g) at an actual period T (s).
+
+        Same NSCP Figure 208-3 branches as calculate(), expressed against real
+        period instead of the normalized x = T / Ts, so the spectrum can share
+        a period axis with a code that plots against T directly.
+
+            T <= T0       : Sa = Ca + (2.5Ca - Ca) * T / T0
+            T0 < T <= Ts  : Sa = 2.5Ca
+            T > Ts        : Sa = Cv / T
+        """
+        if T <= 0:
+            return self.ca
+        if T <= self.T0:
+            return self.ca + (self.sa_max - self.ca) * (T / self.T0)
+        if T <= self.Ts:
+            return self.sa_max
+        return self.cv / T
+
     def calculate(self, x_max: float = 5.0, n_points: int = 800):
         """
         Compute spectrum using normalized period x = T / Ts

@@ -91,6 +91,18 @@ class AsceSpectrumInput(BaseModel):
     fv: float = 0.0           # optional override; 0 = compute from tables
 
 
+class OverlaySpectrumInput(BaseModel):
+    ca: float                 # NSCP 2015 seismic coefficient Ca
+    cv: float                 # NSCP 2015 seismic coefficient Cv
+    ss: float                 # ASCE mapped short-period acceleration
+    s1: float                 # ASCE mapped long-period acceleration
+    site_class: str = "D"     # A, B, C, D, E
+    tl: float = 8.0
+    max_period: float = 8.0
+    fa: float = 0.0           # optional override; 0 = compute from tables
+    fv: float = 0.0           # optional override; 0 = compute from tables
+
+
 class PgaInput(BaseModel):
     magnitude: float
     distance: float
@@ -444,6 +456,61 @@ async def api_asce_spectrum(data: AsceSpectrumInput):
                     "periods": lower["periods"],
                     "accelerations": lower["accelerations"],
                 },
+            },
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/overlay-spectrum")
+async def api_overlay_spectrum(data: OverlaySpectrumInput):
+    try:
+        sc = SiteCoefficients2024(data.site_class, data.ss, data.s1)
+        fa = data.fa if data.fa > 0 else sc.fa()
+        fv = data.fv if data.fv > 0 else sc.fv()
+
+        asce = DesignResponseSpectrumASCE(data.ss, data.s1, fa, fv, tl=data.tl)
+        nscp = ResponseSpectrum(data.ca, data.cv)
+
+        # Sample both codes on the ASCE period grid so the curves and the
+        # NSCP/ASCE ratio all line up on a single actual-period axis.
+        design = asce.generate_spectrum(two_thirds=True, max_period=data.max_period)
+        periods = design["periods"]
+        asce_sa = design["accelerations"]
+        lower_sa = [asce.LOWER_BOUND_FACTOR * v for v in asce_sa]
+        nscp_sa = [nscp.sa_at_period(t) for t in periods]
+        ratio = [(n / a) if a > 0 else 0.0 for n, a in zip(nscp_sa, asce_sa)]
+
+        return {
+            "success": True,
+            "data": {
+                "nscp": {
+                    "ca": round(nscp.ca, 4),
+                    "cv": round(nscp.cv, 4),
+                    "sa_max": round(nscp.sa_max, 4),
+                    "t0": round(nscp.T0, 4),
+                    "ts": round(nscp.Ts, 4),
+                    "accelerations": nscp_sa,
+                },
+                "asce": {
+                    "fa": round(fa, 4),
+                    "fv": round(fv, 4),
+                    "sds": round(asce.sds, 4),
+                    "sd1": round(asce.sd1, 4),
+                    "t0": round(asce.t0, 4),
+                    "ts": round(asce.ts, 4),
+                    "tl": round(asce.tl, 4),
+                    "accelerations": asce_sa,
+                },
+                "lower_bound": {
+                    "factor": asce.LOWER_BOUND_FACTOR,
+                    "accelerations": lower_sa,
+                },
+                "periods": periods,
+                "ratio": [round(r, 4) for r in ratio],
+                "plateau_ratio": round(nscp.sa_max / asce.sds, 4) if asce.sds > 0 else 0.0,
+                "ratio_min": round(min(ratio), 4),
+                "ratio_max": round(max(ratio), 4),
             },
         }
     except Exception as e:

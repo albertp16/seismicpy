@@ -162,6 +162,7 @@
   </div>
   <div class="sidebar-items">
     <a class="sidebar-link" data-target="tab-asce" onclick="switchModule(this)">Design Spectrum</a>
+    <a class="sidebar-link" data-target="tab-overlay" onclick="switchModule(this)">NSCP vs ASCE 41 Overlay</a>
   </div>
 
   <!-- DPWH BSDS -->
@@ -839,6 +840,81 @@
           <div class="card-header">Results</div>
           <div class="card-body" id="asce-params">
             <p class="text-muted text-center mt-4">Enter parameters and click <strong>Generate Spectrum</strong>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MODULE 8E: NSCP 2015 vs ASCE 41 Overlay ═══════════ -->
+  <div class="module-pane" id="tab-overlay">
+    <div class="module-title">NSCP 2015 vs ASCE 41 — Design Spectrum Overlay</div>
+    <div class="row g-4">
+      <div class="col-md-3">
+        <div class="card">
+          <div class="card-header">NSCP 2015 (C<sub>a</sub> / C<sub>v</sub>)</div>
+          <div class="card-body">
+            <div class="mb-3"><label>C<sub>a</sub></label><input type="number" class="form-control" id="ov-ca" value="0.42" step="0.01" min="0" /></div>
+            <div class="mb-3"><label>C<sub>v</sub></label><input type="number" class="form-control" id="ov-cv" value="0.72" step="0.01" min="0" /></div>
+          </div>
+          <div class="card-header">ASCE 41 / ASCE 7 (S<sub>s</sub> / S<sub>1</sub>)</div>
+          <div class="card-body">
+            <div class="mb-3"><label>S<sub>s</sub> (Short Period, 0.2 s)</label><input type="number" class="form-control" id="ov-ss" value="1.1" step="0.01" min="0" /></div>
+            <div class="mb-3"><label>S<sub>1</sub> (Long Period, 1.0 s)</label><input type="number" class="form-control" id="ov-s1" value="0.4" step="0.01" min="0" /></div>
+            <div class="mb-3">
+              <label>Site Class</label>
+              <select class="form-select" id="ov-site">
+                <option value="A">A — Hard Rock</option>
+                <option value="B">B — Rock</option>
+                <option value="C">C — Very Dense Soil / Soft Rock</option>
+                <option value="D" selected>D — Stiff Soil</option>
+                <option value="E">E — Soft Soil</option>
+              </select>
+            </div>
+            <div class="mb-3"><label>T<sub>L</sub> (Long-Period Transition, s)</label><input type="number" class="form-control" id="ov-tl" value="8" step="0.5" min="0.1" /></div>
+            <div class="mb-3"><label>Max Period (s)</label><input type="number" class="form-control" id="ov-maxT" value="8" step="0.5" min="1" /></div>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="ov-show-lb" checked />
+              <label class="form-check-label" for="ov-show-lb">Show ASCE 80% Lower Bound</label>
+            </div>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="ov-show-ratio" checked />
+              <label class="form-check-label" for="ov-show-ratio">Show NSCP / ASCE Ratio</label>
+            </div>
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="calcOverlay()">Generate Overlay</button>
+            <div id="ov-error" class="alert alert-danger mt-3 d-none"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Spectrum Overlay — plotted against actual period T</span>
+            <span>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('ov-chart','NSCP_vs_ASCE_Overlay.png')">&#8615; PNG</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadOverlayData()">&#8615; Data</button>
+            </span>
+          </div>
+          <div class="card-body"><canvas id="ov-chart" height="300"></canvas></div>
+        </div>
+        <div class="card mt-3">
+          <div class="card-header">Notes</div>
+          <div class="card-body small text-muted">
+            The two codes are built from different parameters &mdash; NSCP 2015 from
+            C<sub>a</sub>/C<sub>v</sub> (Figure 208-3), ASCE from S<sub>s</sub>/S<sub>1</sub>
+            with the 2/3 MCE<sub>R</sub> factor. They are drawn here on a common actual-period
+            axis so the shapes can be compared directly; the overlay is a comparison aid, not a
+            code compliance check. The 80% line is the ASCE 7-16 &sect;21.3 / ASCE 41-17
+            &sect;2.4.2 floor on a <em>site-specific</em> spectrum &mdash; it is not a limit that
+            the NSCP 2015 curve is required to satisfy.
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card h-100">
+          <div class="card-header">Results</div>
+          <div class="card-body" id="ov-params">
+            <p class="text-muted text-center mt-4">Enter parameters and click <strong>Generate Overlay</strong>.</p>
           </div>
         </div>
       </div>
@@ -1683,6 +1759,10 @@ async function calcSiteCoef() {
   autoFill("bs-nv", fmt(d.nv, 3));
   autoFill("bs-ca", fmt(d.ca, 3));
   autoFill("bs-cv", fmt(d.cv, 3));
+
+  // Auto-fill the NSCP side of the NSCP vs ASCE overlay
+  autoFill("ov-ca", fmt(d.ca, 3));
+  autoFill("ov-cv", fmt(d.cv, 3));
   document.getElementById("bs-zone").value = body.zone;
   document.getElementById("bs-zone").classList.add("auto-filled");
   document.getElementById("bs-zone").addEventListener("change", function handler() {
@@ -2887,6 +2967,133 @@ function downloadAsceData() {
     return row;
   });
   downloadCSV(headers, rows, "ASCE_spectrum.csv");
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 8E: NSCP 2015 vs ASCE 41 Overlay
+// ══════════════════════════════════════════════════════════════════════════════
+
+let overlayChart = null;
+let overlayLastData = null;
+
+async function calcOverlay() {
+  clearError("ov-error");
+  const body = {
+    ca:         parseFloat(document.getElementById("ov-ca").value),
+    cv:         parseFloat(document.getElementById("ov-cv").value),
+    ss:         parseFloat(document.getElementById("ov-ss").value),
+    s1:         parseFloat(document.getElementById("ov-s1").value),
+    site_class: document.getElementById("ov-site").value,
+    tl:         parseFloat(document.getElementById("ov-tl").value),
+    max_period: parseFloat(document.getElementById("ov-maxT").value),
+  };
+  const r = await postJSON("/api/overlay-spectrum", body);
+  if (!r.success) { showError("ov-error", r.error); return; }
+  const d = r.data;
+  overlayLastData = d;
+  const showLb = document.getElementById("ov-show-lb").checked;
+  const showRatio = document.getElementById("ov-show-ratio").checked;
+  const maxT = body.max_period;
+
+  if (overlayChart) { overlayChart.destroy(); overlayChart = null; }
+
+  const datasets = [
+    {
+      label: "NSCP 2015 (Ca/Cv)",
+      data: d.periods.map((t, i) => ({ x: t, y: d.nscp.accelerations[i] })),
+      borderColor: "#0f2d6b", borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
+      yAxisID: "y",
+    },
+    {
+      label: "ASCE 41 Design (2/3)",
+      data: d.periods.map((t, i) => ({ x: t, y: d.asce.accelerations[i] })),
+      borderColor: "#e76f51", borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
+      yAxisID: "y",
+    },
+  ];
+  if (showLb) {
+    datasets.push({
+      label: "ASCE 80% Lower Bound",
+      data: d.periods.map((t, i) => ({ x: t, y: d.lower_bound.accelerations[i] })),
+      borderColor: "#2a9d8f", borderWidth: 2, borderDash: [4, 4], pointRadius: 0, tension: 0, fill: false,
+      yAxisID: "y",
+    });
+  }
+  if (showRatio) {
+    datasets.push({
+      label: "NSCP / ASCE Ratio",
+      data: d.periods.map((t, i) => ({ x: t, y: d.ratio[i] })),
+      borderColor: "#8d99ae", borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, tension: 0, fill: false,
+      yAxisID: "yRatio",
+    });
+  }
+
+  const opts = baseChartOpts("Period, T (s)", "Spectral Acceleration, Sa (g)", maxT);
+  if (showRatio) {
+    opts.scales.yRatio = {
+      position: "right",
+      min: 0,
+      title: { display: true, text: "NSCP / ASCE Ratio" },
+      grid: { drawOnChartArea: false },
+    };
+  }
+
+  overlayChart = new Chart(document.getElementById("ov-chart"), {
+    type: "line",
+    data: { datasets },
+    options: {
+      ...opts,
+      plugins: {
+        ...opts.plugins,
+        annotation: {
+          annotations: {
+            tsN: makeAnnotation(d.nscp.ts, "#0f2d6b", [4, 4], "Tₛ NSCP"),
+            tsA: makeAnnotation(d.asce.ts, "#e76f51", [4, 4], "Tₛ ASCE"),
+          },
+        },
+      },
+    },
+  });
+
+  const verdict = d.plateau_ratio >= 1
+    ? `NSCP 2015 plateau is ${fmt((d.plateau_ratio - 1) * 100, 1)}% higher than ASCE S<sub>DS</sub>.`
+    : `NSCP 2015 plateau is ${fmt((1 - d.plateau_ratio) * 100, 1)}% lower than ASCE S<sub>DS</sub>.`;
+
+  document.getElementById("ov-params").innerHTML = `
+    <div class="fw-bold small mb-2">NSCP 2015</div>
+    ${resultCard("2.5 C<sub>a</sub> (plateau)", fmt(d.nscp.sa_max, 4), "g")}
+    ${resultCard("T<sub>0</sub>", fmt(d.nscp.t0, 4), "s")}
+    ${resultCard("T<sub>s</sub>", fmt(d.nscp.ts, 4), "s")}
+    <div class="fw-bold small mt-3 mb-2">ASCE 41 / ASCE 7</div>
+    ${resultCard("F<sub>a</sub>", fmt(d.asce.fa, 4))}
+    ${resultCard("F<sub>v</sub>", fmt(d.asce.fv, 4))}
+    ${resultCard("S<sub>DS</sub> (plateau)", fmt(d.asce.sds, 4), "g")}
+    ${resultCard("S<sub>D1</sub>", fmt(d.asce.sd1, 4), "g")}
+    ${resultCard("T<sub>0</sub>", fmt(d.asce.t0, 4), "s")}
+    ${resultCard("T<sub>s</sub>", fmt(d.asce.ts, 4), "s")}
+    <div class="fw-bold small mt-3 mb-2">Comparison</div>
+    ${resultCard("Plateau ratio (2.5C<sub>a</sub> / S<sub>DS</sub>)", fmt(d.plateau_ratio, 4))}
+    ${resultCard("Ratio range", `${fmt(d.ratio_min, 3)} – ${fmt(d.ratio_max, 3)}`)}
+    <div class="mt-2 text-muted small">${verdict}</div>`;
+}
+
+function downloadOverlayData() {
+  if (!overlayLastData) { alert("Generate the overlay first."); return; }
+  const d = overlayLastData;
+  const showLb = document.getElementById("ov-show-lb").checked;
+  const showRatio = document.getElementById("ov-show-ratio").checked;
+
+  const headers = ["Period(s)", "Sa_NSCP2015(g)", "Sa_ASCE_design(g)"];
+  if (showLb) headers.push("Sa_ASCE_80pct(g)");
+  if (showRatio) headers.push("Ratio_NSCP_over_ASCE");
+
+  const rows = d.periods.map((t, i) => {
+    const row = [t.toFixed(4), d.nscp.accelerations[i].toFixed(6), d.asce.accelerations[i].toFixed(6)];
+    if (showLb) row.push(d.lower_bound.accelerations[i].toFixed(6));
+    if (showRatio) row.push(d.ratio[i].toFixed(4));
+    return row;
+  });
+  downloadCSV(headers, rows, "NSCP_vs_ASCE_overlay.csv");
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
