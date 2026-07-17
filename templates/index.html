@@ -156,6 +156,14 @@
     <a class="sidebar-link" data-target="tab-nscp24" onclick="switchModule(this)">Design Spectrum</a>
   </div>
 
+  <!-- ASCE 41 / ASCE 7 -->
+  <div class="sidebar-group-title" onclick="toggleGroup(this)">
+    ASCE 41 / ASCE 7 <i class="bi bi-chevron-down"></i>
+  </div>
+  <div class="sidebar-items">
+    <a class="sidebar-link" data-target="tab-asce" onclick="switchModule(this)">Design Spectrum</a>
+  </div>
+
   <!-- DPWH BSDS -->
   <div class="sidebar-group-title" onclick="toggleGroup(this)">
     DPWH BSDS <i class="bi bi-chevron-down"></i>
@@ -766,6 +774,70 @@
         <div class="card h-100">
           <div class="card-header">Results</div>
           <div class="card-body" id="n24-params">
+            <p class="text-muted text-center mt-4">Enter parameters and click <strong>Generate Spectrum</strong>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MODULE 8D: ASCE 41 / ASCE 7 Design Spectrum ═══════════ -->
+  <div class="module-pane" id="tab-asce">
+    <div class="module-title">ASCE 41 / ASCE 7 — Design Response Spectrum</div>
+    <div class="row g-4">
+      <div class="col-md-3">
+        <div class="card">
+          <div class="card-header">Input Parameters</div>
+          <div class="card-body">
+            <div class="mb-3"><label>S<sub>s</sub> (Short Period, 0.2 s)</label><input type="number" class="form-control" id="asce-ss" value="1.1" step="0.01" min="0" /></div>
+            <div class="mb-3"><label>S<sub>1</sub> (Long Period, 1.0 s)</label><input type="number" class="form-control" id="asce-s1" value="0.4" step="0.01" min="0" /></div>
+            <div class="mb-3">
+              <label>Site Class</label>
+              <select class="form-select" id="asce-site">
+                <option value="A">A — Hard Rock</option>
+                <option value="B">B — Rock</option>
+                <option value="C">C — Very Dense Soil / Soft Rock</option>
+                <option value="D" selected>D — Stiff Soil</option>
+                <option value="E">E — Soft Soil</option>
+              </select>
+            </div>
+            <div class="mb-3"><label>T<sub>L</sub> (Long-Period Transition, s)</label><input type="number" class="form-control" id="asce-tl" value="8" step="0.5" min="0.1" /></div>
+            <div class="mb-3"><label>Max Period (s)</label><input type="number" class="form-control" id="asce-maxT" value="8" step="0.5" min="1" /></div>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="asce-show-mce" checked />
+              <label class="form-check-label" for="asce-show-mce">Show MCE<sub>R</sub> Spectrum</label>
+            </div>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="asce-show-lb" checked />
+              <label class="form-check-label" for="asce-show-lb">Show 80% Lower Bound</label>
+            </div>
+            <div class="alert alert-info small py-2">
+              A site-specific design spectrum shall not be taken as less than 80% of the
+              general-procedure spectrum &mdash; ASCE 7-16 &sect;21.3 and ASCE 41-17 &sect;2.4.2.
+              The 80% floor is in addition to the 2/3 MCE<sub>R</sub>-to-design factor, not a
+              replacement for it.
+            </div>
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="calcAsce()">Generate Spectrum</button>
+            <div id="asce-error" class="alert alert-danger mt-3 d-none"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>ASCE 41 / ASCE 7 — Design Response Spectrum</span>
+            <span>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('asce-chart','ASCE_Spectrum.png')">&#8615; PNG</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadAsceData()">&#8615; Data</button>
+            </span>
+          </div>
+          <div class="card-body"><canvas id="asce-chart" height="300"></canvas></div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card h-100">
+          <div class="card-header">Results</div>
+          <div class="card-body" id="asce-params">
             <p class="text-muted text-center mt-4">Enter parameters and click <strong>Generate Spectrum</strong>.</p>
           </div>
         </div>
@@ -2713,6 +2785,108 @@ function downloadNscp24Data() {
       [t.toFixed(4), d.design.accelerations[i].toFixed(6)]);
     downloadCSV(["Period(s)", "Sa_design(g)"], rows, "NSCP2024_spectrum.csv");
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 8D: ASCE 41 / ASCE 7 Design Spectrum
+// ══════════════════════════════════════════════════════════════════════════════
+
+let asceChart = null;
+let asceLastData = null;
+
+async function calcAsce() {
+  clearError("asce-error");
+  const body = {
+    ss:         parseFloat(document.getElementById("asce-ss").value),
+    s1:         parseFloat(document.getElementById("asce-s1").value),
+    site_class: document.getElementById("asce-site").value,
+    tl:         parseFloat(document.getElementById("asce-tl").value),
+    max_period: parseFloat(document.getElementById("asce-maxT").value),
+  };
+  const r = await postJSON("/api/asce-spectrum", body);
+  if (!r.success) { showError("asce-error", r.error); return; }
+  const d = r.data;
+  asceLastData = d;
+  const showMce = document.getElementById("asce-show-mce").checked;
+  const showLb = document.getElementById("asce-show-lb").checked;
+  const maxT = body.max_period;
+
+  if (asceChart) { asceChart.destroy(); asceChart = null; }
+
+  const datasets = [{
+    label: "Design (2/3)",
+    data: d.design.periods.map((t, i) => ({ x: t, y: d.design.accelerations[i] })),
+    borderColor: "#0f2d6b", borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
+  }];
+  if (showMce) {
+    datasets.push({
+      label: "MCEᵣ",
+      data: d.mce.periods.map((t, i) => ({ x: t, y: d.mce.accelerations[i] })),
+      borderColor: "#e63946", borderWidth: 2, borderDash: [6, 3], pointRadius: 0, tension: 0, fill: false,
+    });
+  }
+  if (showLb) {
+    datasets.push({
+      label: "80% Lower Bound",
+      data: d.lower_bound.periods.map((t, i) => ({ x: t, y: d.lower_bound.accelerations[i] })),
+      borderColor: "#2a9d8f", borderWidth: 2, borderDash: [4, 4], pointRadius: 0, tension: 0, fill: false,
+    });
+  }
+
+  asceChart = new Chart(document.getElementById("asce-chart"), {
+    type: "line",
+    data: { datasets },
+    options: {
+      ...baseChartOpts("Period, T (s)", "Spectral Acceleration, Sa (g)", maxT),
+      plugins: {
+        ...baseChartOpts("", "", maxT).plugins,
+        annotation: {
+          annotations: {
+            t0: makeAnnotation(d.t0, "#999", [4, 4], "T₀"),
+            ts: makeAnnotation(d.ts, "#999", [4, 4], "Tₛ"),
+            tl: makeAnnotation(d.tl, "#bbb", [2, 4], "Tₗ"),
+          },
+        },
+      },
+    },
+  });
+
+  document.getElementById("asce-params").innerHTML = `
+    ${resultCard("F<sub>a</sub>", fmt(d.fa, 4))}
+    ${resultCard("F<sub>v</sub>", fmt(d.fv, 4))}
+    ${resultCard("S<sub>MS</sub>", fmt(d.sms, 4), "g")}
+    ${resultCard("S<sub>M1</sub>", fmt(d.sm1, 4), "g")}
+    ${resultCard("S<sub>DS</sub>", fmt(d.sds, 4), "g")}
+    ${resultCard("S<sub>D1</sub>", fmt(d.sd1, 4), "g")}
+    ${resultCard("0.80 S<sub>DS</sub>", fmt(d.sds * d.lower_bound_factor, 4), "g")}
+    ${resultCard("0.80 S<sub>D1</sub>", fmt(d.sd1 * d.lower_bound_factor, 4), "g")}
+    ${resultCard("T<sub>0</sub>", fmt(d.t0, 4), "s")}
+    ${resultCard("T<sub>s</sub>", fmt(d.ts, 4), "s")}
+    ${resultCard("T<sub>L</sub>", fmt(d.tl, 4), "s")}
+    <div class="mt-2 text-muted small">
+      Lower bound = 80% of the general-procedure design spectrum
+      (ASCE 7-16 &sect;21.3, ASCE 41-17 &sect;2.4.2).
+      F<sub>a</sub> and F<sub>v</sub> are interpolated from the NSCP 2024 site-coefficient tables.
+    </div>`;
+}
+
+function downloadAsceData() {
+  if (!asceLastData) { alert("Generate the spectrum first."); return; }
+  const d = asceLastData;
+  const showMce = document.getElementById("asce-show-mce").checked;
+  const showLb = document.getElementById("asce-show-lb").checked;
+
+  const headers = ["Period(s)", "Sa_design(g)"];
+  if (showMce) headers.push("Sa_MCER(g)");
+  if (showLb) headers.push("Sa_80pct(g)");
+
+  const rows = d.design.periods.map((t, i) => {
+    const row = [t.toFixed(4), d.design.accelerations[i].toFixed(6)];
+    if (showMce) row.push(d.mce.accelerations[i].toFixed(6));
+    if (showLb) row.push(d.lower_bound.accelerations[i].toFixed(6));
+    return row;
+  });
+  downloadCSV(headers, rows, "ASCE_spectrum.csv");
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
