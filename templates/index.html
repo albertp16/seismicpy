@@ -872,7 +872,16 @@
               </select>
             </div>
             <div class="mb-3"><label>T<sub>L</sub> (Long-Period Transition, s)</label><input type="number" class="form-control" id="ov-tl" value="8" step="0.5" min="0.1" /></div>
-            <div class="mb-3"><label>Max Period (s)</label><input type="number" class="form-control" id="ov-maxT" value="8" step="0.5" min="1" /></div>
+            <div class="mb-3">
+              <label>Max Period (s) — x-axis</label>
+              <input type="number" class="form-control" id="ov-maxT" value="4" step="0.5" min="1" />
+              <div class="form-text">Spectra decay to near zero past ~4 s; lower this to fill the plot.</div>
+            </div>
+            <div class="mb-3">
+              <label>Max S<sub>a</sub> (g) — y-axis</label>
+              <input type="number" class="form-control" id="ov-ymax" value="" step="0.1" min="0" placeholder="auto" />
+              <div class="form-text">Leave blank to auto-fit the data.</div>
+            </div>
             <div class="form-check mb-2">
               <input class="form-check-input" type="checkbox" id="ov-show-lb" checked />
               <label class="form-check-label" for="ov-show-lb">Show ASCE 80% Lower Bound</label>
@@ -3029,10 +3038,21 @@ async function calcOverlay() {
   }
 
   const opts = baseChartOpts("Period, T (s)", "Spectral Acceleration, Sa (g)", maxT);
+
+  // Sa axis: honour an explicit ceiling, otherwise auto-fit with headroom so the
+  // plateau never sits flush against the top of the plot.
+  const yMax = parseFloat(document.getElementById("ov-ymax").value);
+  if (yMax > 0) opts.scales.y.max = yMax;
+  else opts.scales.y.grace = "10%";
+
   if (showRatio) {
+    // Fixed range keeps the ratio line readable and comparable between runs
+    // instead of silently rescaling with the data.
+    const ratioTop = Math.max(2, Math.ceil(Math.max(...d.ratio) * 2) / 2);
     opts.scales.yRatio = {
       position: "right",
       min: 0,
+      max: ratioTop,
       title: { display: true, text: "NSCP / ASCE Ratio" },
       grid: { drawOnChartArea: false },
     };
@@ -3049,6 +3069,17 @@ async function calcOverlay() {
           annotations: {
             tsN: makeAnnotation(d.nscp.ts, "#0f2d6b", [4, 4], "Tₛ NSCP"),
             tsA: makeAnnotation(d.asce.ts, "#e76f51", [4, 4], "Tₛ ASCE"),
+            // Parity line: above it NSCP 2015 demands more than ASCE, below it less.
+            ...(showRatio ? {
+              unity: {
+                type: "line", yScaleID: "yRatio", yMin: 1, yMax: 1,
+                borderColor: "#8d99ae", borderWidth: 1, borderDash: [1, 4],
+                label: {
+                  display: true, content: "ratio = 1", position: "end",
+                  color: "#8d99ae", font: { size: 10 },
+                },
+              },
+            } : {}),
           },
         },
       },
