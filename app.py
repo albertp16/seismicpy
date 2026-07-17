@@ -429,7 +429,12 @@ async def api_asce_spectrum(data: AsceSpectrumInput):
         rs = DesignResponseSpectrumASCE(data.ss, data.s1, fa, fv, tl=data.tl)
         design = rs.generate_spectrum(two_thirds=True, max_period=data.max_period)
         mce = rs.generate_spectrum(two_thirds=False, max_period=data.max_period)
-        lower = rs.generate_lower_bound_spectrum(max_period=data.max_period)
+        # One floor per altitude: 0.80 Sds sits under the design curve,
+        # 0.80 Sms under the MCE_R curve. Same rule, stated at both levels.
+        lower_design = rs.generate_lower_bound_spectrum(
+            two_thirds=True, max_period=data.max_period)
+        lower_mce = rs.generate_lower_bound_spectrum(
+            two_thirds=False, max_period=data.max_period)
 
         return {
             "success": True,
@@ -444,6 +449,8 @@ async def api_asce_spectrum(data: AsceSpectrumInput):
                 "ts": round(rs.ts, 4),
                 "tl": round(rs.tl, 4),
                 "lower_bound_factor": rs.LOWER_BOUND_FACTOR,
+                "sms_80": round(rs.LOWER_BOUND_FACTOR * rs.sms, 4),
+                "sds_80": round(rs.LOWER_BOUND_FACTOR * rs.sds, 4),
                 "design": {
                     "periods": design["periods"],
                     "accelerations": design["accelerations"],
@@ -452,9 +459,13 @@ async def api_asce_spectrum(data: AsceSpectrumInput):
                     "periods": mce["periods"],
                     "accelerations": mce["accelerations"],
                 },
-                "lower_bound": {
-                    "periods": lower["periods"],
-                    "accelerations": lower["accelerations"],
+                "lower_bound_design": {
+                    "periods": lower_design["periods"],
+                    "accelerations": lower_design["accelerations"],
+                },
+                "lower_bound_mce": {
+                    "periods": lower_mce["periods"],
+                    "accelerations": lower_mce["accelerations"],
                 },
             },
         }

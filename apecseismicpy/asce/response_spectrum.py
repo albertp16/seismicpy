@@ -23,14 +23,28 @@ class DesignResponseSpectrumASCE(DesignResponseSpectrum2024):
 
     LOWER_BOUND_FACTOR = 0.80
 
-    def sa_lower_bound(self, t):
-        """80% of the general-procedure design Sa (g) at period t."""
-        return self.LOWER_BOUND_FACTOR * self.sa(t, two_thirds=True)
+    def sa_lower_bound(self, t, two_thirds=True):
+        """
+        80% of the general-procedure Sa (g) at period t.
 
-    def generate_lower_bound_spectrum(self, max_period=8.0, step=0.01):
-        """Return period/acceleration arrays for the 80% lower-bound curve."""
-        spectrum = self.generate_spectrum(two_thirds=True, max_period=max_period,
-                                          step=step)
+            two_thirds=True   -> 0.80 * Sds, the floor at design altitude
+            two_thirds=False  -> 0.80 * Sms, the floor at MCE_R altitude
+
+        These are the same requirement stated at two levels, not two different
+        limits. The 2/3 appears on both sides of the Section 21.3 comparison and
+        divides out, so checking a site-specific design spectrum against
+        0.80 * Sds and checking a site-specific MCE_R spectrum against 0.80 * Sms
+        never disagree. Each floor belongs beside the curve at its own altitude;
+        pairing one with the other would compare across levels and be wrong by
+        the 1.5 the 2/3 implies.
+        """
+        return self.LOWER_BOUND_FACTOR * self.sa(t, two_thirds=two_thirds)
+
+    def generate_lower_bound_spectrum(self, two_thirds=True, max_period=8.0,
+                                      step=0.01):
+        """Return period/acceleration arrays for a 80% lower-bound curve."""
+        spectrum = self.generate_spectrum(two_thirds=two_thirds,
+                                          max_period=max_period, step=step)
         return {
             "periods": spectrum["periods"],
             "accelerations": [self.LOWER_BOUND_FACTOR * sa
