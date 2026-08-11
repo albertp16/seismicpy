@@ -25,7 +25,9 @@ A Python library and web application for seismic engineering calculations under 
 ### NSCP 2024 (8th Edition) Modules
 - **Design Spectrum** — Two-parameter (Ss, S1) design response spectrum with Fa/Fv site-class interpolation, design and MCE_R curves, and control periods T0, Ts, TL
 
-### ASCE 41-17 Modules
+### ASCE 41 / ASCE 7 Modules
+- **Design Spectrum** — The ASCE 7 two-parameter general spectrum with the 80% site-specific lower bound of ASCE 7-16 Section 21.3 and ASCE 41-17 Section 2.4.2, plotted at both the MCE_R and design levels (0.80 Sms and 0.80 Sds — the same requirement stated at two altitudes)
+- **NSCP vs ASCE 41 Overlay** — NSCP 2015 and ASCE 41 design spectra on one axis with their ordinate ratio
 - **BSE-1E / BSE-2E Spectra** — General horizontal response spectra for both hazard levels (Section 2.4.1.7.1). BSE-2E is the mapped MCE (Section 2.4.1.3) and BSE-1E is two-thirds of it (Section 2.4.1.4), so both share T0 and Ts. Site coefficients follow ASCE 7-16 Tables 11.4-1/11.4-2 including the Section 11.4.4 floor Fa >= 1.2 for a defaulted Site Class D, with the Eq. (2-3) damping adjustment B1, the Section 11.4.8 site-specific trigger and its 1.5Ts Exception 2 bound, and MIDAS `.sgs` export. Two interpretations are built in and worth knowing: where no 5%/50-year and 20%/50-year hazard maps exist, both BSE caps are taken from the mapped MCE, which over-states demand; and the ASCE 7 Exception 2 amplification, written for the ELF coefficient Cs, is carried onto the Section 2.4.1.7 general spectrum. Both are conservative in direction, and the app prints the governing clauses per run
 
 ### DPWH BSDS Modules
@@ -244,7 +246,7 @@ Then open **http://127.0.0.1:8000**.
 
 Each calculation is exposed as one `POST /api/*` route taking a JSON body:
 
-`/api/site-coefficients` · `/api/response-spectrum` · `/api/adrs` · `/api/period` · `/api/period-limit` · `/api/base-shear` · `/api/pga` · `/api/redundancy` · `/api/scaling` · `/api/bsds-spectrum` · `/api/site-specific-spectrum` · `/api/nscp2024-spectrum` · `/api/asce41-spectrum`
+`/api/site-coefficients` · `/api/response-spectrum` · `/api/adrs` · `/api/period` · `/api/period-limit` · `/api/base-shear` · `/api/pga` · `/api/redundancy` · `/api/scaling` · `/api/bsds-spectrum` · `/api/site-specific-spectrum` · `/api/nscp2024-spectrum` · `/api/asce-spectrum` · `/api/overlay-spectrum` · `/api/asce41-spectrum`
 
 Every route returns the same envelope — `{"success": true, "data": {...}}` on success, `{"success": false, "error": "..."}` on failure. Request and response schemas are generated from the Pydantic models and served at **/docs** (OpenAPI JSON at **/openapi.json**), which is authoritative if the list above falls behind:
 
@@ -267,6 +269,8 @@ curl -X POST http://127.0.0.1:8000/api/asce41-spectrum \
 | **PGA** | Peak ground acceleration via Fukushima-Tanaka |
 | **Scaling Base Shear** | SRSS dynamic scaling |
 | **NSCP 2024 Design Spectrum** | 8th Edition two-parameter spectrum: design and MCE_R curves with Fa/Fv interpolation |
+| **ASCE 41 / ASCE 7 Design Spectrum** | General spectrum with the 80% site-specific lower bound at both MCE_R and design level |
+| **NSCP vs ASCE 41 Overlay** | NSCP 2015 and ASCE 41 spectra on one axis with their ordinate ratio |
 | **ASCE 41-17 BSE-1E / BSE-2E** | Both hazard levels with the Section 11.4.4 Fa floor, B1 damping adjustment, Section 11.4.8 trigger, per-run clause notes, and PNG/CSV/`.sgs` export |
 | **BSDS Spectrum** | Level I and Level II spectra with site factors, PNG export, and tab-separated `.txt` data export |
 | **Site-Specific Spectrum** | BSDS-shape design spectrum with Fpga = Fa = Fv = 1.0 (site-specific hazard values used directly) |
@@ -298,6 +302,8 @@ seismicpy/
 │   ├── nscp2024/
 │   │   ├── site_coefficients.py    # 8th Edition Fa, Fv interpolation
 │   │   └── response_spectrum.py    # Design and MCE_R spectrum
+│   ├── asce/
+│   │   └── response_spectrum.py    # ASCE 7 spectrum + 80% lower bound
 │   ├── asce41/
 │   │   ├── site_coefficients.py    # ASCE 7-16 Fa, Fv + 11.4.4 floor, B1
 │   │   └── spectrum.py             # BSE-1E and BSE-2E spectra (2.4.1.7.1)
