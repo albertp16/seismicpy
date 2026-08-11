@@ -16,6 +16,7 @@ from apecseismicpy.nscp2015.redundancy import calculate_redundancy
 from apecseismicpy.nscp2015.scaling import calculate_scaling
 from apecseismicpy.bsds import SeismicSiteFactor, SeismicDesignResponse
 from apecseismicpy.nscp2024 import SiteCoefficients2024, DesignResponseSpectrum2024
+from apecseismicpy.asce41 import Asce41SiteCoefficients, Asce41Spectrum
 
 app = FastAPI(title="APEC SeismicPy")
 templates = Jinja2Templates(directory="templates")
@@ -78,6 +79,19 @@ class Nscp2024SpectrumInput(BaseModel):
     max_period: float = 8.0
     fa: float = 0.0           # optional override; 0 = compute from tables
     fv: float = 0.0           # optional override; 0 = compute from tables
+
+
+class Asce41SpectrumInput(BaseModel):
+    ss: float
+    s1: float
+    site_class: str = "D"          # A, B, C, D, E
+    default_site_class: bool = True  # Site Class D defaulted per §11.4.3?
+    tl: float = 16.0               # long-period transition period
+    damping: float = 0.05          # effective viscous damping ratio
+    max_period: float = 8.0
+    fa: float = 0.0                # optional override; 0 = compute from tables
+    fv: float = 0.0                # optional override; 0 = compute from tables
+    period: float = 0.0            # optional structure period for the demand readout
 
 
 class PgaInput(BaseModel):
@@ -389,6 +403,71 @@ async def api_nscp2024_spectrum(data: Nscp2024SpectrumInput):
                 "mce": {
                     "periods": mce["periods"],
                     "accelerations": mce["accelerations"],
+                },
+            },
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/asce41-spectrum")
+async def api_asce41_spectrum(data: Asce41SpectrumInput):
+    """ASCE 41-17 BSE-1E (Life Safety) and BSE-2E (Collapse Prevention) spectra."""
+    try:
+        sc = Asce41SiteCoefficients(
+            data.site_class, data.ss, data.s1,
+            default_site_class=data.default_site_class,
+        )
+        coef = sc.calculate()
+        fa_overridden = data.fa > 0
+        fv_overridden = data.fv > 0
+        fa = data.fa if fa_overridden else coef["fa"]
+        fv = data.fv if fv_overridden else coef["fv"]
+
+        rs = Asce41Spectrum(data.ss, data.s1, fa, fv,
+                            tl=data.tl, damping=data.damping)
+        bse2e = rs.generate_spectrum(level="BSE-2E", max_period=data.max_period)
+        bse1e = rs.generate_spectrum(level="BSE-1E", max_period=data.max_period)
+
+        demand = None
+        if data.period > 0:
+            demand = {
+                "period": round(data.period, 4),
+                "sa_bse2e": round(rs.sa(data.period, level="BSE-2E"), 4),
+                "sa_bse1e": round(rs.sa(data.period, level="BSE-1E"), 4),
+                "branch": rs.branch_at(data.period),
+                "beyond_exception2_bound": data.period > rs.exception2_bound,
+            }
+
+        return {
+            "success": True,
+            "data": {
+                "fa": round(fa, 4),
+                "fv": round(fv, 4),
+                "fa_interpolated": round(coef["fa_interpolated"], 4),
+                "fa_floor_applied": coef["fa_floor_applied"] and not fa_overridden,
+                "fa_overridden": fa_overridden,
+                "fv_overridden": fv_overridden,
+                "b1": round(rs.b1, 4),
+                "damping": data.damping,
+                "sxs_bse2e": round(rs.sxs_bse2e, 4),
+                "sx1_bse2e": round(rs.sx1_bse2e, 4),
+                "sxs_bse1e": round(rs.sxs_bse1e, 4),
+                "sx1_bse1e": round(rs.sx1_bse1e, 4),
+                "t0": round(rs.t0, 4),
+                "ts": round(rs.ts, 4),
+                "tl": round(rs.tl, 4),
+                "exception2_bound": round(rs.exception2_bound, 4),
+                "site_specific_required": coef["site_specific_required"],
+                "site_specific_reason": coef["site_specific_reason"],
+                "demand": demand,
+                "bse2e": {
+                    "periods": bse2e["periods"],
+                    "accelerations": bse2e["accelerations"],
+                },
+                "bse1e": {
+                    "periods": bse1e["periods"],
+                    "accelerations": bse1e["accelerations"],
                 },
             },
         }

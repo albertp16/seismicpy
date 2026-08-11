@@ -11,3 +11,5 @@ from .bsds.site_factor import SeismicSiteFactor
 from .bsds.spectrum import SeismicDesignResponse
 from .nscp2024.site_coefficients import SiteCoefficients2024
 from .nscp2024.response_spectrum import DesignResponseSpectrum2024
+from .asce41.site_coefficients import Asce41SiteCoefficients, damping_factor_b1
+from .asce41.spectrum import Asce41Spectrum

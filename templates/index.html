@@ -156,6 +156,14 @@
     <a class="sidebar-link" data-target="tab-nscp24" onclick="switchModule(this)">Design Spectrum</a>
   </div>
 
+  <!-- ASCE 41-17 -->
+  <div class="sidebar-group-title" onclick="toggleGroup(this)">
+    ASCE 41-17 <i class="bi bi-chevron-down"></i>
+  </div>
+  <div class="sidebar-items">
+    <a class="sidebar-link" data-target="tab-asce41" onclick="switchModule(this)">BSE-1E / BSE-2E Spectra</a>
+  </div>
+
   <!-- DPWH BSDS -->
   <div class="sidebar-group-title" onclick="toggleGroup(this)">
     DPWH BSDS <i class="bi bi-chevron-down"></i>
@@ -767,6 +775,75 @@
           <div class="card-header">Results</div>
           <div class="card-body" id="n24-params">
             <p class="text-muted text-center mt-4">Enter parameters and click <strong>Generate Spectrum</strong>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MODULE 8D: ASCE 41-17 BSE-1E / BSE-2E Spectra ═══════════ -->
+  <div class="module-pane" id="tab-asce41">
+    <div class="module-title">ASCE 41-17 — BSE-1E &amp; BSE-2E Response Spectra</div>
+    <div class="row g-4">
+      <div class="col-md-3">
+        <div class="card">
+          <div class="card-header">Input Parameters</div>
+          <div class="card-body">
+            <div class="mb-3"><label>S<sub>s</sub> (Short Period, 0.2 s)</label><input type="number" class="form-control" id="a41-ss" value="1.1" step="0.01" min="0" /></div>
+            <div class="mb-3"><label>S<sub>1</sub> (Long Period, 1.0 s)</label><input type="number" class="form-control" id="a41-s1" value="0.4" step="0.01" min="0" /></div>
+            <div class="mb-3">
+              <label>Site Class</label>
+              <select class="form-select" id="a41-site" onchange="toggleAsce41Default()">
+                <option value="A">A — Hard Rock</option>
+                <option value="B">B — Rock</option>
+                <option value="C">C — Very Dense Soil / Soft Rock</option>
+                <option value="D" selected>D — Stiff Soil</option>
+                <option value="E">E — Soft Soil</option>
+              </select>
+            </div>
+            <div class="form-check mb-3" id="a41-default-wrap">
+              <input class="form-check-input" type="checkbox" id="a41-default" checked />
+              <label class="form-check-label" for="a41-default">
+                Default site class (&sect;11.4.3) &mdash; applies the F<sub>a</sub> &ge; 1.2 floor of &sect;11.4.4
+              </label>
+            </div>
+            <div class="mb-3"><label>T<sub>L</sub> (Long-Period Transition, s)</label><input type="number" class="form-control" id="a41-tl" value="16" step="0.5" min="0.1" /></div>
+            <div class="mb-3"><label>Damping Ratio, &beta;</label><input type="number" class="form-control" id="a41-damping" value="0.05" step="0.01" min="0.01" max="0.5" /></div>
+            <div class="mb-3"><label>Max Period (s)</label><input type="number" class="form-control" id="a41-maxT" value="8" step="0.5" min="1" /></div>
+            <div class="mb-3"><label>Structure Period T (s) <span class="text-muted small">optional</span></label><input type="number" class="form-control" id="a41-period" value="0" step="0.01" min="0" /></div>
+            <div class="form-check mb-4">
+              <input class="form-check-input" type="checkbox" id="a41-show-1e" checked />
+              <label class="form-check-label" for="a41-show-1e">Show BSE-1E (Life Safety)</label>
+            </div>
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="calcAsce41()">Generate Spectra</button>
+            <div id="a41-error" class="alert alert-danger mt-3 d-none"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>ASCE 41-17 &mdash; Seismic Hazard Spectra</span>
+            <span>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('a41-chart','ASCE41_Spectra.png')">&#8615; PNG</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadAsce41Data()">&#8615; Data</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadAsce41Sgs()">&#8615; .sgs</button>
+            </span>
+          </div>
+          <div class="card-body"><canvas id="a41-chart" height="300"></canvas></div>
+        </div>
+        <div class="card mt-3">
+          <div class="card-header">Notes &amp; Clause Basis</div>
+          <div class="card-body small" id="a41-notes">
+            <p class="text-muted mb-0">Generate the spectra to see the governing clauses.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card h-100">
+          <div class="card-header">Results</div>
+          <div class="card-body" id="a41-params">
+            <p class="text-muted text-center mt-4">Enter parameters and click <strong>Generate Spectra</strong>.</p>
           </div>
         </div>
       </div>
@@ -2713,6 +2790,179 @@ function downloadNscp24Data() {
       [t.toFixed(4), d.design.accelerations[i].toFixed(6)]);
     downloadCSV(["Period(s)", "Sa_design(g)"], rows, "NSCP2024_spectrum.csv");
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 8D: ASCE 41-17 BSE-1E / BSE-2E Spectra
+// ══════════════════════════════════════════════════════════════════════════════
+
+let asce41Chart = null;
+let asce41LastData = null;
+
+const A41_COLOR_2E = "#9c1e24";   // Collapse Prevention
+const A41_COLOR_1E = "#1f6f3d";   // Life Safety
+
+function toggleAsce41Default() {
+  // The §11.4.4 floor only attaches to a DEFAULTED Site Class D.
+  const isD = document.getElementById("a41-site").value === "D";
+  document.getElementById("a41-default-wrap").style.opacity = isD ? "1" : ".45";
+  document.getElementById("a41-default").disabled = !isD;
+}
+
+async function calcAsce41() {
+  clearError("a41-error");
+  const body = {
+    ss:                 parseFloat(document.getElementById("a41-ss").value),
+    s1:                 parseFloat(document.getElementById("a41-s1").value),
+    site_class:         document.getElementById("a41-site").value,
+    default_site_class: document.getElementById("a41-default").checked,
+    tl:                 parseFloat(document.getElementById("a41-tl").value),
+    damping:            parseFloat(document.getElementById("a41-damping").value),
+    max_period:         parseFloat(document.getElementById("a41-maxT").value),
+    period:             parseFloat(document.getElementById("a41-period").value) || 0,
+  };
+  const r = await postJSON("/api/asce41-spectrum", body);
+  if (!r.success) { showError("a41-error", r.error); return; }
+  const d = r.data;
+  asce41LastData = d;
+  const show1E = document.getElementById("a41-show-1e").checked;
+  const maxT = body.max_period;
+
+  if (asce41Chart) { asce41Chart.destroy(); asce41Chart = null; }
+
+  const datasets = [{
+    label: "BSE-2E (Collapse Prevention)",
+    data: d.bse2e.periods.map((t, i) => ({ x: t, y: d.bse2e.accelerations[i] })),
+    borderColor: A41_COLOR_2E, borderWidth: 2.5, pointRadius: 0, tension: 0, fill: false,
+  }];
+  if (show1E) {
+    datasets.push({
+      label: "BSE-1E (Life Safety)",
+      data: d.bse1e.periods.map((t, i) => ({ x: t, y: d.bse1e.accelerations[i] })),
+      borderColor: A41_COLOR_1E, borderWidth: 2, borderDash: [6, 3], pointRadius: 0, tension: 0, fill: false,
+    });
+  }
+
+  const annotations = {
+    t0: makeAnnotation(d.t0, "#999", [4, 4], "T₀"),
+    ts: makeAnnotation(d.ts, "#999", [4, 4], "Tₛ"),
+  };
+  if (d.tl <= maxT) annotations.tl = makeAnnotation(d.tl, "#bbb", [2, 4], "Tₗ");
+  if (d.demand) annotations.t1 = makeAnnotation(d.demand.period, "#925e0a", [2, 2], "T");
+
+  asce41Chart = new Chart(document.getElementById("a41-chart"), {
+    type: "line",
+    data: { datasets },
+    options: {
+      ...baseChartOpts("Period, T (s)", "Spectral Acceleration, Sa (g)", maxT),
+      plugins: {
+        ...baseChartOpts("", "", maxT).plugins,
+        annotation: { annotations },
+      },
+    },
+  });
+
+  let html = `
+    ${resultCard("F<sub>a</sub>", fmt(d.fa, 4))}
+    ${resultCard("F<sub>v</sub>", fmt(d.fv, 4))}
+    ${resultCard("B<sub>1</sub> — damping " + fmt(d.damping * 100, 1) + "%", fmt(d.b1, 4))}
+    ${resultCard("S<sub>XS</sub> — BSE-2E", fmt(d.sxs_bse2e, 4), "g")}
+    ${resultCard("S<sub>X1</sub> — BSE-2E", fmt(d.sx1_bse2e, 4), "g")}
+    ${resultCard("S<sub>XS</sub> — BSE-1E", fmt(d.sxs_bse1e, 4), "g")}
+    ${resultCard("S<sub>X1</sub> — BSE-1E", fmt(d.sx1_bse1e, 4), "g")}
+    ${resultCard("T<sub>0</sub>", fmt(d.t0, 4), "s")}
+    ${resultCard("T<sub>s</sub>", fmt(d.ts, 4), "s")}
+    ${resultCard("T<sub>L</sub>", fmt(d.tl, 4), "s")}`;
+  if (d.demand) {
+    html += `
+    ${resultCard("S<sub>a</sub> at T = " + fmt(d.demand.period, 3) + " s — BSE-2E", fmt(d.demand.sa_bse2e, 4), "g")}
+    ${resultCard("S<sub>a</sub> at T = " + fmt(d.demand.period, 3) + " s — BSE-1E", fmt(d.demand.sa_bse1e, 4), "g")}`;
+  }
+  document.getElementById("a41-params").innerHTML = html;
+
+  // ── notes: the clauses that actually governed this run ──────────────────
+  const notes = [];
+  notes.push("<strong>&sect;2.4.1.3 / &sect;2.4.1.4</strong> — BSE-2E is capped at BSE-2N (the mapped MCE) " +
+             "and BSE-1E at BSE-1N, so BSE-1E = 2/3 &times; BSE-2E at every period. " +
+             "T<sub>0</sub> and T<sub>s</sub> are common to both levels.");
+  notes.push("<strong>&sect;2.4.1.6</strong> — S<sub>XS</sub> = F<sub>a</sub>S<sub>s</sub>, " +
+             "S<sub>X1</sub> = F<sub>v</sub>S<sub>1</sub>, with F<sub>a</sub> and F<sub>v</sub> " +
+             "from ASCE 7 &sect;11.4.");
+  if (d.fa_floor_applied) {
+    notes.push('<span class="text-danger"><strong>&sect;11.4.4 floor applied</strong></span> — Site Class D was ' +
+               'selected as the <em>default</em> class, so F<sub>a</sub> is raised from the interpolated ' +
+               fmt(d.fa_interpolated, 4) + " to " + fmt(d.fa, 4) +
+               ". T<sub>s</sub> shortens accordingly; check whether your periods are still on the plateau.");
+  } else if (!d.fa_overridden) {
+    notes.push("<strong>&sect;11.4.4</strong> — floor not applicable; F<sub>a</sub> = " +
+               fmt(d.fa, 4) + " is the interpolated table value.");
+  }
+  notes.push("<strong>&sect;2.4.1.7.1 / Eq. (2-3)</strong> — ordinates divided by " +
+             "B<sub>1</sub> = " + fmt(d.b1, 4) + "; the T = 0 anchor 0.4S<sub>XS</sub> is not, " +
+             "as the clause is written.");
+  if (d.site_specific_required) {
+    notes.push('<span class="text-danger"><strong>ASCE 7-16 &sect;11.4.8 triggered</strong></span> — ' +
+               d.site_specific_reason +
+               " Under Exception 2 the response coefficient is amplified by 1.5 beyond " +
+               "1.5T<sub>s</sub> = " + fmt(d.exception2_bound, 4) + " s.");
+    if (d.demand) {
+      notes.push(d.demand.beyond_exception2_bound
+        ? '<span class="text-danger">T = ' + fmt(d.demand.period, 4) + " s is <strong>beyond</strong> the 1.5T<sub>s</sub> bound — the 1.5&times; amplification applies.</span>"
+        : "T = " + fmt(d.demand.period, 4) + " s is below the 1.5T<sub>s</sub> bound — no amplification.");
+    }
+  }
+  if (d.demand) {
+    notes.push("At T = " + fmt(d.demand.period, 4) + " s the structure sits on the <strong>" +
+               d.demand.branch + "</strong>.");
+  }
+  notes.push('<span class="text-muted">The ASCE 41 leg is unreduced — R, I and &rho; belong to the ' +
+             "NSCP leg only and are never applied here; demand is moderated on the capacity side " +
+             "by m and &kappa;.</span>");
+  document.getElementById("a41-notes").innerHTML =
+    "<ul class='mb-0 ps-3'>" + notes.map(n => "<li class='mb-2'>" + n + "</li>").join("") + "</ul>";
+}
+
+function downloadAsce41Data() {
+  if (!asce41LastData) { alert("Generate the spectra first."); return; }
+  const d = asce41LastData;
+  const rows = d.bse2e.periods.map((t, i) =>
+    [t.toFixed(4), d.bse2e.accelerations[i].toFixed(6), d.bse1e.accelerations[i].toFixed(6)]);
+  downloadCSV(["Period(s)", "Sa_BSE2E(g)", "Sa_BSE1E(g)"], rows, "ASCE41_spectra.csv");
+}
+
+function buildSpectrumSgsText(title, periods, accelerations) {
+  // MIDAS .sgs container for a response spectrum (period vs Sa in g).
+  const lines = [
+    "*SGSw",
+    "*TITLE, " + title,
+    "*TITLE, ",
+    "*X-AXIS, Period (sec)",
+    "*Y-AXIS, Spectral Accel. (g)",
+    "*UNIT&TYPE, GRAV, ACCEL",
+    "*FLAGS, 0, 0",
+    "*DATA",
+    "",
+  ];
+  for (let i = 0; i < periods.length; i++) {
+    if (periods[i] <= 0) continue;   // MIDAS rejects a zero-period ordinate
+    lines.push(periods[i].toFixed(4) + "\t,\t" + accelerations[i].toFixed(6));
+  }
+  lines.push("", "", "", "*ENDDATA");
+  return lines.join("\r\n");
+}
+
+function downloadAsce41Sgs() {
+  if (!asce41LastData) { alert("Generate the spectra first."); return; }
+  const d = asce41LastData;
+  const tag = "Fa=" + fmt(d.fa, 2) + " Fv=" + fmt(d.fv, 2) +
+              " Class" + document.getElementById("a41-site").value;
+
+  triggerDownload("BSE2E_CP.sgs",
+    buildSpectrumSgsText("ASCE 41-17 BSE-2E Collapse Prevention (" + tag + ")",
+                         d.bse2e.periods, d.bse2e.accelerations));
+  setTimeout(() => triggerDownload("BSE1E_LS.sgs",
+    buildSpectrumSgsText("ASCE 41-17 BSE-1E Life Safety (" + tag + ")",
+                         d.bse1e.periods, d.bse1e.accelerations)), 250);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
