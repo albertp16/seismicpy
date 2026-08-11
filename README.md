@@ -17,7 +17,7 @@ A Python library and web application for seismic engineering calculations under 
 - **Response Spectrum** — Design spectrum and 1.4x time-history reference envelope
 - **ADRS** — Acceleration-displacement response spectrum with radial period lines, ATC-40 spectral reduction, pushover capacity curve overlay, trial performance point, and a full calculation report
 - **Base Shear** — Eq. 208-8 through 208-10 plus the Zone 4 minimum (Eq. 208-11); the governing value is returned for Zone 4 only
-- **Structural Period** — Empirical formula with zone-limited upper bound (Section 208.5.2.2)
+- **Structural Period** — Empirical formula with a zone-dependent upper bound (1.70x the period in Zone 4, 1.40x otherwise)
 - **Redundancy Factor** — NSCP Section 208.5.6 redundancy calculation
 - **PGA Calculator** — Fukushima-Tanaka attenuation model
 - **Scaling Base Shear** — SRSS-based dynamic analysis scaling
@@ -26,7 +26,7 @@ A Python library and web application for seismic engineering calculations under 
 - **Design Spectrum** — Two-parameter (Ss, S1) design response spectrum with Fa/Fv site-class interpolation, design and MCE_R curves, and control periods T0, Ts, TL
 
 ### ASCE 41-17 Modules
-- **BSE-1E / BSE-2E Spectra** — General horizontal response spectra for both hazard levels (Section 2.4.1.7.1). BSE-2E is the mapped MCE (Section 2.4.1.3) and BSE-1E is two-thirds of it (Section 2.4.1.4), so both share T0 and Ts. Site coefficients follow ASCE 7-16 Tables 11.4-1/11.4-2 including the Section 11.4.4 floor Fa >= 1.2 for a defaulted Site Class D, with the Eq. (2-3) damping adjustment B1, the Section 11.4.8 site-specific trigger and its 1.5Ts Exception 2 bound, and MIDAS `.sgs` export
+- **BSE-1E / BSE-2E Spectra** — General horizontal response spectra for both hazard levels (Section 2.4.1.7.1). BSE-2E is the mapped MCE (Section 2.4.1.3) and BSE-1E is two-thirds of it (Section 2.4.1.4), so both share T0 and Ts. Site coefficients follow ASCE 7-16 Tables 11.4-1/11.4-2 including the Section 11.4.4 floor Fa >= 1.2 for a defaulted Site Class D, with the Eq. (2-3) damping adjustment B1, the Section 11.4.8 site-specific trigger and its 1.5Ts Exception 2 bound, and MIDAS `.sgs` export. Two interpretations are built in and worth knowing: where no 5%/50-year and 20%/50-year hazard maps exist, both BSE caps are taken from the mapped MCE, which over-states demand; and the ASCE 7 Exception 2 amplification, written for the ELF coefficient Cs, is carried onto the Section 2.4.1.7 general spectrum. Both are conservative in direction, and the app prints the governing clauses per run
 
 ### DPWH BSDS Modules
 - **Design Spectrum** — Level I and Level II response spectra with site factor interpolation (Fpga, Fa, Fv), damping ratio adjustment, and 2/3-rule minimum overlay
@@ -34,7 +34,7 @@ A Python library and web application for seismic engineering calculations under 
 
 ### ACI 350 Modules (library only — no web UI)
 - **Effective Liquid Weights** — Impulsive and convective weights per Eq. 9.2.1a and 9.2.1b
-- **Centers of Gravity** — Heights to the centers of gravity, EBP and IBP (Sections 9.2.2 and 9.2.3)
+- **Centers of Gravity** — Heights to the centers of gravity, excluding and including base pressure (Sections 9.2.2 and 9.2.3). Note the returned keys are `EPB` (sic) and `IBP`
 - **Dynamic Properties** — Tank impulsive and convective periods
 
 ### Diagram Modules
@@ -42,7 +42,7 @@ A Python library and web application for seismic engineering calculations under 
 - **Story Drift** and **Story Acceleration** — With user-defined limit lines
 
 ### Ground Motion Modules
-- **PEER GM Record** — Upload one or more PEER NGA strong-motion records (.AT2, .VT2, .DT2, .txt, .acc, .csv) and plot the acceleration time-histories together, with CSV and PNG export
+- **PEER GM Record** — Upload one or more PEER NGA strong-motion records (.AT2, .VT2, .DT2, .txt, .acc, .csv) and plot the acceleration time-histories together, with CSV export, a combined PNG, and a per-record "PNG (each)" export
 - **PEER → SGS Converter** — Batch-convert PEER NGA records (.AT2, .txt) to SGS format (plain decimal, no scientific notation), with time-history preview and per-record .sgs downloads
 
 ### Smart Auto-Fill
@@ -85,7 +85,7 @@ result = sc.calculate()
 ```python
 from apecseismicpy import ResponseSpectrum
 
-rs = ResponseSpectrum(ca=0.44, cv=0.72)
+rs = ResponseSpectrum(ca=0.44, cv=0.768)   # Ca, Cv from the example above
 x, Sa = rs.calculate(x_max=5.0)
 # x  = normalized period T/Ts
 # Sa = spectral acceleration (g)
@@ -101,7 +101,7 @@ T = calculateStructuralPeriod("concrete", hn=15.0)
 # Returns period in seconds
 
 result = calculatePeriodWithLimit("concrete", hn=15.0, zone=4)
-# {'period': 0.5572, 'limit': 0.9472}
+# {'period': 0.5572, 'limit': 0.9472}   # limit = 1.70 x period in Zone 4
 ```
 
 ### Base Shear
@@ -110,7 +110,7 @@ result = calculatePeriodWithLimit("concrete", hn=15.0, zone=4)
 from apecseismicpy import calculate_base_shear
 
 bs = calculate_base_shear(
-    zone=4, nv=1.29, ca=0.44, cv=0.72,
+    zone=4, nv=1.2, ca=0.44, cv=0.768,
     importance_factor=1.0, response_modification=8.0,
     period=0.62, weight=21000.0
 )
@@ -127,6 +127,7 @@ print(bs.governingShear())    # Governing value
 from apecseismicpy import calculate_pga
 
 result = calculate_pga(magnitude=7.0, distance=25.0, soil_type="medium_soil")
+# {'pga_cm_s2': 267.091, 'pga_g': 0.272542, 'correction_factor': 1.07}
 ```
 
 ### Redundancy Factor
@@ -176,18 +177,32 @@ sc.calculate()
 # {'fa': 1.2, 'fa_interpolated': 1.06, 'fa_floor_applied': True, 'fv': 1.9,
 #  'site_specific_required': True,
 #  'site_specific_reason': '§11.4.8 item 3 — Site Class D with S1 = 0.40 >= 0.20. ...'}
-# Fa interpolates to 1.06, but Site Class D was DEFAULTED, so the §11.4.4
-# floor of 1.2 governs. Pass default_site_class=False when the class was
-# determined from a documented investigation.
+# Fa interpolates to 1.06, but Site Class D was DEFAULTED, so the Section
+# 11.4.4 floor of 1.2 governs. Pass default_site_class=False when the class
+# was determined from a documented investigation.
 
 rs = Asce41Spectrum(ss=1.10, s1=0.40, fa=sc.fa(), fv=sc.fv(), tl=16.0, damping=0.05)
 print(rs.ts, rs.t0)                      # 0.5758  0.1152 — common to both levels
 print(rs.sa(0.60, level="BSE-2E"))       # 1.2637 g — Collapse Prevention
 print(rs.sa(0.60, level="BSE-1E"))       # 0.8425 g — Life Safety (2/3 of BSE-2E)
 print(rs.branch_at(0.60))                # 'velocity branch (Ts < T <= TL)'
-print(rs.exception2_bound)               # 0.8636 s — the 1.5*Ts bound of §11.4.8 Exc. 2
+print(rs.exception2_bound)               # 0.8636 s — 1.5*Ts, the Section 11.4.8 Exc. 2 bound
 
 bse2e = rs.generate_spectrum(level="BSE-2E", max_period=8.0)
+```
+
+### ACI 350 Tank Hydrodynamics
+
+```python
+from apecseismicpy import effective_liquid_weights, calculate_heights_of_centers_of_gravity
+
+effective_liquid_weights(L=10.0, height=5.0, liquid_weight=1000.0)
+# {'impulsive': {'value': 542.3163, 'units': 'kN'},
+#  'convective': {'value': 485.0218, 'units': 'kN'}}
+
+calculate_heights_of_centers_of_gravity(l=10.0, h_l=5.0)
+# {'EPB': {'hi': 1.875, 'hc': 2.9164}, 'IBP': {'hpi': 3.9849, 'hpc': 4.2914}}
+# the excluding-base-pressure key is spelled 'EPB' in the source
 ```
 
 ### DPWH BSDS Design Spectrum
@@ -231,7 +246,7 @@ Each calculation is exposed as one `POST /api/*` route taking a JSON body:
 
 `/api/site-coefficients` · `/api/response-spectrum` · `/api/adrs` · `/api/period` · `/api/period-limit` · `/api/base-shear` · `/api/pga` · `/api/redundancy` · `/api/scaling` · `/api/bsds-spectrum` · `/api/site-specific-spectrum` · `/api/nscp2024-spectrum` · `/api/asce41-spectrum`
 
-Every route returns the same envelope — `{"success": true, "data": {...}}` on success, `{"success": false, "error": "..."}` on failure:
+Every route returns the same envelope — `{"success": true, "data": {...}}` on success, `{"success": false, "error": "..."}` on failure. Request and response schemas are generated from the Pydantic models and served at **/docs** (OpenAPI JSON at **/openapi.json**), which is authoritative if the list above falls behind:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/asce41-spectrum \
@@ -252,8 +267,8 @@ curl -X POST http://127.0.0.1:8000/api/asce41-spectrum \
 | **PGA** | Peak ground acceleration via Fukushima-Tanaka |
 | **Scaling Base Shear** | SRSS dynamic scaling |
 | **NSCP 2024 Design Spectrum** | 8th Edition two-parameter spectrum: design and MCE_R curves with Fa/Fv interpolation |
-| **ASCE 41-17 BSE-1E / BSE-2E** | Both hazard levels with the §11.4.4 Fa floor, B1 damping adjustment, §11.4.8 trigger, per-run clause notes, and PNG/CSV/`.sgs` export |
-| **BSDS Spectrum** | Level I and Level II spectra with site factors and PNG export |
+| **ASCE 41-17 BSE-1E / BSE-2E** | Both hazard levels with the Section 11.4.4 Fa floor, B1 damping adjustment, Section 11.4.8 trigger, per-run clause notes, and PNG/CSV/`.sgs` export |
+| **BSDS Spectrum** | Level I and Level II spectra with site factors, PNG export, and tab-separated `.txt` data export |
 | **Site-Specific Spectrum** | BSDS-shape design spectrum with Fpga = Fa = Fv = 1.0 (site-specific hazard values used directly) |
 | **Story Displacement** | Per-story displacement with TH1-TH7 load cases |
 | **Story Drift** | Interstory drift with configurable limit line |
@@ -284,14 +299,15 @@ seismicpy/
 │   │   ├── site_coefficients.py    # 8th Edition Fa, Fv interpolation
 │   │   └── response_spectrum.py    # Design and MCE_R spectrum
 │   ├── asce41/
-│   │   ├── site_coefficients.py    # ASCE 7-16 Fa, Fv + §11.4.4 floor, B1
-│   │   └── spectrum.py             # BSE-1E and BSE-2E spectra (§2.4.1.7.1)
+│   │   ├── site_coefficients.py    # ASCE 7-16 Fa, Fv + 11.4.4 floor, B1
+│   │   └── spectrum.py             # BSE-1E and BSE-2E spectra (2.4.1.7.1)
 │   ├── bsds/
 │   │   ├── site_factor.py          # Fpga, Fa, Fv interpolation tables
 │   │   └── spectrum.py             # Level I and Level II spectrum
 │   └── aci350/
 │       └── hydrodynamic/           # Tank hydrodynamic analysis (library only)
 ├── Dockerfile                      # Production container
+├── railway.json                    # Railway build + health-check config
 ├── requirements.txt                # Python dependencies
 ├── setup.py                        # Package installer
 └── CHANGELOG.md                    # Version history
