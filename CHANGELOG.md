@@ -7,9 +7,19 @@ All notable changes to APEC SeismicPy are documented here.
 ## [Unreleased]
 
 ### Added
+- ASCE 41-17 group with a BSE-1E / BSE-2E Spectra tab: both hazard levels from one set of inputs (BSE-1E = 2/3 BSE-2E per §2.4.1.4), ASCE 7-16 site coefficients including the §11.4.4 floor Fa >= 1.2 for a defaulted Site Class D, the Eq. (2-3) damping adjustment B1, the §11.4.8 site-specific trigger with its 1.5Ts Exception 2 bound, per-run clause notes, and PNG/CSV/MIDAS `.sgs` export
+- `apecseismicpy.asce41` package (`Asce41SiteCoefficients`, `Asce41Spectrum`, `damping_factor_b1`) and the `/api/asce41-spectrum` endpoint
+- NSCP 2024 (8th Edition) group with a Design Spectrum tab: Fa/Fv site-class interpolation, design and MCE_R curves, control periods T0/Ts/TL
+- `apecseismicpy.nscp2024` package (`SiteCoefficients2024`, `DesignResponseSpectrum2024`) and the `/api/nscp2024-spectrum` endpoint
 - Site-Specific Spectrum tab (DPWH BSDS group): design response spectrum built directly from site-specific PGA, Ss, and S1 with no site-factor interpolation (Fpga = Fa = Fv = 1.0), with 2/3 minimum overlay and PNG/CSV export
 - `/api/site-specific-spectrum` endpoint reusing `SeismicDesignResponse` with unit site factors
 - PEER GM: per-record PNG export — a PNG button on each record in the list plus a "PNG (each)" header button that exports one hi-res chart per record
+
+### Removed
+- Story Shear and Overturning Moment diagram tabs
+
+### Fixed
+- README: documented the NSCP 2024, ASCE 41-17, and ACI 350 module families, dropped the removed Story Shear and Overturning Moment entries, corrected the Site Coefficients and Structural Period example outputs, and added the HTTP API route list
 
 ---
 

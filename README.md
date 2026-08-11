@@ -4,7 +4,7 @@
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/github/license/albertp16/seismicpy)](https://github.com/albertp16/seismicpy/blob/main/LICENSE)
 
-A Python library and web application for seismic engineering calculations under the **National Structural Code of the Philippines (NSCP 2015)** and the **DPWH Bridge Seismic Design Specifications (BSDS)**. Built by [APEC Engineering Consultancy](https://seismic.apeconsultancy.net).
+A Python library and web application for seismic engineering calculations under the **National Structural Code of the Philippines (NSCP 2015 and 2024)**, the **DPWH Bridge Seismic Design Specifications (BSDS)**, **ASCE 41-17 Seismic Evaluation and Retrofit of Existing Buildings**, and **ACI 350 tank hydrodynamics**. Built by [APEC Engineering Consultancy](https://seismic.apeconsultancy.net).
 
 **Live Web App:** [seismic.apeconsultancy.net](https://seismic.apeconsultancy.net)
 
@@ -16,27 +16,37 @@ A Python library and web application for seismic engineering calculations under 
 - **Site Coefficients** — Na, Nv, Ca, Cv lookup with distance interpolation (Tables 208-4 to 208-8)
 - **Response Spectrum** — Design spectrum and 1.4x time-history reference envelope
 - **ADRS** — Acceleration-displacement response spectrum with radial period lines, ATC-40 spectral reduction, pushover capacity curve overlay, trial performance point, and a full calculation report
-- **Base Shear** — Governing lateral force per Eq. 208-8 through 208-11
+- **Base Shear** — Eq. 208-8 through 208-10 plus the Zone 4 minimum (Eq. 208-11); the governing value is returned for Zone 4 only
 - **Structural Period** — Empirical formula with zone-limited upper bound (Section 208.5.2.2)
 - **Redundancy Factor** — NSCP Section 208.5.6 redundancy calculation
 - **PGA Calculator** — Fukushima-Tanaka attenuation model
 - **Scaling Base Shear** — SRSS-based dynamic analysis scaling
 
+### NSCP 2024 (8th Edition) Modules
+- **Design Spectrum** — Two-parameter (Ss, S1) design response spectrum with Fa/Fv site-class interpolation, design and MCE_R curves, and control periods T0, Ts, TL
+
+### ASCE 41-17 Modules
+- **BSE-1E / BSE-2E Spectra** — General horizontal response spectra for both hazard levels (Section 2.4.1.7.1). BSE-2E is the mapped MCE (Section 2.4.1.3) and BSE-1E is two-thirds of it (Section 2.4.1.4), so both share T0 and Ts. Site coefficients follow ASCE 7-16 Tables 11.4-1/11.4-2 including the Section 11.4.4 floor Fa >= 1.2 for a defaulted Site Class D, with the Eq. (2-3) damping adjustment B1, the Section 11.4.8 site-specific trigger and its 1.5Ts Exception 2 bound, and MIDAS `.sgs` export
+
 ### DPWH BSDS Modules
 - **Design Spectrum** — Level I and Level II response spectra with site factor interpolation (Fpga, Fa, Fv), damping ratio adjustment, and 2/3-rule minimum overlay
 - **Site-Specific Spectrum** — Design response spectrum from site-specific PGA, Ss, S1 with no site factor interpolation (Fpga = Fa = Fv = 1.0) and 2/3-rule minimum overlay
 
+### ACI 350 Modules (library only — no web UI)
+- **Effective Liquid Weights** — Impulsive and convective weights per Eq. 9.2.1a and 9.2.1b
+- **Centers of Gravity** — Heights to the centers of gravity, EBP and IBP (Sections 9.2.2 and 9.2.3)
+- **Dynamic Properties** — Tank impulsive and convective periods
+
 ### Diagram Modules
-- **Story Shear** and **Overturning Moment** — Spreadsheet input with interactive plots
 - **Story Displacement** — Per-story tables with TH1-TH7 load case support
 - **Story Drift** and **Story Acceleration** — With user-defined limit lines
 
 ### Ground Motion Modules
-- **PEER GM Record** — Upload one or more PEER NGA strong-motion records (.AT2, .VT2, .DT2) and plot the acceleration time-histories together, with CSV and PNG export
-- **PEER → SGS Converter** — Batch-convert PEER NGA records (.AT2) to SGS format (plain decimal, no scientific notation), with time-history preview and per-record .sgs downloads
+- **PEER GM Record** — Upload one or more PEER NGA strong-motion records (.AT2, .VT2, .DT2, .txt, .acc, .csv) and plot the acceleration time-histories together, with CSV and PNG export
+- **PEER → SGS Converter** — Batch-convert PEER NGA records (.AT2, .txt) to SGS format (plain decimal, no scientific notation), with time-history preview and per-record .sgs downloads
 
 ### Smart Auto-Fill
-Site coefficient results (Ca, Cv, Nv, Zone) automatically populate the Response Spectrum and Base Shear input fields, visually indicated by a light green hatch on auto-filled fields.
+Site coefficient results (Ca, Cv, Nv, Zone) automatically populate the Response Spectrum, ADRS, and Base Shear input fields — Ca and Cv to all three, Nv and Zone to Base Shear only — visually indicated by a light green hatch on auto-filled fields.
 
 ---
 
@@ -45,6 +55,8 @@ Site coefficient results (Ca, Cv, Nv, Zone) automatically populate the Response 
 ```bash
 pip install apecseismicpy
 ```
+
+**Note:** PyPI currently ships v0.2 while this repository is at v0.5.0. The DPWH BSDS, NSCP 2024, and ASCE 41-17 modules documented below are available only from source until the next release.
 
 Or install from source:
 
@@ -65,7 +77,7 @@ from apecseismicpy import site_coefficients
 
 sc = site_coefficients(distance=5.0, source_type="B", soil_type="sd", zone=4)
 result = sc.calculate()
-# {'na': 1.0, 'nv': 1.29, 'ca': 0.44, 'cv': 0.72}
+# {'na': 1.0, 'nv': 1.2, 'ca': 0.44, 'cv': 0.768}
 ```
 
 ### Response Spectrum
@@ -89,7 +101,7 @@ T = calculateStructuralPeriod("concrete", hn=15.0)
 # Returns period in seconds
 
 result = calculatePeriodWithLimit("concrete", hn=15.0, zone=4)
-# Returns {'period': T, 'limit': T_upper, 'governing': min(T, T_upper)}
+# {'period': 0.5572, 'limit': 0.9472}
 ```
 
 ### Base Shear
@@ -123,6 +135,59 @@ result = calculate_pga(magnitude=7.0, distance=25.0, soil_type="medium_soil")
 from apecseismicpy import calculate_redundancy
 
 result = calculate_redundancy(v_struc=500.0, v_element=120.0, ab=200.0, factor=1.25)
+# {'r_max': 0.24, 'rho_raw': 0.2028, 'rho_clamped': 1.0, 'rho': 1.0, 'factor': 1.25}
+```
+
+### Scaling Base Shear
+
+```python
+from apecseismicpy import calculate_scaling
+
+result = calculate_scaling(
+    static_shear=4499.4,
+    scale_factor=1.0,
+    dynamic_data=[{"label": "MAJOR", "x": 106.27, "y": 4499.40}],
+)
+# {'results': [{'label': 'MAJOR', 'srt': 4500.6548, 'ratio': 0.9997}]}
+```
+
+### NSCP 2024 Design Spectrum
+
+```python
+from apecseismicpy import SiteCoefficients2024, DesignResponseSpectrum2024
+
+sc = SiteCoefficients2024("D", ss=1.10, s1=0.40)
+# sc.calculate() -> {'fa': 1.06, 'fv': 1.6}
+
+rs = DesignResponseSpectrum2024(ss=1.10, s1=0.40, fa=sc.fa(), fv=sc.fv(), tl=4.0)
+print(rs.sds, rs.sd1, rs.ts, rs.t0)   # 0.7773  0.4267  0.5489  0.1098
+
+design = rs.generate_spectrum(two_thirds=True, max_period=8.0)   # design level
+mce    = rs.generate_spectrum(two_thirds=False, max_period=8.0)  # MCE_R level
+```
+
+### ASCE 41-17 BSE-1E / BSE-2E Spectra
+
+```python
+from apecseismicpy import Asce41SiteCoefficients, Asce41Spectrum
+
+sc = Asce41SiteCoefficients("D", ss=1.10, s1=0.40, default_site_class=True)
+sc.calculate()
+# {'fa': 1.2, 'fa_interpolated': 1.06, 'fa_floor_applied': True, 'fv': 1.9,
+#  'site_specific_required': True,
+#  'site_specific_reason': '§11.4.8 item 3 — Site Class D with S1 = 0.40 >= 0.20. ...'}
+# Fa interpolates to 1.06, but Site Class D was DEFAULTED, so the §11.4.4
+# floor of 1.2 governs. Pass default_site_class=False when the class was
+# determined from a documented investigation.
+
+rs = Asce41Spectrum(ss=1.10, s1=0.40, fa=sc.fa(), fv=sc.fv(), tl=16.0, damping=0.05)
+print(rs.ts, rs.t0)                      # 0.5758  0.1152 — common to both levels
+print(rs.sa(0.60, level="BSE-2E"))       # 1.2637 g — Collapse Prevention
+print(rs.sa(0.60, level="BSE-1E"))       # 0.8425 g — Life Safety (2/3 of BSE-2E)
+print(rs.branch_at(0.60))                # 'velocity branch (Ts < T <= TL)'
+print(rs.exception2_bound)               # 0.8636 s — the 1.5*Ts bound of §11.4.8 Exc. 2
+
+bse2e = rs.generate_spectrum(level="BSE-2E", max_period=8.0)
 ```
 
 ### DPWH BSDS Design Spectrum
@@ -144,7 +209,7 @@ level1 = sdr.generate_level1_spectrum("II", damping_ratio=0.02, max_period=8.0)
 
 ## Web Application
 
-The package includes a FastAPI web application with interactive charts, PNG export, and spreadsheet-style data input.
+The package includes a FastAPI web application with interactive charts, PNG and CSV export, and spreadsheet-style data input.
 
 **Try it live:** [seismic.apeconsultancy.net](https://seismic.apeconsultancy.net)
 
@@ -160,6 +225,20 @@ uvicorn app:app --reload
 
 Then open **http://127.0.0.1:8000**.
 
+### HTTP API
+
+Each calculation is exposed as one `POST /api/*` route taking a JSON body:
+
+`/api/site-coefficients` · `/api/response-spectrum` · `/api/adrs` · `/api/period` · `/api/period-limit` · `/api/base-shear` · `/api/pga` · `/api/redundancy` · `/api/scaling` · `/api/bsds-spectrum` · `/api/site-specific-spectrum` · `/api/nscp2024-spectrum` · `/api/asce41-spectrum`
+
+Every route returns the same envelope — `{"success": true, "data": {...}}` on success, `{"success": false, "error": "..."}` on failure:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/asce41-spectrum \
+  -H "Content-Type: application/json" \
+  -d '{"ss": 1.10, "s1": 0.40, "site_class": "D", "tl": 16, "max_period": 8, "period": 0.60}'
+```
+
 ### Web App Modules
 
 | Module | Description |
@@ -167,15 +246,15 @@ Then open **http://127.0.0.1:8000**.
 | **Site Coefficients** | Na, Nv, Ca, Cv for any zone, source type, and soil profile |
 | **Response Spectrum** | NSCP 2015 design spectrum + 1.4x TH reference |
 | **ADRS** | ATC-40 capacity spectrum: elastic/reduced ADRS, radial period lines, pushover curve overlay, calculation report |
-| **Base Shear** | Governing lateral force (Eq. 208-8 to 208-11) |
+| **Base Shear** | Lateral force per Eq. 208-8 to 208-10 with the Zone 4 minimum (Eq. 208-11) |
 | **Structural Period** | Empirical period with zone-limited upper bound |
 | **Redundancy** | Redundancy factor per Section 208.5.6 |
 | **PGA** | Peak ground acceleration via Fukushima-Tanaka |
 | **Scaling Base Shear** | SRSS dynamic scaling |
+| **NSCP 2024 Design Spectrum** | 8th Edition two-parameter spectrum: design and MCE_R curves with Fa/Fv interpolation |
+| **ASCE 41-17 BSE-1E / BSE-2E** | Both hazard levels with the §11.4.4 Fa floor, B1 damping adjustment, §11.4.8 trigger, per-run clause notes, and PNG/CSV/`.sgs` export |
 | **BSDS Spectrum** | Level I and Level II spectra with site factors and PNG export |
 | **Site-Specific Spectrum** | BSDS-shape design spectrum with Fpga = Fa = Fv = 1.0 (site-specific hazard values used directly) |
-| **Story Shear** | Interactive story shear diagram from spreadsheet input |
-| **Overturning Moment** | Overturning moment diagram |
 | **Story Displacement** | Per-story displacement with TH1-TH7 load cases |
 | **Story Drift** | Interstory drift with configurable limit line |
 | **Story Acceleration** | Floor acceleration with configurable limit line |
@@ -201,11 +280,17 @@ seismicpy/
 │   │   ├── pga.py                  # Fukushima-Tanaka attenuation
 │   │   ├── redundancy.py           # Redundancy factor
 │   │   └── scaling.py              # SRSS dynamic scaling
+│   ├── nscp2024/
+│   │   ├── site_coefficients.py    # 8th Edition Fa, Fv interpolation
+│   │   └── response_spectrum.py    # Design and MCE_R spectrum
+│   ├── asce41/
+│   │   ├── site_coefficients.py    # ASCE 7-16 Fa, Fv + §11.4.4 floor, B1
+│   │   └── spectrum.py             # BSE-1E and BSE-2E spectra (§2.4.1.7.1)
 │   ├── bsds/
 │   │   ├── site_factor.py          # Fpga, Fa, Fv interpolation tables
 │   │   └── spectrum.py             # Level I and Level II spectrum
 │   └── aci350/
-│       └── hydrodynamic/           # Tank hydrodynamic analysis
+│       └── hydrodynamic/           # Tank hydrodynamic analysis (library only)
 ├── Dockerfile                      # Production container
 ├── requirements.txt                # Python dependencies
 ├── setup.py                        # Package installer

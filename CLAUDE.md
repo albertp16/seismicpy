@@ -29,6 +29,8 @@ No test suite; verify changes by exercising the relevant module in the browser.
 - **`templates/index.html`** — the entire UI (HTML + CSS + vanilla JS, ~3000 lines). Bootstrap 5, Chart.js 4, chartjs-plugin-annotation. No build step, no framework, no separate JS files.
 - **`apecseismicpy/`** — the library. Each submodule owns one code/standard:
   - `nscp2015/` — site_coefficients, response_spectrum, baseshear, period, pga, redundancy, scaling
+  - `nscp2024/` — site_coefficients, response_spectrum (8th Edition, two-parameter Ss/S1)
+  - `asce41/` — site_coefficients, spectrum (ASCE 41-17 BSE-1E / BSE-2E)
   - `bsds/` — site_factor, spectrum (DPWH Bridge Seismic Design)
   - `aci350/hydrodynamic/` — loads, period, pressure, provision (tank analysis)
   - Public API is re-exported from `apecseismicpy/__init__.py`.
