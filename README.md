@@ -4,7 +4,7 @@
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/github/license/albertp16/seismicpy)](https://github.com/albertp16/seismicpy/blob/main/LICENSE)
 
-A Python library and web application for seismic engineering calculations under the **National Structural Code of the Philippines (NSCP 2015 and 2024)**, the **DPWH Bridge Seismic Design Specifications (BSDS)**, **ASCE 41-17 Seismic Evaluation and Retrofit of Existing Buildings**, and **ACI 350 tank hydrodynamics**. Built by [APEC Engineering Consultancy](https://seismic.apeconsultancy.net).
+A Python library and web application for seismic engineering calculations under the **National Structural Code of the Philippines (NSCP 2015 and 2024)**, the **DPWH Bridge Seismic Design Specifications (BSDS)**, **ASCE 41-17 Seismic Evaluation and Retrofit of Existing Buildings**, and **ACI 350 tank hydrodynamics**. Built by [Albert Pamonag Engineering Consultancy](https://seismic.apeconsultancy.net) — developed by **Albert Pamonag** and **Camille Pajarillaga**.
 
 **Live Web App:** [seismic.apeconsultancy.net](https://seismic.apeconsultancy.net)
 
@@ -49,6 +49,9 @@ Every spectrum module writes a MIDAS `.sgs` alongside its PNG and CSV — NSCP 2
 
 ### Smart Auto-Fill
 Site coefficient results (Ca, Cv, Nv, Zone) automatically populate the Response Spectrum, ADRS, and Base Shear input fields — Ca and Cv to all three, Nv and Zone to Base Shear only — visually indicated by a light green hatch on auto-filled fields.
+
+### Interactive Charts
+Every chart supports zoom and pan for inspecting spectra up close: **Ctrl + mouse wheel** (or pinch on touch devices) to zoom, **Shift + drag** to pan, and **double-click** to reset the view. Charts export as hi-res PNG and CSV, and every spectrum chart also writes a MIDAS `.sgs`.
 
 ---
 
@@ -226,7 +229,7 @@ level1 = sdr.generate_level1_spectrum("II", damping_ratio=0.02, max_period=8.0)
 
 ## Web Application
 
-The package includes a FastAPI web application with interactive charts, PNG and CSV export, and spreadsheet-style data input.
+The package includes a FastAPI web application with a professional engineering UI: interactive charts with zoom/pan, PNG/CSV/MIDAS `.sgs` export, spreadsheet-style data input with Excel paste support, and smart auto-fill between modules. The interface is a single page built with Bootstrap 5, Bootstrap Icons, Chart.js 4 (annotation + zoom plugins), and Inter / JetBrains Mono typography — all via CDN, no build step.
 
 **Try it live:** [seismic.apeconsultancy.net](https://seismic.apeconsultancy.net)
 
@@ -286,7 +289,7 @@ curl -X POST http://127.0.0.1:8000/api/asce41-spectrum \
 seismicpy/
 ├── app.py                          # FastAPI web application
 ├── templates/
-│   └── index.html                  # Single-page UI (Bootstrap 5 + Chart.js)
+│   └── index.html                  # Single-page UI (Bootstrap 5 + Chart.js 4)
 ├── apecseismicpy/
 │   ├── __init__.py                 # Public API exports
 │   ├── nscp2015/
@@ -346,9 +349,11 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
-## Author
+## Developers
 
-**Albert Pamonag** — APEC Engineering Consultancy
+**Albert Pamonag** — Albert Pamonag Engineering Consultancy
 - Email: albert@apeconsultancy.net
 - Web: [seismic.apeconsultancy.net](https://seismic.apeconsultancy.net)
 - Repository: [github.com/albertp16/seismicpy](https://github.com/albertp16/seismicpy)
+
+**Camille Pajarillaga**
