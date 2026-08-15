@@ -39,13 +39,13 @@ A Python library and web application for seismic engineering calculations under 
 - **Centers of Gravity** — Heights to the centers of gravity, excluding and including base pressure (Sections 9.2.2 and 9.2.3). Note the returned keys are `EPB` (sic) and `IBP`
 - **Dynamic Properties** — Tank impulsive and convective periods
 
-### Diagram Modules
-- **Story Displacement** — Per-story tables with TH1-TH7 load case support
-- **Story Drift** and **Story Acceleration** — With user-defined limit lines
-
 ### Ground Motion Modules
 - **PEER GM Record** — Upload one or more PEER NGA strong-motion records (.AT2, .VT2, .DT2, .txt, .acc, .csv) and plot the acceleration time-histories together, with CSV export, a combined PNG, and a per-record "PNG (each)" export
 - **PEER → SGS Converter** — Batch-convert PEER NGA records (.AT2, .txt) to SGS format (plain decimal, no scientific notation), with time-history preview and per-record .sgs downloads
+- **SGS Generator** — Build a MIDAS `.sgs` from any two-column data: paste from Excel, load a CSV/TSV/`.sgs`, or supply one column of values plus a Δt. Time-history, response-spectrum, or custom axis labels, with a live chart and file preview
+
+### MIDAS `.sgs` Export
+Every spectrum module writes a MIDAS `.sgs` alongside its PNG and CSV — NSCP 2015 (design and 1.4× reference), NSCP 2024 (design and MCE_R), ASCE 7 (design, MCE_R, and both 80% lower bounds), the NSCP vs ASCE overlay, DPWH BSDS Level I and II, Site-Specific, and ASCE 41-17 BSE-1E / BSE-2E. Output matches a MIDAS-written file byte for byte: CRLF endings, `<x>TAB,TAB<y>` rows, trailing zeros trimmed, and ASCII-only headers.
 
 ### Smart Auto-Fill
 Site coefficient results (Ca, Cv, Nv, Zone) automatically populate the Response Spectrum, ADRS, and Base Shear input fields — Ca and Cv to all three, Nv and Zone to Base Shear only — visually indicated by a light green hatch on auto-filled fields.
@@ -274,11 +274,9 @@ curl -X POST http://127.0.0.1:8000/api/asce41-spectrum \
 | **ASCE 41-17 BSE-1E / BSE-2E** | Both hazard levels with the Section 11.4.4 Fa floor, B1 damping adjustment, Section 11.4.8 trigger, per-run clause notes, and PNG/CSV/`.sgs` export |
 | **BSDS Spectrum** | Level I and Level II spectra with site factors, PNG export, and tab-separated `.txt` data export |
 | **Site-Specific Spectrum** | BSDS-shape design spectrum with Fpga = Fa = Fv = 1.0 (site-specific hazard values used directly) |
-| **Story Displacement** | Per-story displacement with TH1-TH7 load cases |
-| **Story Drift** | Interstory drift with configurable limit line |
-| **Story Acceleration** | Floor acceleration with configurable limit line |
 | **PEER GM Record** | Multi-file PEER NGA time-history plot with CSV/PNG export |
 | **PEER → SGS Converter** | Batch PEER .AT2 → .sgs conversion with preview |
+| **SGS Generator** | Any two-column data → MIDAS .sgs, with Δt mode, file import, live chart and file preview |
 
 ---
 

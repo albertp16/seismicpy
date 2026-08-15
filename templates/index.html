@@ -4,18 +4,35 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>APEC SeismicPy</title>
+  <meta name="description" content="Seismic engineering calculations — NSCP 2015/2024, ASCE 41/7, DPWH BSDS — by Albert Pamonag Engineering Consultancy." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M60 3C64 30 76 62 97 94C72 80 36 76 6 86C28 58 47 30 60 3Z' fill='%231e6b35'/%3E%3Cpath d='M42 40L52 68L26 71Z' fill='white'/%3E%3C/svg%3E" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
   <style>
     :root {
-      --accent: #1a56db;
-      --accent-light: #e8f0fe;
-      --sidebar-bg: #0f2d6b;
-      --sidebar-w: 240px;
+      --navy: #12233b;
+      --green: #1e6b35;
+      --green-dark: #17512a;
+      --green-light: #3fa25c;
+      --ink: #1d2936;
+      --muted: #5c6b7a;
+      --line: #dce2ec;
+      --bg: #eef1f6;
+      --accent: #16324f;
+      --accent-light: #f2f6fa;
+      --sidebar-bg: #0e1e33;
+      --sidebar-w: 256px;
+      --font-ui: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
     }
-    body { background: #f4f6fb; font-family: 'Segoe UI', sans-serif; margin: 0; }
+    body { background: var(--bg); font-family: var(--font-ui); color: var(--ink); margin: 0; }
 
     /* ── Sidebar ─────────────────────────────────────────────── */
     .sidebar {
@@ -23,33 +40,59 @@
       width: var(--sidebar-w); background: var(--sidebar-bg);
       overflow-y: auto; z-index: 1040; transition: transform .25s;
       display: flex; flex-direction: column;
+      border-right: 1px solid rgba(255,255,255,.06);
+      scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.18) transparent;
     }
+    .sidebar::-webkit-scrollbar { width: 6px; }
+    .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 3px; }
     .sidebar-brand {
-      padding: 1.1rem 1.2rem; color: #fff; font-weight: 700; font-size: 1.15rem;
-      border-bottom: 1px solid rgba(255,255,255,.1); letter-spacing: .3px;
+      display: flex; align-items: center; gap: .7rem;
+      padding: 1rem 1.1rem;
+      border-bottom: 1px solid rgba(255,255,255,.08);
     }
-    .sidebar-brand small { display: block; font-size: .7rem; font-weight: 400; opacity: .55; margin-top: 2px; }
+    .brand-mark { width: 40px; height: 40px; flex: none; }
+    .brand-name { color: #fff; font-weight: 700; font-size: 1.02rem; letter-spacing: .02em; line-height: 1.2; }
+    .brand-name .brand-accent { color: #5cc07e; font-weight: 600; }
+    .sidebar-brand small {
+      display: block; font-size: .58rem; font-weight: 500; color: rgba(255,255,255,.5);
+      letter-spacing: .06em; margin-top: 2px; text-transform: uppercase;
+    }
     .sidebar-group-title {
       display: flex; align-items: center; justify-content: space-between;
-      padding: .6rem 1.2rem; color: rgba(255,255,255,.45);
-      font-size: .72rem; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600;
+      padding: .6rem 1.2rem; color: rgba(255,255,255,.4);
+      font-size: .68rem; text-transform: uppercase; letter-spacing: .12em; font-weight: 600;
       cursor: pointer; user-select: none; margin-top: .5rem;
     }
     .sidebar-group-title:hover { color: rgba(255,255,255,.7); }
-    .sidebar-group-title .bi { transition: transform .2s; font-size: .7rem; }
-    .sidebar-group-title.collapsed .bi { transform: rotate(-90deg); }
+    .sidebar-group-title span .bi { margin-right: .5rem; font-size: .8rem; opacity: .85; }
+    .sidebar-group-title .bi-chevron-down { transition: transform .2s; font-size: .7rem; }
+    .sidebar-group-title.collapsed .bi-chevron-down { transform: rotate(-90deg); }
     .sidebar-items { overflow: hidden; transition: max-height .25s ease; max-height: 500px; }
     .sidebar-items.collapsed { max-height: 0; }
     .sidebar-link {
       display: block; padding: .45rem 1.2rem .45rem 2rem;
-      color: rgba(255,255,255,.7); text-decoration: none; font-size: .88rem;
-      border-left: 3px solid transparent; transition: all .15s;
+      color: rgba(255,255,255,.66); text-decoration: none; font-size: .86rem;
+      border-left: 3px solid transparent; transition: all .15s; cursor: pointer;
     }
     .sidebar-link:hover { background: rgba(255,255,255,.06); color: #fff; }
-    .sidebar-link.active { background: rgba(255,255,255,.1); color: #fff; border-left-color: #5b9aff; font-weight: 600; }
+    .sidebar-link.active {
+      background: rgba(63,162,92,.16); color: #fff;
+      border-left-color: var(--green-light); font-weight: 600;
+    }
+    .sidebar-foot {
+      margin-top: auto; padding: .9rem 1.1rem 1rem;
+      border-top: 1px solid rgba(255,255,255,.08);
+      font-size: .72rem; color: rgba(255,255,255,.55); line-height: 1.6;
+    }
+    .sidebar-foot-title {
+      font-size: .6rem; text-transform: uppercase; letter-spacing: .14em;
+      color: rgba(255,255,255,.35); margin-bottom: .25rem; font-weight: 600;
+    }
+    .sidebar-foot strong { color: rgba(255,255,255,.82); font-weight: 600; }
+    .sidebar-foot-meta { margin-top: .4rem; font-size: .64rem; color: rgba(255,255,255,.35); }
 
     /* ── Main content ────────────────────────────────────────── */
-    .main-content { margin-left: var(--sidebar-w); padding: 1.5rem 2rem 3rem; min-height: 100vh; }
+    .main-content { margin-left: var(--sidebar-w); padding: 1.75rem 2.25rem 2.5rem; min-height: 100vh; }
 
     /* ── Hamburger (mobile) ──────────────────────────────────── */
     .sidebar-toggle {
@@ -66,29 +109,60 @@
     }
 
     /* ── Cards & result cards ────────────────────────────────── */
-    .card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
-    .card-header { background: var(--accent); color: #fff; border-radius: 12px 12px 0 0 !important; font-weight: 600; }
-    .result-card { background: var(--accent-light); border-radius: 10px; padding: 1rem 1.25rem; }
-    .result-label { font-size: .78rem; color: #555; text-transform: uppercase; letter-spacing: .5px; }
-    .result-value { font-size: 1.4rem; font-weight: 700; color: #0f2d6b; }
-    .result-unit  { font-size: .85rem; color: #777; }
-    .btn-calc { background: var(--accent); border: none; padding: .5rem 1.8rem; border-radius: 8px; font-weight: 600; }
-    .btn-calc:hover { background: #1347b0; }
-    label { font-weight: 500; font-size: .9rem; }
-    .form-control, .form-select { font-size: .9rem; }
+    .card {
+      border: 1px solid var(--line); border-radius: 10px;
+      box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 4px 12px rgba(16,24,40,.04);
+    }
+    .card-header {
+      background: var(--accent); color: #fff; border-radius: 9px 9px 0 0 !important;
+      font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .07em;
+      padding: .7rem 1rem; border-bottom: none;
+    }
+    .result-card {
+      background: var(--accent-light); border: 1px solid var(--line);
+      border-left: 3px solid var(--green);
+      border-radius: 8px; padding: 1rem 1.25rem;
+    }
+    .result-label {
+      font-size: .7rem; color: var(--muted); text-transform: uppercase;
+      letter-spacing: .08em; font-weight: 600;
+    }
+    .result-value {
+      font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+      font-size: 1.35rem; font-weight: 600; color: var(--navy);
+    }
+    .result-unit  { font-size: .82rem; color: var(--muted); }
+    .btn-calc {
+      --bs-btn-bg: var(--green);
+      --bs-btn-border-color: var(--green);
+      --bs-btn-hover-bg: var(--green-dark);
+      --bs-btn-hover-border-color: var(--green-dark);
+      --bs-btn-active-bg: var(--green-dark);
+      --bs-btn-active-border-color: var(--green-dark);
+      --bs-btn-disabled-bg: var(--green);
+      --bs-btn-disabled-border-color: var(--green);
+      --bs-btn-focus-shadow-rgb: 30,107,53;
+      padding: .55rem 1.8rem; border-radius: 8px; font-weight: 600; letter-spacing: .02em;
+    }
+    label { font-weight: 600; font-size: .82rem; color: #33414f; }
+    .form-control, .form-select { font-size: .9rem; border-color: #ccd4e0; }
+    .form-control:focus, .form-select:focus {
+      border-color: #7fb391; box-shadow: 0 0 0 .2rem rgba(30,107,53,.12);
+    }
     .tag-zone { display:inline-block; background:#fff3cd; color:#856404; border-radius:6px; padding:2px 8px; font-size:.8rem; font-weight:600; }
 
     /* ── Spreadsheet Table ────────────────────────────────────── */
-    .spread-table { width: 100%; border-collapse: collapse; border: 1px solid #bcc3ce; font-size: .88rem; }
+    .spread-table { width: 100%; border-collapse: collapse; border: 1px solid #bcc3ce; font-size: .88rem; background: #fff; }
     .spread-table th {
-      background: #dfe6f0; font-size: .75rem; text-transform: uppercase; letter-spacing: .5px;
-      padding: .35rem .5rem; border: 1px solid #bcc3ce; text-align: center; font-weight: 600; color: #444;
+      background: #e9edf4; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
+      padding: .35rem .5rem; border: 1px solid #bcc3ce; text-align: center; font-weight: 600; color: #46556b;
     }
     .spread-table td {
       border: 1px solid #d0d5dd; padding: 0; text-align: center; min-width: 80px; height: 32px;
     }
     .spread-table td[contenteditable] {
       outline: none; padding: .25rem .4rem; cursor: cell;
+      font-family: var(--font-mono); font-size: .8rem; font-variant-numeric: tabular-nums;
     }
     .spread-table td[contenteditable]:focus {
       background: #eef3ff; box-shadow: inset 0 0 0 2px var(--accent);
@@ -102,7 +176,33 @@
     /* ── Module panes ────────────────────────────────────────── */
     .module-pane { display: none; }
     .module-pane.active { display: block; }
-    .module-title { font-size: 1.3rem; font-weight: 700; color: #0f2d6b; margin-bottom: 1.2rem; }
+    .module-title {
+      font-size: 1.28rem; font-weight: 700; color: var(--navy); letter-spacing: -.01em;
+      margin-bottom: 1.3rem; padding-bottom: .65rem; border-bottom: 1px solid var(--line);
+      position: relative;
+    }
+    .module-title::after {
+      content: ""; position: absolute; left: 0; bottom: -1px;
+      width: 56px; height: 3px; background: var(--green); border-radius: 2px;
+    }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    .app-footer {
+      margin-top: 3rem; padding-top: 1.4rem; border-top: 1px solid var(--line);
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 1.5rem; flex-wrap: wrap;
+    }
+    .app-footer-brand { display: flex; gap: .8rem; align-items: center; }
+    .app-footer-mark { width: 44px; height: 44px; flex: none; }
+    .app-footer-company { font-weight: 700; color: var(--navy); font-size: .92rem; letter-spacing: .04em; }
+    .app-footer-company span { color: var(--green); font-size: 1.12em; }
+    .app-footer-tag { font-size: .74rem; color: var(--muted); margin-top: 2px; }
+    .app-footer-meta { font-size: .75rem; color: var(--muted); text-align: right; line-height: 1.7; max-width: 540px; }
+    .app-footer-meta strong { color: var(--ink); font-weight: 600; }
+    @media (max-width: 767.98px) {
+      .app-footer { flex-direction: column; }
+      .app-footer-meta { text-align: left; }
+    }
 
     /* ── Auto-filled indicator (light green hatch) ─────────── */
     .auto-filled {
@@ -129,13 +229,25 @@
 ════════════════════════════════════════════════════════════════════ -->
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-brand">
-    &#127758; APEC SeismicPy
-    <small>seismic.apeconsultancy.net</small>
+    <svg class="brand-mark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="APEC logo">
+      <defs>
+        <linearGradient id="apec-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#2f8f4b"/>
+          <stop offset="1" stop-color="#17512a"/>
+        </linearGradient>
+      </defs>
+      <path d="M60 3 C64 30 76 62 97 94 C72 80 36 76 6 86 C28 58 47 30 60 3 Z" fill="url(#apec-grad)"/>
+      <path d="M42 40 L52 68 L26 71 Z" fill="#fff"/>
+    </svg>
+    <div>
+      <div class="brand-name">APEC <span class="brand-accent">SeismicPy</span></div>
+      <small>Albert Pamonag Engineering Consultancy</small>
+    </div>
   </div>
 
   <!-- NSCP 2015 -->
   <div class="sidebar-group-title" onclick="toggleGroup(this)">
-    NSCP 2015 <i class="bi bi-chevron-down"></i>
+    <span><i class="bi bi-buildings"></i>NSCP 2015</span> <i class="bi bi-chevron-down"></i>
   </div>
   <div class="sidebar-items">
     <a class="sidebar-link active" data-target="tab-site" onclick="switchModule(this)">Site Coefficients</a>
@@ -150,7 +262,7 @@
 
   <!-- NSCP 2024 (8th Edition) -->
   <div class="sidebar-group-title" onclick="toggleGroup(this)">
-    NSCP 2024 (8th Ed.) <i class="bi bi-chevron-down"></i>
+    <span><i class="bi bi-building-up"></i>NSCP 2024 (8th Ed.)</span> <i class="bi bi-chevron-down"></i>
   </div>
   <div class="sidebar-items">
     <a class="sidebar-link" data-target="tab-nscp24" onclick="switchModule(this)">Design Spectrum</a>
@@ -158,7 +270,7 @@
 
   <!-- ASCE 41 / ASCE 7 -->
   <div class="sidebar-group-title" onclick="toggleGroup(this)">
-    ASCE 41 / ASCE 7 <i class="bi bi-chevron-down"></i>
+    <span><i class="bi bi-journal-bookmark"></i>ASCE 41 / ASCE 7</span> <i class="bi bi-chevron-down"></i>
   </div>
   <div class="sidebar-items">
     <a class="sidebar-link" data-target="tab-asce" onclick="switchModule(this)">Design Spectrum</a>
@@ -168,30 +280,30 @@
 
   <!-- DPWH BSDS -->
   <div class="sidebar-group-title" onclick="toggleGroup(this)">
-    DPWH BSDS <i class="bi bi-chevron-down"></i>
+    <span><i class="bi bi-signpost-split"></i>DPWH BSDS</span> <i class="bi bi-chevron-down"></i>
   </div>
   <div class="sidebar-items">
     <a class="sidebar-link" data-target="tab-bsds" onclick="switchModule(this)">Design Spectrum</a>
     <a class="sidebar-link" data-target="tab-sitespec" onclick="switchModule(this)">Site-Specific Spectrum</a>
   </div>
 
-  <!-- Diagrams -->
-  <div class="sidebar-group-title" onclick="toggleGroup(this)">
-    Diagrams <i class="bi bi-chevron-down"></i>
-  </div>
-  <div class="sidebar-items">
-    <a class="sidebar-link" data-target="tab-displacement" onclick="switchModule(this)">Story Displacement</a>
-    <a class="sidebar-link" data-target="tab-drift" onclick="switchModule(this)">Story Drift</a>
-    <a class="sidebar-link" data-target="tab-acceleration" onclick="switchModule(this)">Story Acceleration</a>
-  </div>
 
   <!-- Ground Motion -->
   <div class="sidebar-group-title" onclick="toggleGroup(this)">
-    Ground Motion <i class="bi bi-chevron-down"></i>
+    <span><i class="bi bi-activity"></i>Ground Motion</span> <i class="bi bi-chevron-down"></i>
   </div>
   <div class="sidebar-items">
     <a class="sidebar-link" data-target="tab-peer-gm" onclick="switchModule(this)">PEER GM Record</a>
     <a class="sidebar-link" data-target="tab-peer-sgs" onclick="switchModule(this)">PEER &rarr; SGS Converter</a>
+    <a class="sidebar-link" data-target="tab-sgs-gen" onclick="switchModule(this)">SGS Generator</a>
+  </div>
+
+  <!-- Developers -->
+  <div class="sidebar-foot">
+    <div class="sidebar-foot-title">Developed by</div>
+    <div><strong>Albert Pamonag</strong></div>
+    <div><strong>Camille Pajarillaga</strong></div>
+    <div class="sidebar-foot-meta">seismic.apeconsultancy.net</div>
   </div>
 </nav>
 
@@ -278,6 +390,7 @@
             <div>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadSpectrumCSV()">&#8615; CSV</button>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart1','spectrum_NSCP2015.png')">&#8615; PNG</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadSpectrumSgsNscp15()">&#8615; .sgs</button>
             </div>
           </div>
           <div class="card-body"><canvas id="chart1" height="260"></canvas></div>
@@ -290,6 +403,7 @@
           <div class="card-header d-flex justify-content-between align-items-center">
             <span>&#9313; Time-History Reference (1.4&#215; + period markers)</span>
             <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('chart2','spectrum_TH_reference.png')">&#8615; PNG</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadSpectrumSgsNscp15Th()">&#8615; .sgs</button>
           </div>
           <div class="card-body"><canvas id="chart2" height="260"></canvas></div>
         </div>
@@ -654,6 +768,7 @@
             <span>BSDS Level II — Design Response Spectrum</span>
             <span>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('bsds-chart-l2','BSDS_Level2.png')">&#8615; PNG</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadBsdsSgs('l2')">&#8615; .sgs</button>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadBsdsData('l2')">&#8615; Data</button>
             </span>
           </div>
@@ -664,6 +779,7 @@
             <span>BSDS Level I — EGM Response Spectrum</span>
             <span>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('bsds-chart-l1','BSDS_Level1.png')">&#8615; PNG</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadBsdsSgs('l1')">&#8615; .sgs</button>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadBsdsData('l1')">&#8615; Data</button>
             </span>
           </div>
@@ -712,6 +828,7 @@
             <span>Site-Specific Design Response Spectrum (F<sub>a</sub> = F<sub>v</sub> = 1.0)</span>
             <span>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('ssp-chart','SiteSpecific_Spectrum.png')">&#8615; PNG</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadSspSgs()">&#8615; .sgs</button>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadSiteSpecCSV()">&#8615; CSV</button>
             </span>
           </div>
@@ -767,6 +884,7 @@
             <span>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('n24-chart','NSCP2024_Spectrum.png')">&#8615; PNG</button>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadNscp24Data()">&#8615; Data</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadNscp24Sgs()">&#8615; .sgs</button>
             </span>
           </div>
           <div class="card-body"><canvas id="n24-chart" height="300"></canvas></div>
@@ -851,6 +969,7 @@
             <span>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('asce-chart','ASCE_Spectrum.png')">&#8615; PNG</button>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadAsceData()">&#8615; Data</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadAsceSgs()">&#8615; .sgs</button>
             </span>
           </div>
           <div class="card-body"><canvas id="asce-chart" height="300"></canvas></div>
@@ -923,6 +1042,7 @@
             <span>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('ov-chart','NSCP_vs_ASCE_Overlay.png')">&#8615; PNG</button>
               <button class="btn btn-sm btn-outline-light py-0" onclick="downloadOverlayData()">&#8615; Data</button>
+              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadOverlaySgs()">&#8615; .sgs</button>
             </span>
           </div>
           <div class="card-body"><canvas id="ov-chart" height="300"></canvas></div>
@@ -1020,623 +1140,6 @@
     </div>
   </div>
 
-  <!-- ═══════════ MODULE 11: Story Displacement ═══════════ -->
-  <div class="module-pane" id="tab-displacement">
-    <div class="module-title">Story Displacement Plot</div>
-
-    <!-- ── Story Definition Table ── -->
-    <div class="row g-3 mb-3">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Story Definition</span>
-            <div class="d-flex gap-2">
-              <button class="btn btn-sm btn-outline-light" onclick="addDispStoryRow()"><i class="bi bi-plus"></i> Add Row</button>
-              <button class="btn btn-sm btn-outline-light" onclick="removeDispStoryRow()"><i class="bi bi-dash"></i> Remove Row</button>
-            </div>
-          </div>
-          <div class="card-body">
-            <table class="spread-table" id="disp-story-table" style="max-width:300px;">
-              <thead><tr><th>Story</th><th>Level (m)</th></tr></thead>
-              <tbody>
-                <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td></tr>
-                <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td></tr>
-                <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── 7 Displacement Tables in scrollable row ── -->
-    <div class="row g-3 mb-4">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header">Displacement Data (paste Max Disp &amp; Avg Disp from spreadsheet)</div>
-          <div class="card-body" style="overflow-x:auto;">
-            <div class="d-flex gap-3" style="min-width:max-content;">
-              <div class="disp-input-col" style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="disp-name-1" value="TH1" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="disp-chk-1" checked onchange="plotDisplacement()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="disp-table-1">
-                  <thead><tr><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.0016</td><td contenteditable="true">0.0003</td></tr>
-                    <tr><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
-                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="disp-input-col" style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="disp-name-2" value="TH2" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="disp-chk-2" checked onchange="plotDisplacement()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="disp-table-2">
-                  <thead><tr><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.0010</td><td contenteditable="true">0.0002</td></tr>
-                    <tr><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
-                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="disp-input-col" style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="disp-name-3" value="TH3" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="disp-chk-3" checked onchange="plotDisplacement()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="disp-table-3">
-                  <thead><tr><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.0012</td><td contenteditable="true">0.0002</td></tr>
-                    <tr><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
-                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="disp-input-col" style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="disp-name-4" value="TH4" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="disp-chk-4" checked onchange="plotDisplacement()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="disp-table-4">
-                  <thead><tr><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.0008</td><td contenteditable="true">0.0001</td></tr>
-                    <tr><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
-                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="disp-input-col" style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="disp-name-5" value="TH5" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="disp-chk-5" checked onchange="plotDisplacement()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="disp-table-5">
-                  <thead><tr><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.0014</td><td contenteditable="true">0.0003</td></tr>
-                    <tr><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
-                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="disp-input-col" style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="disp-name-6" value="TH6" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="disp-chk-6" checked onchange="plotDisplacement()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="disp-table-6">
-                  <thead><tr><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.0011</td><td contenteditable="true">0.0002</td></tr>
-                    <tr><td contenteditable="true">0.0001</td><td contenteditable="true">0.0000</td></tr>
-                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="disp-input-col" style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="disp-name-7" value="TH7" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="disp-chk-7" checked onchange="plotDisplacement()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="disp-table-7">
-                  <thead><tr><th>Max Disp (mm)</th><th>Avg Disp (mm)</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.0020</td><td contenteditable="true">0.0004</td></tr>
-                    <tr><td contenteditable="true">0.0002</td><td contenteditable="true">0.0000</td></tr>
-                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Plot options + Chart ── -->
-    <div class="row g-4">
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header">Plot Options</div>
-          <div class="card-body">
-            <div class="mb-3">
-              <label>Display Mode</label>
-              <select class="form-select" id="disp-mode" onchange="plotDisplacement()">
-                <option value="single" selected>Single (one load case)</option>
-                <option value="multiple">Multiple (overlay all)</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label>Data Column</label>
-              <select class="form-select" id="disp-col" onchange="plotDisplacement()">
-                <option value="max" selected>Maximum Displacement</option>
-                <option value="avg">Average Displacement</option>
-              </select>
-            </div>
-            <div class="form-check mb-2">
-              <input class="form-check-input" type="checkbox" id="disp-show-mean" onchange="plotDisplacement()" />
-              <label class="form-check-label" for="disp-show-mean">Show Mean</label>
-            </div>
-            <div class="form-check mb-3">
-              <input class="form-check-input" type="checkbox" id="disp-show-envelope" onchange="plotDisplacement()" />
-              <label class="form-check-label" for="disp-show-envelope">Show Envelope (Max)</label>
-            </div>
-            <div class="mb-3">
-              <label>Limit Line (vertical dash)</label>
-              <input type="number" class="form-control" id="disp-limit-val" placeholder="e.g. 0.005" step="any" onchange="plotDisplacement()" />
-            </div>
-            <hr />
-            <p class="mb-2" style="font-size:.82rem;font-weight:600;color:#555;">Select / Highlight Load Case</p>
-            <div id="disp-highlight-list"></div>
-            <hr />
-            <button class="btn btn-calc btn-primary text-white w-100" onclick="plotDisplacement()">Generate Plot</button>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-8">
-        <div class="card h-100">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Story Displacement Plot</span>
-            <div class="d-flex gap-1">
-              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadDisplacementCSV()">&#8615; CSV</button>
-              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('disp-chart','StoryDisplacement.png')">&#8615; PNG</button>
-            </div>
-          </div>
-          <div class="card-body"><canvas id="disp-chart" height="400"></canvas></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════ MODULE 12: Story Drift ═══════════ -->
-  <div class="module-pane" id="tab-drift">
-    <div class="module-title">Story Drift Plot</div>
-
-    <!-- ── Story Definition Table ── -->
-    <div class="row g-3 mb-3">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Story Definition</span>
-            <div class="d-flex gap-2">
-              <button class="btn btn-sm btn-outline-light" onclick="addDriftStoryRow()"><i class="bi bi-plus"></i> Add Row</button>
-              <button class="btn btn-sm btn-outline-light" onclick="removeDriftStoryRow()"><i class="bi bi-dash"></i> Remove Row</button>
-            </div>
-          </div>
-          <div class="card-body">
-            <table class="spread-table" id="drift-story-table" style="max-width:300px;">
-              <thead><tr><th>Story</th><th>Level (m)</th></tr></thead>
-              <tbody>
-                <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td></tr>
-                <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td></tr>
-                <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── 7 Drift Tables ── -->
-    <div class="row g-3 mb-4">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header">Drift Data (paste Max Drift &amp; Avg Drift from spreadsheet)</div>
-          <div class="card-body" style="overflow-x:auto;">
-            <div class="d-flex gap-3" style="min-width:max-content;">
-              <div class="drift-input-col" style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="drift-name-1" value="TH1" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="drift-chk-1" checked onchange="plotDrift()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="drift-table-1">
-                  <thead><tr><th>Max Drift</th><th>Avg Drift</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.0010</td><td contenteditable="true">0.0002</td></tr>
-                    <tr><td contenteditable="true">0.0005</td><td contenteditable="true">0.0001</td></tr>
-                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="drift-input-col" style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="drift-name-2" value="TH2" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="drift-chk-2" checked onchange="plotDrift()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="drift-table-2">
-                  <thead><tr><th>Max Drift</th><th>Avg Drift</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.0008</td><td contenteditable="true">0.0002</td></tr>
-                    <tr><td contenteditable="true">0.0004</td><td contenteditable="true">0.0001</td></tr>
-                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="drift-input-col" style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="drift-name-3" value="TH3" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="drift-chk-3" checked onchange="plotDrift()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="drift-table-3">
-                  <thead><tr><th>Max Drift</th><th>Avg Drift</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.0009</td><td contenteditable="true">0.0002</td></tr>
-                    <tr><td contenteditable="true">0.0004</td><td contenteditable="true">0.0001</td></tr>
-                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="drift-input-col" style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="drift-name-4" value="TH4" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="drift-chk-4" checked onchange="plotDrift()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="drift-table-4">
-                  <thead><tr><th>Max Drift</th><th>Avg Drift</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.0006</td><td contenteditable="true">0.0001</td></tr>
-                    <tr><td contenteditable="true">0.0003</td><td contenteditable="true">0.0001</td></tr>
-                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="drift-input-col" style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="drift-name-5" value="TH5" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="drift-chk-5" checked onchange="plotDrift()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="drift-table-5">
-                  <thead><tr><th>Max Drift</th><th>Avg Drift</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.0011</td><td contenteditable="true">0.0003</td></tr>
-                    <tr><td contenteditable="true">0.0005</td><td contenteditable="true">0.0001</td></tr>
-                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="drift-input-col" style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="drift-name-6" value="TH6" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="drift-chk-6" checked onchange="plotDrift()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="drift-table-6">
-                  <thead><tr><th>Max Drift</th><th>Avg Drift</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.0007</td><td contenteditable="true">0.0002</td></tr>
-                    <tr><td contenteditable="true">0.0004</td><td contenteditable="true">0.0001</td></tr>
-                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="drift-input-col" style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="drift-name-7" value="TH7" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="drift-chk-7" checked onchange="plotDrift()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="drift-table-7">
-                  <thead><tr><th>Max Drift</th><th>Avg Drift</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.0013</td><td contenteditable="true">0.0003</td></tr>
-                    <tr><td contenteditable="true">0.0006</td><td contenteditable="true">0.0001</td></tr>
-                    <tr><td contenteditable="true">0.0000</td><td contenteditable="true">0.0000</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Plot options + Chart ── -->
-    <div class="row g-4">
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header">Plot Options</div>
-          <div class="card-body">
-            <div class="mb-3">
-              <label>Display Mode</label>
-              <select class="form-select" id="drift-mode" onchange="plotDrift()">
-                <option value="single" selected>Single (one load case)</option>
-                <option value="multiple">Multiple (overlay all)</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label>Data Column</label>
-              <select class="form-select" id="drift-col" onchange="plotDrift()">
-                <option value="max" selected>Maximum Drift</option>
-                <option value="avg">Average Drift</option>
-              </select>
-            </div>
-            <div class="form-check mb-2">
-              <input class="form-check-input" type="checkbox" id="drift-show-mean" onchange="plotDrift()" />
-              <label class="form-check-label" for="drift-show-mean">Show Mean</label>
-            </div>
-            <div class="form-check mb-3">
-              <input class="form-check-input" type="checkbox" id="drift-show-envelope" onchange="plotDrift()" />
-              <label class="form-check-label" for="drift-show-envelope">Show Envelope (Max)</label>
-            </div>
-            <div class="mb-3">
-              <label>Limit Line (vertical dash)</label>
-              <input type="number" class="form-control" id="drift-limit-val" placeholder="e.g. 0.01" step="any" onchange="plotDrift()" />
-            </div>
-            <hr />
-            <p class="mb-2" style="font-size:.82rem;font-weight:600;color:#555;">Select / Highlight Load Case</p>
-            <div id="drift-highlight-list"></div>
-            <hr />
-            <button class="btn btn-calc btn-primary text-white w-100" onclick="plotDrift()">Generate Plot</button>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-8">
-        <div class="card h-100">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Story Drift Plot</span>
-            <div class="d-flex gap-1">
-              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadDriftCSV()">&#8615; CSV</button>
-              <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('drift-chart','StoryDrift.png')">&#8615; PNG</button>
-            </div>
-          </div>
-          <div class="card-body"><canvas id="drift-chart" height="400"></canvas></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════ MODULE 13: Story Acceleration ═══════════ -->
-  <div class="module-pane" id="tab-acceleration">
-    <div class="module-title">Story Acceleration Plot</div>
-
-    <!-- ── Story Definition Table ── -->
-    <div class="row g-3 mb-3">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Story Definition</span>
-            <div class="d-flex gap-2">
-              <button class="btn btn-sm btn-outline-light" onclick="addAccelStoryRow()"><i class="bi bi-plus"></i> Add Row</button>
-              <button class="btn btn-sm btn-outline-light" onclick="removeAccelStoryRow()"><i class="bi bi-dash"></i> Remove Row</button>
-            </div>
-          </div>
-          <div class="card-body">
-            <table class="spread-table" id="accel-story-table" style="max-width:300px;">
-              <thead><tr><th>Story</th><th>Level (m)</th></tr></thead>
-              <tbody>
-                <tr><td contenteditable="true">Roof</td><td contenteditable="true">5.36</td></tr>
-                <tr><td contenteditable="true">2F</td><td contenteditable="true">3.00</td></tr>
-                <tr><td contenteditable="true">1F</td><td contenteditable="true">0.00</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── 7 Acceleration Tables ── -->
-    <div class="row g-3 mb-4">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header">Acceleration Data (paste Max Accel &amp; Avg Accel from spreadsheet)</div>
-          <div class="card-body" style="overflow-x:auto;">
-            <div class="d-flex gap-3" style="min-width:max-content;">
-              <div style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="accel-name-1" value="TH1" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="accel-chk-1" checked onchange="plotAcceleration()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="accel-table-1">
-                  <thead><tr><th>Max Accel</th><th>Avg Accel</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.50</td><td contenteditable="true">0.10</td></tr>
-                    <tr><td contenteditable="true">0.30</td><td contenteditable="true">0.06</td></tr>
-                    <tr><td contenteditable="true">0.00</td><td contenteditable="true">0.00</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="accel-name-2" value="TH2" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="accel-chk-2" checked onchange="plotAcceleration()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="accel-table-2">
-                  <thead><tr><th>Max Accel</th><th>Avg Accel</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.45</td><td contenteditable="true">0.09</td></tr>
-                    <tr><td contenteditable="true">0.25</td><td contenteditable="true">0.05</td></tr>
-                    <tr><td contenteditable="true">0.00</td><td contenteditable="true">0.00</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="accel-name-3" value="TH3" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="accel-chk-3" checked onchange="plotAcceleration()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="accel-table-3">
-                  <thead><tr><th>Max Accel</th><th>Avg Accel</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.48</td><td contenteditable="true">0.10</td></tr>
-                    <tr><td contenteditable="true">0.28</td><td contenteditable="true">0.06</td></tr>
-                    <tr><td contenteditable="true">0.00</td><td contenteditable="true">0.00</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="accel-name-4" value="TH4" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="accel-chk-4" checked onchange="plotAcceleration()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="accel-table-4">
-                  <thead><tr><th>Max Accel</th><th>Avg Accel</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.40</td><td contenteditable="true">0.08</td></tr>
-                    <tr><td contenteditable="true">0.22</td><td contenteditable="true">0.04</td></tr>
-                    <tr><td contenteditable="true">0.00</td><td contenteditable="true">0.00</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="accel-name-5" value="TH5" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="accel-chk-5" checked onchange="plotAcceleration()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="accel-table-5">
-                  <thead><tr><th>Max Accel</th><th>Avg Accel</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.52</td><td contenteditable="true">0.11</td></tr>
-                    <tr><td contenteditable="true">0.32</td><td contenteditable="true">0.07</td></tr>
-                    <tr><td contenteditable="true">0.00</td><td contenteditable="true">0.00</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="accel-name-6" value="TH6" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="accel-chk-6" checked onchange="plotAcceleration()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="accel-table-6">
-                  <thead><tr><th>Max Accel</th><th>Avg Accel</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.42</td><td contenteditable="true">0.09</td></tr>
-                    <tr><td contenteditable="true">0.24</td><td contenteditable="true">0.05</td></tr>
-                    <tr><td contenteditable="true">0.00</td><td contenteditable="true">0.00</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div style="min-width:220px;">
-                <div class="d-flex align-items-center mb-2">
-                  <input type="text" class="form-control form-control-sm" id="accel-name-7" value="TH7" style="width:100px;" />
-                  <label class="ms-2 mb-0 d-flex align-items-center" style="white-space:nowrap;">
-                    <input type="checkbox" class="form-check-input me-1" id="accel-chk-7" checked onchange="plotAcceleration()" /> Show
-                  </label>
-                </div>
-                <table class="spread-table" id="accel-table-7">
-                  <thead><tr><th>Max Accel</th><th>Avg Accel</th></tr></thead>
-                  <tbody>
-                    <tr><td contenteditable="true">0.55</td><td contenteditable="true">0.12</td></tr>
-                    <tr><td contenteditable="true">0.35</td><td contenteditable="true">0.07</td></tr>
-                    <tr><td contenteditable="true">0.00</td><td contenteditable="true">0.00</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Plot options + Chart ── -->
-    <div class="row g-4">
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header">Plot Options</div>
-          <div class="card-body">
-            <div class="mb-3">
-              <label>Data Column</label>
-              <select class="form-select" id="accel-col" onchange="plotAcceleration()">
-                <option value="max" selected>Maximum Acceleration</option>
-                <option value="avg">Average Acceleration</option>
-              </select>
-            </div>
-            <div class="form-check mb-2">
-              <input class="form-check-input" type="checkbox" id="accel-show-mean" onchange="plotAcceleration()" />
-              <label class="form-check-label" for="accel-show-mean">Show Mean</label>
-            </div>
-            <div class="form-check mb-3">
-              <input class="form-check-input" type="checkbox" id="accel-show-envelope" onchange="plotAcceleration()" />
-              <label class="form-check-label" for="accel-show-envelope">Show Envelope (Max)</label>
-            </div>
-            <div class="mb-3">
-              <label>Limit Line (vertical dash)</label>
-              <input type="number" class="form-control" id="accel-limit-val" placeholder="e.g. 0.5" step="any" onchange="plotAcceleration()" />
-            </div>
-            <hr />
-            <p class="mb-2" style="font-size:.82rem;font-weight:600;color:#555;">Highlight Load Case</p>
-            <div id="accel-highlight-list"></div>
-            <hr />
-            <button class="btn btn-calc btn-primary text-white w-100" onclick="plotAcceleration()">Generate Plot</button>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-8">
-        <div class="card h-100">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Story Acceleration Plot</span>
-            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('accel-chart','StoryAcceleration.png')">&#8615; PNG</button>
-          </div>
-          <div class="card-body"><canvas id="accel-chart" height="400"></canvas></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- ═══════════ MODULE 15: PEER → SGS Converter ═══════════ -->
   <div class="module-pane" id="tab-peer-sgs">
     <div class="module-title">PEER &rarr; SGS Converter</div>
@@ -1677,6 +1180,98 @@
             </div>
           </div>
           <div class="card-body"><canvas id="sgs-chart" height="360"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MODULE 16: SGS Generator ═══════════ -->
+  <div class="module-pane" id="tab-sgs-gen">
+    <div class="module-title">SGS Generator &mdash; build a MIDAS <code>.sgs</code> from any data</div>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">File Header</div>
+          <div class="card-body">
+            <div class="mb-3"><label>Title</label><input type="text" class="form-control" id="sg-title" value="Earthquake Record" /></div>
+            <div class="mb-3">
+              <label>Function Type</label>
+              <select class="form-select" id="sg-kind" onchange="onSgsKindChange()">
+                <option value="time" selected>Time History &mdash; Time (sec) / Ground Accel. (g)</option>
+                <option value="spectrum">Response Spectrum &mdash; Period (sec) / Spectral Accel. (g)</option>
+                <option value="custom">Custom axis labels</option>
+              </select>
+            </div>
+            <div id="sg-custom-wrap" class="d-none">
+              <div class="mb-3"><label>X-Axis Label</label><input type="text" class="form-control" id="sg-xlabel" value="Time (sec)" /></div>
+              <div class="mb-3"><label>Y-Axis Label</label><input type="text" class="form-control" id="sg-ylabel" value="Ground Accel. (g)" /></div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6"><label>UNIT&amp;TYPE</label><input type="text" class="form-control" id="sg-unit" value="GRAV, ACCEL" /></div>
+              <div class="col-6"><label>FLAGS</label><input type="text" class="form-control" id="sg-flags" value="0, 0" /></div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6"><label>X decimals</label><input type="number" class="form-control" id="sg-xprec" value="6" min="0" max="8" step="1" /></div>
+              <div class="col-6"><label>Y decimals</label><input type="number" class="form-control" id="sg-yprec" value="8" min="0" max="10" step="1" /></div>
+            </div>
+            <div class="mb-3"><label>Output Filename</label><input type="text" class="form-control" id="sg-filename" value="record.sgs" /></div>
+            <button class="btn btn-calc btn-primary text-white w-100" onclick="downloadGeneratedSgs()">&#8615; Download .sgs</button>
+            <div id="sg-error" class="alert alert-danger mt-3 d-none"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">Data</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label>Input Mode</label>
+              <select class="form-select" id="sg-mode" onchange="onSgsModeChange()">
+                <option value="xy" selected>Two columns &mdash; X and Y</option>
+                <option value="dt">One column &mdash; Y only, X from &Delta;t</option>
+              </select>
+            </div>
+            <div class="mb-3 d-none" id="sg-dt-wrap">
+              <label>&Delta;t (sec)</label>
+              <input type="number" class="form-control" id="sg-dt" value="0.001" step="0.001" min="0.000001" />
+              <small class="text-muted">X is written as (i+1)&times;&Delta;t, the way MIDAS indexes a record.</small>
+            </div>
+            <label class="mb-2">Values <small class="text-muted">(paste straight from Excel)</small></label>
+            <div style="max-height:340px;overflow:auto;">
+              <table class="spread-table mb-2" id="sg-table">
+                <thead><tr><th id="sg-th-x">X</th><th id="sg-th-y">Y</th></tr></thead>
+                <tbody>
+                  <tr><td contenteditable="true">0.001</td><td contenteditable="true">0</td></tr>
+                  <tr><td contenteditable="true">0.002</td><td contenteditable="true">0</td></tr>
+                  <tr><td contenteditable="true">0.003</td><td contenteditable="true">0</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="d-flex gap-2 mb-3">
+              <button class="btn btn-sm btn-outline-secondary" onclick="addDiagramRow('sg-table')">+ Row</button>
+              <button class="btn btn-sm btn-outline-secondary" onclick="removeDiagramRow('sg-table')">&minus; Row</button>
+              <button class="btn btn-sm btn-outline-secondary" onclick="clearSgsTable()">Clear</button>
+              <button class="btn btn-sm btn-outline-primary ms-auto" onclick="refreshSgsPreview()">Preview</button>
+            </div>
+            <label class="mb-1">Or load a CSV / TSV / two-column text file</label>
+            <input type="file" class="form-control form-control-sm" id="sg-file" accept=".csv,.txt,.tsv,.sgs" onchange="loadSgsDataFile(event)" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Preview</span>
+            <button class="btn btn-sm btn-outline-light py-0" onclick="downloadCanvas('sg-chart','SGS_preview.png')">&#8615; PNG</button>
+          </div>
+          <div class="card-body">
+            <canvas id="sg-chart" height="200"></canvas>
+            <div class="mt-3 small text-muted" id="sg-summary">No data yet.</div>
+            <label class="mt-3 mb-1 small">File preview</label>
+            <pre id="sg-preview" class="small mb-0" style="background:#f6f7f9;border:1px solid #e3e6ea;border-radius:4px;padding:8px;max-height:260px;overflow:auto;white-space:pre;">(click Preview)</pre>
+          </div>
         </div>
       </div>
     </div>
@@ -1723,6 +1318,30 @@
     </div>
   </div>
 
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <footer class="app-footer">
+    <div class="app-footer-brand">
+      <svg class="app-footer-mark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="APEC logo">
+        <defs>
+          <linearGradient id="apec-grad-footer" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#2f8f4b"/>
+            <stop offset="1" stop-color="#17512a"/>
+          </linearGradient>
+        </defs>
+        <path d="M60 3 C64 30 76 62 97 94 C72 80 36 76 6 86 C28 58 47 30 60 3 Z" fill="url(#apec-grad-footer)"/>
+        <path d="M42 40 L52 68 L26 71 Z" fill="#fff"/>
+      </svg>
+      <div>
+        <div class="app-footer-company"><span>A</span>LBERT <span>P</span>AMONAG <span>E</span>NGINEERING <span>C</span>ONSULTANCY</div>
+        <div class="app-footer-tag">Structural &amp; Seismic Engineering &mdash; seismic.apeconsultancy.net</div>
+      </div>
+    </div>
+    <div class="app-footer-meta">
+      <div>Developed by <strong>Albert Pamonag</strong> and <strong>Camille Pajarillaga</strong></div>
+      <div>&copy; 2026 Albert Pamonag Engineering Consultancy. Results are for preliminary design reference &mdash; verify against the governing code provisions.</div>
+    </div>
+  </footer>
+
 </div><!-- /main-content -->
 
 <!-- ADRS Calculation Report Modal -->
@@ -1746,6 +1365,33 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+
+// Match Chart.js typography to the app font
+if (window.Chart) {
+  Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+  Chart.defaults.color = "#3b4a5a";
+  // chartjs-plugin-zoom on every chart: Ctrl+wheel / pinch to zoom, Shift+drag to pan.
+  // Mutate individual keys — replacing the whole object drops the plugin's other
+  // defaults (drag, limits) and breaks every chart update.
+  const zoomDefaults = Chart.defaults.plugins.zoom;
+  if (zoomDefaults) {
+    zoomDefaults.zoom.wheel.enabled = true;
+    zoomDefaults.zoom.wheel.modifierKey = "ctrl";
+    zoomDefaults.zoom.pinch.enabled = true;
+    zoomDefaults.zoom.mode = "xy";
+    zoomDefaults.pan.enabled = true;
+    zoomDefaults.pan.mode = "xy";
+    zoomDefaults.pan.modifierKey = "shift";
+  }
+}
+
+// Double-click any chart to reset its zoom/pan
+document.addEventListener("dblclick", e => {
+  if (e.target.tagName === "CANVAS") {
+    const c = Chart.getChart(e.target);
+    if (c && typeof c.resetZoom === "function") c.resetZoom();
+  }
+});
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  SIDEBAR NAVIGATION
@@ -3380,39 +3026,189 @@ function downloadAsce41Data() {
   downloadCSV(["Period(s)", "Sa_BSE2E(g)", "Sa_BSE1E(g)"], rows, "ASCE41_spectra.csv");
 }
 
-function buildSpectrumSgsText(title, periods, accelerations) {
-  // MIDAS .sgs container for a response spectrum (period vs Sa in g).
-  const lines = [
-    "*SGSw",
-    "*TITLE, " + title,
-    "*TITLE, ",
-    "*X-AXIS, Period (sec)",
-    "*Y-AXIS, Spectral Accel. (g)",
-    "*UNIT&TYPE, GRAV, ACCEL",
-    "*FLAGS, 0, 0",
-    "*DATA",
-    "",
-  ];
-  for (let i = 0; i < periods.length; i++) {
-    if (periods[i] <= 0) continue;   // MIDAS rejects a zero-period ordinate
-    lines.push(periods[i].toFixed(4) + "\t,\t" + accelerations[i].toFixed(6));
-  }
-  lines.push("", "", "", "*ENDDATA");
-  return lines.join("\r\n");
-}
-
 function downloadAsce41Sgs() {
   if (!asce41LastData) { alert("Generate the spectra first."); return; }
   const d = asce41LastData;
   const tag = "Fa=" + fmt(d.fa, 2) + " Fv=" + fmt(d.fv, 2) +
               " Class" + document.getElementById("a41-site").value;
 
-  triggerDownload("BSE2E_CP.sgs",
-    buildSpectrumSgsText("ASCE 41-17 BSE-2E Collapse Prevention (" + tag + ")",
-                         d.bse2e.periods, d.bse2e.accelerations));
-  setTimeout(() => triggerDownload("BSE1E_LS.sgs",
-    buildSpectrumSgsText("ASCE 41-17 BSE-1E Life Safety (" + tag + ")",
-                         d.bse1e.periods, d.bse1e.accelerations)), 250);
+  downloadSgsSeries([
+    { filename: "BSE2E_CP.sgs", title: "ASCE 41-17 BSE-2E Collapse Prevention (" + tag + ")",
+      periods: d.bse2e.periods, accelerations: d.bse2e.accelerations },
+    { filename: "BSE1E_LS.sgs", title: "ASCE 41-17 BSE-1E Life Safety (" + tag + ")",
+      periods: d.bse1e.periods, accelerations: d.bse1e.accelerations },
+  ]);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MODULE 16: SGS Generator — any two-column data → MIDAS .sgs
+// ══════════════════════════════════════════════════════════════════════════════
+
+let sgsGenChart = null;
+
+function onSgsKindChange() {
+  const kind = document.getElementById("sg-kind").value;
+  const axis = SGS_AXES[kind] || SGS_AXES.time;
+  document.getElementById("sg-custom-wrap").classList.toggle("d-none", kind !== "custom");
+  if (kind !== "custom") {
+    document.getElementById("sg-xlabel").value = axis.x;
+    document.getElementById("sg-ylabel").value = axis.y;
+    document.getElementById("sg-xprec").value = axis.xPrec;
+    document.getElementById("sg-yprec").value = axis.yPrec;
+  }
+  document.getElementById("sg-th-x").textContent = document.getElementById("sg-xlabel").value;
+  document.getElementById("sg-th-y").textContent = document.getElementById("sg-ylabel").value;
+}
+
+function onSgsModeChange() {
+  const dtMode = document.getElementById("sg-mode").value === "dt";
+  document.getElementById("sg-dt-wrap").classList.toggle("d-none", !dtMode);
+  document.getElementById("sg-th-x").textContent =
+    dtMode ? "(from Δt)" : document.getElementById("sg-xlabel").value;
+}
+
+function clearSgsTable() {
+  const tbody = document.querySelector("#sg-table tbody");
+  tbody.innerHTML = "";
+  for (let i = 0; i < 3; i++) addDiagramRow("sg-table");
+  refreshSgsPreview();
+}
+
+// Read the table into [x, y] pairs. In Δt mode the first column is ignored and
+// X is synthesised as (i+1)*Δt.
+function readSgsRows() {
+  const dtMode = document.getElementById("sg-mode").value === "dt";
+  const dt = parseFloat(document.getElementById("sg-dt").value);
+  if (dtMode && (!isFinite(dt) || dt <= 0)) throw new Error("Δt must be a positive number.");
+
+  const cellRows = [...document.querySelectorAll("#sg-table tbody tr")]
+    .map(tr => [...tr.querySelectorAll("td[contenteditable]")].map(td => td.textContent.trim()))
+    .filter(r => r.length >= 2);
+
+  // In Δt mode a single pasted column lands in the first cell, but a user may
+  // also have data already sitting in the second. Decide which column carries Y
+  // ONCE for the whole table — a per-row guess would misread a legitimate 0.
+  const yCol = (dtMode && !cellRows.some(r => r[1] !== "" && isFinite(parseFloat(r[1])))) ? 0 : 1;
+
+  const rows = [];
+  cellRows.forEach(raw => {
+    const y = parseFloat(raw[yCol]);
+    if (!isFinite(y)) return;
+    const x = dtMode ? (rows.length + 1) * dt : parseFloat(raw[0]);
+    if (!isFinite(x)) return;
+    rows.push([x, y]);
+  });
+  if (!rows.length) throw new Error("No numeric rows found. Paste or type at least one pair.");
+  return rows;
+}
+
+function currentSgsConfig(rows) {
+  return {
+    title: document.getElementById("sg-title").value,
+    xLabel: document.getElementById("sg-xlabel").value,
+    yLabel: document.getElementById("sg-ylabel").value,
+    unitType: document.getElementById("sg-unit").value,
+    flags: document.getElementById("sg-flags").value,
+    xPrec: parseInt(document.getElementById("sg-xprec").value, 10),
+    yPrec: parseInt(document.getElementById("sg-yprec").value, 10),
+    rows,
+  };
+}
+
+function refreshSgsPreview() {
+  clearError("sg-error");
+  let rows;
+  try {
+    rows = readSgsRows();
+  } catch (err) {
+    showError("sg-error", err.message);
+    return null;
+  }
+
+  const text = buildSgsFile(currentSgsConfig(rows));
+  const lines = text.split("\r\n");
+  const head = lines.slice(0, 14);
+  const shown = lines.length > 20
+    ? head.concat(["…  (" + (lines.length - 18) + " more rows)"], lines.slice(-4))
+    : lines;
+  document.getElementById("sg-preview").textContent = shown.join("\n");
+
+  const xs = rows.map(r => r[0]), ys = rows.map(r => r[1]);
+  document.getElementById("sg-summary").innerHTML =
+    "<strong>" + rows.length + "</strong> points &nbsp;·&nbsp; X " +
+    fmt(Math.min(...xs), 4) + " → " + fmt(Math.max(...xs), 4) +
+    " &nbsp;·&nbsp; Y " + fmt(Math.min(...ys), 4) + " → " + fmt(Math.max(...ys), 4) +
+    " &nbsp;·&nbsp; " + (text.length + " bytes");
+
+  if (sgsGenChart) { sgsGenChart.destroy(); sgsGenChart = null; }
+  sgsGenChart = new Chart(document.getElementById("sg-chart"), {
+    type: "line",
+    data: {
+      datasets: [{
+        label: document.getElementById("sg-ylabel").value,
+        data: rows.map(([x, y]) => ({ x, y })),
+        borderColor: "#0f2d6b", borderWidth: 1.4, pointRadius: 0, tension: 0, fill: false,
+      }],
+    },
+    options: {
+      responsive: true, animation: false,
+      scales: {
+        x: { type: "linear", title: { display: true, text: document.getElementById("sg-xlabel").value } },
+        y: { title: { display: true, text: document.getElementById("sg-ylabel").value } },
+      },
+      plugins: { legend: { display: false }, tooltip: { mode: "index", intersect: false } },
+    },
+  });
+  return text;
+}
+
+function downloadGeneratedSgs() {
+  const text = refreshSgsPreview();
+  if (text === null) return;
+  let name = document.getElementById("sg-filename").value.trim() || "spectrum.sgs";
+  if (!/\.sgs$/i.test(name)) name += ".sgs";
+  triggerDownload(name, text);
+}
+
+// Accepts CSV, TSV, whitespace-separated text, or an existing .sgs (whose
+// header lines are skipped and whose "x TAB , TAB y" rows are read back).
+function loadSgsDataFile(event) {
+  const file = (event.target.files || [])[0];
+  if (!file) return;
+  clearError("sg-error");
+  const reader = new FileReader();
+  reader.onload = e => {
+    const pairs = [];
+    e.target.result.split(/\r?\n/).forEach(line => {
+      const t = line.trim();
+      if (!t || t.startsWith("*") || t.startsWith("#")) return;
+      const parts = t.split(/[,;\t\s]+/).filter(p => p !== "");
+      if (parts.length < 2) return;
+      const x = parseFloat(parts[0]), y = parseFloat(parts[1]);
+      if (isFinite(x) && isFinite(y)) pairs.push([x, y]);
+    });
+    if (!pairs.length) { showError("sg-error", "No two-column numeric rows found in " + file.name + "."); return; }
+
+    const tbody = document.querySelector("#sg-table tbody");
+    tbody.innerHTML = "";
+    pairs.forEach(([x, y]) => {
+      const tr = document.createElement("tr");
+      [x, y].forEach(v => {
+        const td = document.createElement("td");
+        td.contentEditable = "true";
+        td.textContent = String(v);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    if (/\.sgs$/i.test(file.name)) {
+      document.getElementById("sg-filename").value = file.name;
+    }
+    refreshSgsPreview();
+  };
+  reader.onerror = () => showError("sg-error", "Could not read " + file.name + ".");
+  reader.readAsText(file);
+  event.target.value = "";
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -3507,299 +3303,6 @@ document.addEventListener("paste", function(e) {
 //  Download chart as high-resolution PNG
 // ══════════════════════════════════════════════════════════════════════════════
 
-// ══════════════════════════════════════════════════════════════════════════════
-//  GENERIC STORY PLOT ENGINE (shared by Displacement, Drift, Acceleration)
-// ══════════════════════════════════════════════════════════════════════════════
-
-const PLOT_COUNT = 7;
-
-function genericAddRow(storyTableId, dataPrefix) {
-  addDiagramRow(storyTableId);
-  for (let i = 1; i <= PLOT_COUNT; i++) addDiagramRow(dataPrefix + "-table-" + i);
-}
-function genericRemoveRow(storyTableId, dataPrefix) {
-  removeDiagramRow(storyTableId);
-  for (let i = 1; i <= PLOT_COUNT; i++) removeDiagramRow(dataPrefix + "-table-" + i);
-}
-
-function readStoryLevels(storyTableId) {
-  const rows = document.querySelectorAll("#" + storyTableId + " tbody tr");
-  const levels = [];
-  rows.forEach(row => {
-    const cells = row.querySelectorAll("td[contenteditable]");
-    if (cells.length >= 2) {
-      const story = cells[0].textContent.trim();
-      const level = parseFloat(cells[1].textContent.trim());
-      if (!isNaN(level)) levels.push({ story, level });
-    }
-  });
-  return levels;
-}
-
-function readDataTable(prefix, idx, storyLevels) {
-  const rows = document.querySelectorAll("#" + prefix + "-table-" + idx + " tbody tr");
-  const data = [];
-  let r = 0;
-  rows.forEach(row => {
-    const cells = row.querySelectorAll("td[contenteditable]");
-    if (cells.length >= 2 && r < storyLevels.length) {
-      const maxD = parseFloat(cells[0].textContent.trim());
-      const avgD = parseFloat(cells[1].textContent.trim());
-      data.push({ story: storyLevels[r].story, level: storyLevels[r].level, max: maxD || 0, avg: avgD || 0 });
-      r++;
-    }
-  });
-  return data;
-}
-
-function getHighlightIdx(prefix) {
-  const checked = document.querySelector('.' + prefix + '-hl-radio:checked');
-  return checked ? parseInt(checked.value) : 0;
-}
-
-function buildHighlightList(prefix, plotFnName, preserveIdx) {
-  const container = document.getElementById(prefix + "-highlight-list");
-  if (!container) return;
-  const sel = preserveIdx !== undefined ? preserveIdx : getHighlightIdx(prefix);
-  let html = "";
-  for (let i = 1; i <= PLOT_COUNT; i++) {
-    const name = document.getElementById(prefix + "-name-" + i).value || ("LC" + i);
-    const chk = sel === i ? " checked" : "";
-    html += '<div class="form-check mb-1">' +
-      '<input class="form-check-input ' + prefix + '-hl-radio" type="radio" name="' + prefix + '-highlight" id="' + prefix + '-hl-' + i + '" value="' + i + '"' + chk + ' onchange="' + plotFnName + '()">' +
-      '<label class="form-check-label" for="' + prefix + '-hl-' + i + '" style="font-size:.85rem;">' + name + '</label></div>';
-  }
-  const chk0 = sel === 0 ? " checked" : "";
-  html += '<div class="form-check mb-1">' +
-    '<input class="form-check-input ' + prefix + '-hl-radio" type="radio" name="' + prefix + '-highlight" id="' + prefix + '-hl-0" value="0"' + chk0 + ' onchange="' + plotFnName + '()">' +
-    '<label class="form-check-label" for="' + prefix + '-hl-0" style="font-size:.85rem;">None (all grey)</label></div>';
-  container.innerHTML = html;
-}
-
-function genericPlot(cfg) {
-  // cfg: { prefix, storyTable, colSelect, meanChk, envChk, limitInput, canvasId, chartRef,
-  //        title, xLabelMax, xLabelAvg, plotFnName, modeSelect? }
-  const prefix = cfg.prefix;
-  const highlightIdx = getHighlightIdx(prefix);
-  buildHighlightList(prefix, cfg.plotFnName, highlightIdx);
-
-  if (cfg.chartRef.inst) { cfg.chartRef.inst.destroy(); cfg.chartRef.inst = null; }
-
-  const colKey = document.getElementById(cfg.colSelect).value;
-  const showMean = document.getElementById(cfg.meanChk).checked;
-  const showEnvelope = document.getElementById(cfg.envChk).checked;
-  const limitVal = parseFloat(document.getElementById(cfg.limitInput).value);
-  const mode = cfg.modeSelect ? document.getElementById(cfg.modeSelect).value : "multiple";
-  const storyLevels = readStoryLevels(cfg.storyTable);
-  if (storyLevels.length === 0) return;
-
-  // In Single mode, pick the highlighted series; if none, fall back to first checked
-  let singleIdx = 0;
-  if (mode === "single") {
-    if (highlightIdx > 0) {
-      singleIdx = highlightIdx;
-    } else {
-      for (let i = 1; i <= PLOT_COUNT; i++) {
-        const chk = document.getElementById(prefix + "-chk-" + i);
-        if (chk && chk.checked) { singleIdx = i; break; }
-      }
-    }
-  }
-
-  const datasets = [];
-  const allSeries = [];
-
-  for (let i = 1; i <= PLOT_COUNT; i++) {
-    const chk = document.getElementById(prefix + "-chk-" + i);
-    if (!chk || !chk.checked) continue;
-    if (mode === "single" && i !== singleIdx) continue;
-    const name = document.getElementById(prefix + "-name-" + i).value || ("TH" + i);
-    const tableData = readDataTable(prefix, i, storyLevels);
-    if (tableData.length === 0) continue;
-
-    tableData.sort((a, b) => a.level - b.level);
-    const pts = tableData.map(d => ({ x: d[colKey], y: d.level }));
-    allSeries.push({ idx: i, name, pts, tableData });
-
-    const isHighlighted = mode === "single" || (highlightIdx > 0 && highlightIdx === i);
-    datasets.push({
-      label: name,
-      data: pts,
-      borderColor: isHighlighted ? "#d62728" : "#ccc",
-      borderWidth: isHighlighted ? 2.5 : 1.2,
-      pointRadius: isHighlighted ? 4 : 2,
-      pointBackgroundColor: isHighlighted ? "#d62728" : "#ccc",
-      fill: false, tension: 0, showLine: true,
-      order: isHighlighted ? 0 : 1,
-    });
-  }
-
-  if (allSeries.length === 0) return;
-
-  if (showMean || showEnvelope) {
-    const levelSet = new Set();
-    allSeries.forEach(s => s.tableData.forEach(d => levelSet.add(d.level)));
-    const levels = Array.from(levelSet).sort((a, b) => a - b);
-
-    if (showMean) {
-      const meanPts = levels.map(lv => {
-        let sum = 0, count = 0;
-        allSeries.forEach(s => {
-          const match = s.tableData.find(d => d.level === lv);
-          if (match) { sum += match[colKey]; count++; }
-        });
-        return { x: count > 0 ? sum / count : 0, y: lv };
-      });
-      datasets.push({
-        label: "Mean",
-        data: meanPts,
-        borderColor: "#000", borderWidth: 2.5, borderDash: [8, 4],
-        pointRadius: 0, fill: false, tension: 0, showLine: true, order: -1,
-      });
-    }
-
-    if (showEnvelope) {
-      const envPts = levels.map(lv => {
-        let maxVal = 0;
-        allSeries.forEach(s => {
-          const match = s.tableData.find(d => d.level === lv);
-          if (match) maxVal = Math.max(maxVal, match[colKey]);
-        });
-        return { x: maxVal, y: lv };
-      });
-      datasets.push({
-        label: "Envelope",
-        data: envPts,
-        borderColor: "#d62728", borderWidth: 3, borderDash: [4, 2],
-        pointRadius: 0, fill: false, tension: 0, showLine: true, order: -2,
-      });
-    }
-  }
-
-  let maxX = 0, maxLevel = 0;
-  datasets.forEach(ds => ds.data.forEach(p => {
-    if (p.x > maxX) maxX = p.x;
-    if (p.y > maxLevel) maxLevel = p.y;
-  }));
-  if (!isNaN(limitVal) && limitVal > maxX) maxX = limitVal;
-  maxX = maxX * 1.15 || 0.01;
-  maxLevel = maxLevel * 1.1 || 1;
-
-  const colLabel = colKey === "max" ? cfg.xLabelMax : cfg.xLabelAvg;
-
-  // Build annotations for limit line
-  const annotations = {};
-  if (!isNaN(limitVal) && limitVal > 0) {
-    annotations.limitLine = {
-      type: "line",
-      xMin: limitVal, xMax: limitVal,
-      borderColor: "#1a237e",
-      borderWidth: 2,
-      borderDash: [8, 4],
-      label: {
-        display: true,
-        content: "Limit = " + limitVal,
-        position: "start",
-        color: "#1a237e",
-        font: { size: 11, weight: "bold" },
-      },
-    };
-  }
-
-  cfg.chartRef.inst = new Chart(document.getElementById(cfg.canvasId), {
-    type: "scatter",
-    data: { datasets },
-    options: {
-      responsive: true, animation: false,
-      scales: {
-        x: { type: "linear", min: 0, max: maxX, title: { display: true, text: colLabel } },
-        y: { type: "linear", min: 0, max: maxLevel, title: { display: true, text: "Building Height (m)" } },
-      },
-      plugins: {
-        legend: { position: "top" },
-        title: { display: true, text: cfg.title, font: { size: 15, weight: "bold" } },
-        annotation: { annotations },
-      },
-    },
-  });
-}
-
-// ── Displacement ────────────────────────────────────────────────────────────
-const dispChartRef = { inst: null };
-function addDispStoryRow() { genericAddRow("disp-story-table", "disp"); }
-function removeDispStoryRow() { genericRemoveRow("disp-story-table", "disp"); }
-function plotDisplacement() {
-  updateDispInputVisibility();
-  genericPlot({
-    prefix: "disp", storyTable: "disp-story-table",
-    colSelect: "disp-col", meanChk: "disp-show-mean", envChk: "disp-show-envelope",
-    limitInput: "disp-limit-val", canvasId: "disp-chart", chartRef: dispChartRef,
-    title: "Story Displacement Plot", plotFnName: "plotDisplacement",
-    xLabelMax: "Maximum Displacement (mm)", xLabelAvg: "Average Displacement (mm)",
-    modeSelect: "disp-mode",
-  });
-}
-
-// Show only the selected TH input column in Single mode; show all in Multiple
-function updateInputColVisibility(prefix, modeId, colClass) {
-  const mode = document.getElementById(modeId).value;
-  const cols = document.querySelectorAll("." + colClass);
-
-  if (mode === "multiple") {
-    cols.forEach(c => { c.style.display = ""; });
-    return;
-  }
-
-  // Single: pick highlighted, else first checked, else 1
-  let sel = getHighlightIdx(prefix);
-  if (sel === 0) {
-    for (let i = 1; i <= PLOT_COUNT; i++) {
-      const chk = document.getElementById(prefix + "-chk-" + i);
-      if (chk && chk.checked) { sel = i; break; }
-    }
-  }
-  if (sel === 0) sel = 1;
-
-  cols.forEach((c, i) => { c.style.display = (i + 1 === sel) ? "" : "none"; });
-}
-
-function updateDispInputVisibility()  { updateInputColVisibility("disp",  "disp-mode",  "disp-input-col"); }
-function updateDriftInputVisibility() { updateInputColVisibility("drift", "drift-mode", "drift-input-col"); }
-
-// ── Drift ───────────────────────────────────────────────────────────────────
-const driftChartRef = { inst: null };
-function addDriftStoryRow() { genericAddRow("drift-story-table", "drift"); }
-function removeDriftStoryRow() { genericRemoveRow("drift-story-table", "drift"); }
-function plotDrift() {
-  updateDriftInputVisibility();
-  genericPlot({
-    prefix: "drift", storyTable: "drift-story-table",
-    colSelect: "drift-col", meanChk: "drift-show-mean", envChk: "drift-show-envelope",
-    limitInput: "drift-limit-val", canvasId: "drift-chart", chartRef: driftChartRef,
-    title: "Story Drift Plot", plotFnName: "plotDrift",
-    xLabelMax: "Maximum Drift", xLabelAvg: "Average Drift",
-    modeSelect: "drift-mode",
-  });
-}
-
-// ── Acceleration ────────────────────────────────────────────────────────────
-const accelChartRef = { inst: null };
-function addAccelStoryRow() { genericAddRow("accel-story-table", "accel"); }
-function removeAccelStoryRow() { genericRemoveRow("accel-story-table", "accel"); }
-function plotAcceleration() {
-  genericPlot({
-    prefix: "accel", storyTable: "accel-story-table",
-    colSelect: "accel-col", meanChk: "accel-show-mean", envChk: "accel-show-envelope",
-    limitInput: "accel-limit-val", canvasId: "accel-chart", chartRef: accelChartRef,
-    title: "Story Acceleration Plot", plotFnName: "plotAcceleration",
-    xLabelMax: "Maximum Acceleration (g)", xLabelAvg: "Average Acceleration (g)",
-  });
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-//  Download chart as high-resolution PNG
-// ══════════════════════════════════════════════════════════════════════════════
-
 function downloadCanvas(canvasId, filename) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) { alert("Generate the chart first."); return; }
@@ -3833,11 +3336,171 @@ function downloadCSV(headers, rows, filename) {
   URL.revokeObjectURL(a.href);
 }
 
+// ── MIDAS .sgs writer — one implementation, used by every module ────────────
+//
+// Byte-for-byte what MIDAS itself exports: CRLF throughout, a blank line after
+// *DATA, rows written as <x>TAB,TAB<y>, three blank lines before *ENDDATA, and
+// no trailing newline. Number columns carry fixed precision with trailing zeros
+// trimmed (0.0100 -> 0.01), which is how a MIDAS-written file reads.
+
+const SGS_AXES = {
+  time:     { x: "Time (sec)",   y: "Ground Accel. (g)",    xPrec: 6, yPrec: 8 },
+  spectrum: { x: "Period (sec)", y: "Spectral Accel. (g)",  xPrec: 4, yPrec: 6 },
+};
+
+function sgsNumber(v, prec) {
+  let s = Number(v).toFixed(prec);
+  if (s.indexOf(".") !== -1) s = s.replace(/0+$/, "").replace(/\.$/, "");
+  return (s === "-0" || s === "") ? "0" : s;
+}
+
+// A .sgs file is plain ASCII. Titles here are written by us and carry clause
+// marks (§, ×, en/em dashes) that would reach MIDAS as mojibake, so fold them
+// down rather than shipping bytes the format does not describe.
+function sgsAscii(s) {
+  return String(s)
+    .replace(/§\s*/g, "Sec. ")
+    .replace(/[×✕]/g, "x")
+    .replace(/[–—]/g, "-")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[≥]/g, ">=").replace(/[≤]/g, "<=")
+    .replace(/[^\x20-\x7E]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildSgsFile(cfg) {
+  const axis = SGS_AXES[cfg.axis || "spectrum"] || SGS_AXES.spectrum;
+  const xLabel = cfg.xLabel || axis.x;
+  const yLabel = cfg.yLabel || axis.y;
+  const xPrec = cfg.xPrec === undefined ? axis.xPrec : cfg.xPrec;
+  const yPrec = cfg.yPrec === undefined ? axis.yPrec : cfg.yPrec;
+
+  const lines = [
+    "*SGSw",
+    "*TITLE, " + sgsAscii(cfg.title || ""),
+    "*TITLE, ",
+    "*X-AXIS, " + sgsAscii(xLabel),
+    "*Y-AXIS, " + sgsAscii(yLabel),
+    "*UNIT&TYPE, " + sgsAscii(cfg.unitType || "GRAV, ACCEL"),
+    "*FLAGS, " + sgsAscii(cfg.flags || "0, 0"),
+    "*DATA",
+    "",
+  ];
+  cfg.rows.forEach(([x, y]) => {
+    if (!isFinite(x) || !isFinite(y)) return;
+    if (cfg.dropZeroX && x <= 0) return;   // MIDAS rejects a zero-period ordinate
+    lines.push(sgsNumber(x, xPrec) + "\t,\t" + sgsNumber(y, yPrec));
+  });
+  lines.push("", "", "", "*ENDDATA");
+  return lines.join("\r\n");
+}
+
+// Convenience: build one spectrum curve (period vs Sa) and download it.
+function downloadSpectrumSgs(filename, title, periods, accelerations) {
+  const rows = periods.map((t, i) => [t, accelerations[i]]);
+  triggerDownload(filename, buildSgsFile({
+    axis: "spectrum", title, rows, dropZeroX: true,
+  }));
+}
+
+// Several curves from one module — staggered so the browser keeps every file.
+function downloadSgsSeries(series) {
+  series.forEach((s, i) => setTimeout(
+    () => downloadSpectrumSgs(s.filename, s.title, s.periods, s.accelerations),
+    i * 250));
+}
+
 function downloadSpectrumCSV() {
   if (!lastSpectrumData) { alert("Generate the spectrum first."); return; }
   const d = lastSpectrumData;
   const rows = d.x.map((xi, i) => [xi.toFixed(6), d.Sa[i].toFixed(6), d.Sd[i].toFixed(6)]);
   downloadCSV(["T/Ts", "Sa (g)", "Sd (m)"], rows, "response_spectrum.csv");
+}
+
+// ── .sgs exports, one per spectrum module ───────────────────────────────────
+// The chart axis is normalized (T/Ts); MIDAS wants real period, so multiply back.
+
+function downloadSpectrumSgsNscp15() {
+  if (!lastSpectrumData) { alert("Generate the spectrum first."); return; }
+  const d = lastSpectrumData;
+  downloadSpectrumSgs("NSCP2015_spectrum.sgs",
+    "NSCP 2015 design spectrum (Ts=" + fmt(d.Ts, 4) + " s)",
+    d.x.map(xi => xi * d.Ts), d.Sa);
+}
+
+function downloadSpectrumSgsNscp15Th() {
+  if (!lastSpectrumData) { alert("Generate the spectrum first."); return; }
+  const d = lastSpectrumData;
+  downloadSpectrumSgs("NSCP2015_spectrum_1.4TH.sgs",
+    "NSCP 2015 design spectrum x 1.4 (time-history reference)",
+    d.x.map(xi => xi * d.Ts), d.Sa_14);
+}
+
+function downloadBsdsSgs(level) {
+  if (!bsdsLastData) { alert("Generate the spectrum first."); return; }
+  const src = level === "l2" ? bsdsLastData.level2 : bsdsLastData.level1;
+  const label = level === "l2" ? "Level_II" : "Level_I";
+  downloadSpectrumSgs("BSDS_" + label + ".sgs",
+    "DPWH BSDS " + (level === "l2" ? "Level II" : "Level I") + " design spectrum",
+    src.periods, src.accelerations);
+}
+
+function downloadSspSgs() {
+  if (!sspLastData) { alert("Generate the spectrum first."); return; }
+  const d = sspLastData;
+  downloadSpectrumSgs("SiteSpecific_spectrum.sgs",
+    "Site-specific design spectrum (Fpga = Fa = Fv = 1.0)",
+    d.periods, d.accelerations);
+}
+
+function downloadNscp24Sgs() {
+  if (!nscp24LastData) { alert("Generate the spectrum first."); return; }
+  const d = nscp24LastData;
+  const series = [{
+    filename: "NSCP2024_design.sgs",
+    title: "NSCP 2024 design spectrum (Sds=" + fmt(d.sds, 4) + " Sd1=" + fmt(d.sd1, 4) + ")",
+    periods: d.design.periods, accelerations: d.design.accelerations,
+  }];
+  if (document.getElementById("n24-show-mce").checked) {
+    series.push({
+      filename: "NSCP2024_MCEr.sgs",
+      title: "NSCP 2024 MCE_R spectrum (Sms=" + fmt(d.sms, 4) + " Sm1=" + fmt(d.sm1, 4) + ")",
+      periods: d.mce.periods, accelerations: d.mce.accelerations,
+    });
+  }
+  downloadSgsSeries(series);
+}
+
+function downloadAsceSgs() {
+  if (!asceLastData) { alert("Generate the spectrum first."); return; }
+  const d = asceLastData;
+  downloadSgsSeries([
+    { filename: "ASCE_design.sgs",
+      title: "ASCE 7 design spectrum (Sds=" + fmt(d.sds, 4) + " Sd1=" + fmt(d.sd1, 4) + ")",
+      periods: d.design.periods, accelerations: d.design.accelerations },
+    { filename: "ASCE_MCEr.sgs",
+      title: "ASCE 7 MCE_R spectrum (Sms=" + fmt(d.sms, 4) + " Sm1=" + fmt(d.sm1, 4) + ")",
+      periods: d.mce.periods, accelerations: d.mce.accelerations },
+    { filename: "ASCE_design_80pct.sgs",
+      title: "ASCE 7-16 §21.3 lower bound — 0.80 x design spectrum",
+      periods: d.lower_bound_design.periods, accelerations: d.lower_bound_design.accelerations },
+    { filename: "ASCE_MCEr_80pct.sgs",
+      title: "ASCE 7-16 §21.3 lower bound — 0.80 x MCE_R spectrum",
+      periods: d.lower_bound_mce.periods, accelerations: d.lower_bound_mce.accelerations },
+  ]);
+}
+
+function downloadOverlaySgs() {
+  if (!overlayLastData) { alert("Generate the overlay first."); return; }
+  const d = overlayLastData;
+  downloadSgsSeries([
+    { filename: "Overlay_NSCP2015.sgs", title: "NSCP 2015 design spectrum",
+      periods: d.periods, accelerations: d.nscp.accelerations },
+    { filename: "Overlay_ASCE41.sgs", title: "ASCE 41 design spectrum (2/3 MCE_R)",
+      periods: d.periods, accelerations: d.asce.accelerations },
+  ]);
 }
 
 function downloadADRSCSV() {
@@ -3853,73 +3516,6 @@ function downloadADRSCSV() {
     return row;
   });
   downloadCSV(headers, rows, "ADRS.csv");
-}
-
-function downloadStoryPlotCSV(cfg) {
-  // cfg: { prefix, storyTable, colSelect, modeSelect, labelMax, labelAvg, baseFilename }
-  const storyLevels = readStoryLevels(cfg.storyTable);
-  if (storyLevels.length === 0) { alert("Enter story levels first."); return; }
-  const colKey = document.getElementById(cfg.colSelect).value;
-  const colLabel = colKey === "max" ? cfg.labelMax : cfg.labelAvg;
-  const mode = document.getElementById(cfg.modeSelect).value;
-
-  let onlyIdx = 0;
-  if (mode === "single") {
-    const hl = getHighlightIdx(cfg.prefix);
-    if (hl > 0) {
-      onlyIdx = hl;
-    } else {
-      for (let i = 1; i <= PLOT_COUNT; i++) {
-        const chk = document.getElementById(cfg.prefix + "-chk-" + i);
-        if (chk && chk.checked) { onlyIdx = i; break; }
-      }
-    }
-  }
-
-  const headers = ["Story", "Level (m)"];
-  const seriesData = [];
-  for (let i = 1; i <= PLOT_COUNT; i++) {
-    const chk = document.getElementById(cfg.prefix + "-chk-" + i);
-    if (!chk || !chk.checked) continue;
-    if (mode === "single" && i !== onlyIdx) continue;
-    const name = document.getElementById(cfg.prefix + "-name-" + i).value || ("TH" + i);
-    const td = readDataTable(cfg.prefix, i, storyLevels);
-    if (td.length === 0) continue;
-    headers.push(name + " (" + colLabel + ")");
-    seriesData.push({ name, td });
-  }
-  if (seriesData.length === 0) { alert("No visible series to export."); return; }
-
-  const rows = storyLevels.map((sl, r) => {
-    const row = [sl.story, sl.level];
-    seriesData.forEach(s => {
-      const entry = s.td[r];
-      row.push(entry ? entry[colKey] : "");
-    });
-    return row;
-  });
-  const filename = mode === "single"
-    ? cfg.baseFilename.replace(".csv", "_" + seriesData[0].name + ".csv")
-    : cfg.baseFilename;
-  downloadCSV(headers, rows, filename);
-}
-
-function downloadDisplacementCSV() {
-  downloadStoryPlotCSV({
-    prefix: "disp", storyTable: "disp-story-table",
-    colSelect: "disp-col", modeSelect: "disp-mode",
-    labelMax: "Maximum Displacement", labelAvg: "Average Displacement",
-    baseFilename: "StoryDisplacement.csv",
-  });
-}
-
-function downloadDriftCSV() {
-  downloadStoryPlotCSV({
-    prefix: "drift", storyTable: "drift-story-table",
-    colSelect: "drift-col", modeSelect: "drift-mode",
-    labelMax: "Maximum Drift", labelAvg: "Average Drift",
-    baseFilename: "StoryDrift.csv",
-  });
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -4339,32 +3935,15 @@ function sgsTimePrecision(dt) {
 }
 
 function buildSgsText(rec) {
-  const tPrec = sgsTimePrecision(rec.dt);
-  const aPrec = 8;
-  const titleLine = (rec.header || rec.filename || "Earthquake Record").trim();
-
-  const lines = [];
-  lines.push("*SGSw");
-  lines.push("*TITLE, " + titleLine);
-  lines.push("*TITLE, ");
-  lines.push("*X-AXIS, Time (sec)");
-  lines.push("*Y-AXIS, Ground Accel. (g)");
-  lines.push("*UNIT&TYPE, GRAV, ACCEL");
-  lines.push("*FLAGS, 0, 0");
-  lines.push("*DATA");
-  lines.push("");
-
-  for (let i = 0; i < rec.npts; i++) {
-    const t = (i + 1) * rec.dt;
-    const a = rec.accel[i];
-    lines.push(t.toFixed(tPrec) + "\t,\t" + a.toFixed(aPrec));
-  }
-
-  lines.push("");
-  lines.push("");
-  lines.push("");
-  lines.push("*ENDDATA");
-  return lines.join("\r\n");
+  // Time origin is t = (i+1)*dt, matching how MIDAS indexes a record.
+  const rows = [];
+  for (let i = 0; i < rec.npts; i++) rows.push([(i + 1) * rec.dt, rec.accel[i]]);
+  return buildSgsFile({
+    axis: "time",
+    title: (rec.header || rec.filename || "Earthquake Record").trim(),
+    xPrec: sgsTimePrecision(rec.dt),
+    rows,
+  });
 }
 
 function sgsFilenameFor(rec) {
@@ -4463,11 +4042,6 @@ function plotSgsPreview() {
   });
 }
 
-// Collapse displacement + drift inputs to single-column on first load (Single is default mode)
-document.addEventListener("DOMContentLoaded", function() {
-  if (typeof updateDispInputVisibility  === "function") updateDispInputVisibility();
-  if (typeof updateDriftInputVisibility === "function") updateDriftInputVisibility();
-});
 
 </script>
 </body>

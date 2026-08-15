@@ -26,7 +26,7 @@ No test suite; verify changes by exercising the relevant module in the browser.
 ## Architecture
 
 - **`app.py`** — FastAPI entry point. One Pydantic input model + one `/api/*` POST route per calculation. `GET /` renders `templates/index.html`.
-- **`templates/index.html`** — the entire UI (HTML + CSS + vanilla JS, ~3000 lines). Bootstrap 5, Chart.js 4, chartjs-plugin-annotation. No build step, no framework, no separate JS files.
+- **`templates/index.html`** — the entire UI (HTML + CSS + vanilla JS, ~4000 lines). Bootstrap 5, Bootstrap Icons, Chart.js 4, chartjs-plugin-annotation, chartjs-plugin-zoom (+ Hammer.js), Google Fonts (Inter / JetBrains Mono) — all via CDN. No build step, no framework, no separate JS files.
 - **`apecseismicpy/`** — the library. Each submodule owns one code/standard:
   - `nscp2015/` — site_coefficients, response_spectrum, baseshear, period, pga, redundancy, scaling
   - `nscp2024/` — site_coefficients, response_spectrum (8th Edition, two-parameter Ss/S1)
@@ -56,22 +56,11 @@ The file is long but follows strict conventions — match them when extending.
 
 ### Editable tables
 
-Tables with class `spread-table` + `td[contenteditable]` get Excel-style paste/copy for free via the global listener near `readSpreadTable`. To read values back, use `readSpreadTable(tableId)` for `{h, x, y}` rows, or `readStoryLevels` + `readDataTable` for the shared story-plot format.
-
-### Story-level plots (displacement / drift / acceleration)
-
-These share a single engine — `genericPlot(cfg)`. Each module has:
-- A `<prefix>-story-table` (story labels + levels)
-- Seven `<prefix>-table-<1..7>` tables for TH1..TH7 load cases
-- A `<prefix>-chk-<i>`, `<prefix>-name-<i>` control per series
-- Controls: `<prefix>-col` (max/avg selector), `<prefix>-show-mean`, `<prefix>-show-envelope`, `<prefix>-limit-val`
-- `plot<Name>()` wrapper that calls `genericPlot` with its prefix
-
-To add another, clone the acceleration module HTML block and the `plotAcceleration()` + `addAccelStoryRow()` wrappers — don't reimplement the engine.
+Tables with class `spread-table` + `td[contenteditable]` get Excel-style paste/copy for free via the global listener near `readSpreadTable`. To read values back, use `readSpreadTable(tableId)` for `{h, x, y}` rows.
 
 ### Charts
 
-Chart instances are stored in module-scoped refs (e.g. `adrsChart`, `peerChart`, `dispChartRef.inst`) and destroyed before re-rendering. Always follow that pattern to avoid Chart.js memory leaks.
+Chart instances are stored in module-scoped refs (e.g. `adrsChart`, `peerChart`, `sgsChart`) and destroyed before re-rendering. Always follow that pattern to avoid Chart.js memory leaks.
 
 ### Download helpers
 
@@ -79,7 +68,7 @@ Two utilities near the bottom of the script block:
 - `downloadCanvas(canvasId, filename)` — 3× hi-res PNG export on a white background.
 - `downloadCSV(headers, rows, filename)` — builds a CSV blob and triggers download.
 
-Every new chart should get both buttons in its card header (matches the existing PNG/CSV pair pattern — see Story Shear, Displacement, PEER GM).
+Every new chart should get both buttons in its card header (matches the existing PNG/CSV pair pattern — see Response Spectrum, ADRS, PEER GM).
 
 ### Auto-fill between modules
 

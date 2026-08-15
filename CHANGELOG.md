@@ -7,6 +7,9 @@ All notable changes to APEC SeismicPy are documented here.
 ## [Unreleased]
 
 ### Added
+- SGS Generator tab (Ground Motion group): builds a MIDAS `.sgs` from any two-column data — Excel paste, CSV/TSV/`.sgs` file import, or a single column of values plus a Δt — with time-history, response-spectrum or custom axis labels, a live chart and a live file preview
+- `.sgs` export on every spectrum module: NSCP 2015 (design and 1.4× reference), NSCP 2024 (design and MCE_R), ASCE 7 (design, MCE_R and both 80% lower bounds), NSCP vs ASCE overlay, BSDS Level I and II, and Site-Specific
+- One shared `.sgs` writer behind every export, replacing the two ad-hoc builders. Output is byte-identical to a MIDAS-written file: CRLF endings, `<x>TAB,TAB<y>` rows, trailing zeros trimmed, three blank lines before `*ENDDATA`, no trailing newline, and clause marks (§, ×, dashes) folded to ASCII in header lines
 - ASCE 41-17 group with a BSE-1E / BSE-2E Spectra tab: both hazard levels from one set of inputs (BSE-1E = 2/3 BSE-2E per §2.4.1.4), ASCE 7-16 site coefficients including the §11.4.4 floor Fa >= 1.2 for a defaulted Site Class D, the Eq. (2-3) damping adjustment B1, the §11.4.8 site-specific trigger with its 1.5Ts Exception 2 bound, per-run clause notes, and PNG/CSV/MIDAS `.sgs` export
 - `apecseismicpy.asce41` package (`Asce41SiteCoefficients`, `Asce41Spectrum`, `damping_factor_b1`) and the `/api/asce41-spectrum` endpoint
 - ASCE 41 / ASCE 7 Design Spectrum tab and `apecseismicpy.asce` (`DesignResponseSpectrumASCE`): the general two-parameter spectrum with the 80% site-specific lower bound of ASCE 7-16 §21.3 / ASCE 41-17 §2.4.2, plotted at both MCE_R and design level, via `/api/asce-spectrum`
@@ -16,9 +19,15 @@ All notable changes to APEC SeismicPy are documented here.
 - Site-Specific Spectrum tab (DPWH BSDS group): design response spectrum built directly from site-specific PGA, Ss, and S1 with no site-factor interpolation (Fpga = Fa = Fv = 1.0), with 2/3 minimum overlay and PNG/CSV export
 - `/api/site-specific-spectrum` endpoint reusing `SeismicDesignResponse` with unit site factors
 - PEER GM: per-record PNG export — a PNG button on each record in the list plus a "PNG (each)" header button that exports one hi-res chart per record
+- APEC branding: logo mark in the sidebar and footer, an SVG favicon, and developer credits (Albert Pamonag and Camille Pajarillaga) in the sidebar and page footer
+- Zoom and pan on every chart via chartjs-plugin-zoom + Hammer.js (Ctrl+wheel or pinch to zoom, Shift+drag to pan, double-click to reset)
+
+### Changed
+- Professional UI restyle: Inter / JetBrains Mono typography (tabular numerals on results and editable tables), navy-and-green engineering palette drawn from the APEC logo, bordered cards with uppercase headers, green-accented module titles, and a refreshed sidebar with brand header, Bootstrap Icons group markers, and credits
 
 ### Removed
 - Story Shear and Overturning Moment diagram tabs
+- Diagrams group: Story Displacement, Story Drift, and Story Acceleration tabs, together with their shared story-plot engine and CSV exports
 
 ### Fixed
 - README: documented the NSCP 2024, ASCE 41-17, and ACI 350 module families, dropped the removed Story Shear and Overturning Moment entries, corrected the Site Coefficients and Structural Period example outputs, and added the HTTP API route list
