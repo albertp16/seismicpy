@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>APEC SeismicPy</title>
   <meta name="description" content="Seismic engineering calculations — NSCP 2015/2024, ASCE 41/7, DPWH BSDS — by Albert Pamonag Engineering Consultancy." />
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M60 3C64 30 76 62 97 94C72 80 36 76 6 86C28 58 47 30 60 3Z' fill='%231e6b35'/%3E%3Cpath d='M42 40L52 68L26 71Z' fill='white'/%3E%3C/svg%3E" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='4' y='4' width='92' height='92' rx='22' fill='%231e6b35'/%3E%3Ctext x='50' y='69' font-family='Arial,Helvetica,sans-serif' font-size='54' font-weight='700' fill='white' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -46,12 +46,12 @@
     .sidebar::-webkit-scrollbar { width: 6px; }
     .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 3px; }
     .sidebar-brand {
-      display: flex; align-items: center; gap: .7rem;
-      padding: 1rem 1.1rem;
+      flex-shrink: 0;
+      padding: 1.05rem 1.2rem;
       border-bottom: 1px solid rgba(255,255,255,.08);
+      border-left: 3px solid var(--green-light);
     }
-    .brand-mark { width: 40px; height: 40px; flex: none; }
-    .brand-name { color: #fff; font-weight: 700; font-size: 1.02rem; letter-spacing: .02em; line-height: 1.2; }
+    .brand-name { color: #fff; font-weight: 700; font-size: 1.05rem; letter-spacing: .02em; line-height: 1.2; }
     .brand-name .brand-accent { color: #5cc07e; font-weight: 600; }
     .sidebar-brand small {
       display: block; font-size: .58rem; font-weight: 500; color: rgba(255,255,255,.5);
@@ -59,6 +59,7 @@
     }
     .sidebar-group-title {
       display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
       padding: .6rem 1.2rem; color: rgba(255,255,255,.4);
       font-size: .68rem; text-transform: uppercase; letter-spacing: .12em; font-weight: 600;
       cursor: pointer; user-select: none; margin-top: .5rem;
@@ -67,7 +68,9 @@
     .sidebar-group-title span .bi { margin-right: .5rem; font-size: .8rem; opacity: .85; }
     .sidebar-group-title .bi-chevron-down { transition: transform .2s; font-size: .7rem; }
     .sidebar-group-title.collapsed .bi-chevron-down { transform: rotate(-90deg); }
-    .sidebar-items { overflow: hidden; transition: max-height .25s ease; max-height: 500px; }
+    /* flex-shrink: 0 — without it, overflow:hidden lets flex compress the
+       groups on short viewports and links get clipped instead of scrolling */
+    .sidebar-items { overflow: hidden; flex-shrink: 0; transition: max-height .25s ease; max-height: 500px; }
     .sidebar-items.collapsed { max-height: 0; }
     .sidebar-link {
       display: block; padding: .45rem 1.2rem .45rem 2rem;
@@ -80,7 +83,7 @@
       border-left-color: var(--green-light); font-weight: 600;
     }
     .sidebar-foot {
-      margin-top: auto; padding: .9rem 1.1rem 1rem;
+      margin-top: auto; flex-shrink: 0; padding: .9rem 1.2rem 1rem;
       border-top: 1px solid rgba(255,255,255,.08);
       font-size: .72rem; color: rgba(255,255,255,.55); line-height: 1.6;
     }
@@ -192,8 +195,6 @@
       display: flex; justify-content: space-between; align-items: flex-start;
       gap: 1.5rem; flex-wrap: wrap;
     }
-    .app-footer-brand { display: flex; gap: .8rem; align-items: center; }
-    .app-footer-mark { width: 44px; height: 44px; flex: none; }
     .app-footer-company { font-weight: 700; color: var(--navy); font-size: .92rem; letter-spacing: .04em; }
     .app-footer-company span { color: var(--green); font-size: 1.12em; }
     .app-footer-tag { font-size: .74rem; color: var(--muted); margin-top: 2px; }
@@ -229,20 +230,8 @@
 ════════════════════════════════════════════════════════════════════ -->
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-brand">
-    <svg class="brand-mark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="APEC logo">
-      <defs>
-        <linearGradient id="apec-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#2f8f4b"/>
-          <stop offset="1" stop-color="#17512a"/>
-        </linearGradient>
-      </defs>
-      <path d="M60 3 C64 30 76 62 97 94 C72 80 36 76 6 86 C28 58 47 30 60 3 Z" fill="url(#apec-grad)"/>
-      <path d="M42 40 L52 68 L26 71 Z" fill="#fff"/>
-    </svg>
-    <div>
-      <div class="brand-name">APEC <span class="brand-accent">SeismicPy</span></div>
-      <small>Albert Pamonag Engineering Consultancy</small>
-    </div>
+    <div class="brand-name">APEC <span class="brand-accent">SeismicPy</span></div>
+    <small>Albert Pamonag Engineering Consultancy</small>
   </div>
 
   <!-- NSCP 2015 -->
@@ -1320,21 +1309,9 @@
 
   <!-- ═══════════ FOOTER ═══════════ -->
   <footer class="app-footer">
-    <div class="app-footer-brand">
-      <svg class="app-footer-mark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="APEC logo">
-        <defs>
-          <linearGradient id="apec-grad-footer" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#2f8f4b"/>
-            <stop offset="1" stop-color="#17512a"/>
-          </linearGradient>
-        </defs>
-        <path d="M60 3 C64 30 76 62 97 94 C72 80 36 76 6 86 C28 58 47 30 60 3 Z" fill="url(#apec-grad-footer)"/>
-        <path d="M42 40 L52 68 L26 71 Z" fill="#fff"/>
-      </svg>
-      <div>
-        <div class="app-footer-company"><span>A</span>LBERT <span>P</span>AMONAG <span>E</span>NGINEERING <span>C</span>ONSULTANCY</div>
-        <div class="app-footer-tag">Structural &amp; Seismic Engineering &mdash; seismic.apeconsultancy.net</div>
-      </div>
+    <div>
+      <div class="app-footer-company"><span>A</span>LBERT <span>P</span>AMONAG <span>E</span>NGINEERING <span>C</span>ONSULTANCY</div>
+      <div class="app-footer-tag">Structural &amp; Seismic Engineering &mdash; seismic.apeconsultancy.net</div>
     </div>
     <div class="app-footer-meta">
       <div>Developed by <strong>Albert Pamonag</strong> and <strong>Camille Pajarillaga</strong></div>
@@ -1370,6 +1347,8 @@
 if (window.Chart) {
   Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
   Chart.defaults.color = "#3b4a5a";
+  // Render at 2x minimum so charts stay sharp on standard-DPI monitors too
+  Chart.defaults.devicePixelRatio = Math.max(2, window.devicePixelRatio || 1);
   // chartjs-plugin-zoom on every chart: Ctrl+wheel / pinch to zoom, Shift+drag to pan.
   // Mutate individual keys — replacing the whole object drops the plugin's other
   // defaults (drag, limits) and breaks every chart update.
@@ -3306,15 +3285,29 @@ document.addEventListener("paste", function(e) {
 function downloadCanvas(canvasId, filename) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) { alert("Generate the chart first."); return; }
-  const scale = 3;
+
+  // True HD export: re-render the chart at 4x devicePixelRatio so lines and
+  // text are drawn sharp at full resolution — upscaling the on-screen bitmap
+  // instead would only interpolate it.
+  const chart = Chart.getChart(canvas);
+  const EXPORT_DPR = 4;
+  let restore = null;
+  if (chart) {
+    const prev = chart.options.devicePixelRatio;
+    chart.options.devicePixelRatio = EXPORT_DPR;
+    chart.resize();
+    restore = () => { chart.options.devicePixelRatio = prev; chart.resize(); };
+  }
+
   const hiRes = document.createElement("canvas");
-  hiRes.width = canvas.width * scale;
-  hiRes.height = canvas.height * scale;
+  hiRes.width = canvas.width;
+  hiRes.height = canvas.height;
   const ctx = hiRes.getContext("2d");
-  ctx.scale(scale, scale);
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, hiRes.width, hiRes.height);
+  ctx.drawImage(canvas, 0, 0);
+  if (restore) restore();
+
   const url = hiRes.toDataURL("image/png");
   const a = document.createElement("a");
   a.href = url;

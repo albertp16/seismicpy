@@ -19,8 +19,9 @@ All notable changes to APEC SeismicPy are documented here.
 - Site-Specific Spectrum tab (DPWH BSDS group): design response spectrum built directly from site-specific PGA, Ss, and S1 with no site-factor interpolation (Fpga = Fa = Fv = 1.0), with 2/3 minimum overlay and PNG/CSV export
 - `/api/site-specific-spectrum` endpoint reusing `SeismicDesignResponse` with unit site factors
 - PEER GM: per-record PNG export — a PNG button on each record in the list plus a "PNG (each)" header button that exports one hi-res chart per record
-- APEC branding: logo mark in the sidebar and footer, an SVG favicon, and developer credits (Albert Pamonag and Camille Pajarillaga) in the sidebar and page footer
+- APEC branding: sidebar brand header, an SVG favicon, and developer credits (Albert Pamonag and Camille Pajarillaga) in the sidebar and page footer
 - Zoom and pan on every chart via chartjs-plugin-zoom + Hammer.js (Ctrl+wheel or pinch to zoom, Shift+drag to pan, double-click to reset)
+- HD charts: on-screen rendering at 2x devicePixelRatio minimum, and PNG export re-renders the chart at 4x so exported lines and text stay sharp instead of upscaling the screen bitmap
 
 ### Changed
 - Professional UI restyle: Inter / JetBrains Mono typography (tabular numerals on results and editable tables), navy-and-green engineering palette drawn from the APEC logo, bordered cards with uppercase headers, green-accented module titles, and a refreshed sidebar with brand header, Bootstrap Icons group markers, and credits
@@ -30,6 +31,7 @@ All notable changes to APEC SeismicPy are documented here.
 - Diagrams group: Story Displacement, Story Drift, and Story Acceleration tabs, together with their shared story-plot engine and CSV exports
 
 ### Fixed
+- Sidebar no longer clips module links on short viewports: flex children could compress (overflow: hidden zeroes their minimum size) instead of letting the sidebar scroll
 - README: documented the NSCP 2024, ASCE 41-17, and ACI 350 module families, dropped the removed Story Shear and Overturning Moment entries, corrected the Site Coefficients and Structural Period example outputs, and added the HTTP API route list
 
 ---
